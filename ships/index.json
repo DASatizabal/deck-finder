@@ -1,0 +1,35 @@
+{
+  "lines": [
+    {
+      "id": "ncl",
+      "name": "Norwegian Cruise Line",
+      "path": "ships/ncl/",
+      "ships": [
+        {
+          "id": "ncl/aqua",
+          "name": "Norwegian Aqua",
+          "path": "ships/ncl/aqua/",
+          "decks": 16,
+          "bytes": 1151927,
+          "hash": "57f8e7848dd83e7550f8ab36543113014024d222b98ebb8e9946c17ffb0479c7"
+        },
+        {
+          "id": "ncl/getaway",
+          "name": "Norwegian Getaway",
+          "path": "ships/ncl/getaway/",
+          "decks": 14,
+          "bytes": 1136861,
+          "hash": "5c16c3e6998edab862a5f0df3b76b0e783cd2754bd2f69cd78c2ffbbcd9ff4cb"
+        },
+        {
+          "id": "ncl/joy",
+          "name": "Norwegian Joy",
+          "path": "ships/ncl/joy/",
+          "decks": 16,
+          "bytes": 1529088,
+          "hash": "23d98312805f04b383c15c8ccd178b7eb88b1dbde4c2a8ef28e898d332319e96"
+        }
+      ]
+    }
+  ]
+}

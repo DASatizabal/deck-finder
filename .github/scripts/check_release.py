@@ -7,6 +7,8 @@ Checks:
 2. The version is higher than the newest existing git tag.
 3. CHANGELOG.md starts with an entry for this version.
 4. The JavaScript in index.html has no syntax errors.
+5. Every deck image named in each ships/<line>/<ship>/ship.json exists.
+6. ships/index.json matches what tools/build_index.py would generate right now.
 """
 import json
 import os
@@ -74,6 +76,32 @@ result = subprocess.run(["node", "--check", "app_check.js"], capture_output=True
 if result.returncode != 0:
     fail("index.html has a JavaScript error:\n" + result.stderr[-1500:])
 Path("app_check.js").unlink(missing_ok=True)
+
+# 5. Every deck image named in each ship.json exists
+ship_files = sorted(Path("ships").glob("*/*/ship.json"))
+if not ship_files:
+    fail("no ships found (expected ships/<line>/<ship>/ship.json)")
+for ship_file in ship_files:
+    folder = ship_file.parent.as_posix()
+    try:
+        ship = json.loads(ship_file.read_text(encoding="utf-8"))
+    except json.JSONDecodeError as e:
+        fail(f"{folder}/ship.json is not valid JSON: {e}")
+        continue
+    for deck, info in ship.get("decks", {}).items():
+        image = info.get("image")
+        if not image or not (ship_file.parent / image).is_file():
+            fail(f"{folder}: deck {deck} image {image!r} is missing")
+
+# 6. ships/index.json is up to date
+sys.path.insert(0, "tools")
+try:
+    import build_index
+    current = Path("ships/index.json").read_text(encoding="utf-8") if Path("ships/index.json").exists() else ""
+    if current != build_index.render():
+        fail("ships/index.json is out of date. Run python tools/build_index.py and commit the result.")
+except Exception as e:
+    fail(f"could not run tools/build_index.py: {e}")
 
 if errors:
     print(f"\n{len(errors)} problem(s) found. Nothing was published.")

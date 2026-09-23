@@ -1,0 +1,160 @@
+{
+  "id": "ncl/aqua",
+  "line": "ncl",
+  "name": "Norwegian Aqua",
+  "itinerary_code": "AQUA",
+  "decks": {
+    "5": {
+      "image": "deck5.webp",
+      "venues": [
+        "Staterooms"
+      ]
+    },
+    "6": {
+      "image": "deck6.webp",
+      "venues": [
+        "Commodore Room",
+        "Penrose Bar",
+        "Casino",
+        "Aqua Theater & Club",
+        "Penrose Atrium",
+        "Hasuki",
+        "Improv At Sea",
+        "Whiskey Bar",
+        "Swirl"
+      ]
+    },
+    "7": {
+      "image": "deck7.webp",
+      "venues": [
+        "Cagney's Steakhouse",
+        "Humidor Cigar Lounge",
+        "Le Bistro French Restaurant",
+        "Hudson's",
+        "Metropolitan Bar",
+        "Aqua Theater & Club",
+        "Syd Norman's Pour House",
+        "Starbucks",
+        "Penrose Atrium",
+        "Shops",
+        "Nama"
+      ]
+    },
+    "8": {
+      "image": "deck8.webp",
+      "venues": [
+        "Belvedere Bar",
+        "Infinity Beach",
+        "Indulge Outdoor Lounge",
+        "Oceanwalk",
+        "Indulge Food Hall",
+        "Local Bar & Grill",
+        "Onda By Scarpetta",
+        "Los Lobos",
+        "Aqua Theater & Club",
+        "Penrose Atrium",
+        "La Terrazza",
+        "Deck 8 Shops",
+        "Photo Gallery"
+      ]
+    },
+    "9": {
+      "image": "deck9.webp",
+      "venues": [
+        "Staterooms"
+      ]
+    },
+    "10": {
+      "image": "deck10.webp",
+      "venues": [
+        "Staterooms"
+      ]
+    },
+    "11": {
+      "image": "deck11.webp",
+      "venues": [
+        "Staterooms"
+      ]
+    },
+    "12": {
+      "image": "deck12.webp",
+      "venues": [
+        "Staterooms"
+      ]
+    },
+    "13": {
+      "image": "deck13.webp",
+      "venues": [
+        "Staterooms"
+      ]
+    },
+    "14": {
+      "image": "deck14.webp",
+      "venues": [
+        "Staterooms",
+        "Entourage"
+      ]
+    },
+    "15": {
+      "image": "deck15.webp",
+      "venues": [
+        "Staterooms",
+        "Mandara Spa & Salon",
+        "Splash Academy"
+      ]
+    },
+    "16": {
+      "image": "deck16.webp",
+      "venues": [
+        "Staterooms",
+        "Haven Restaurant",
+        "Haven Outdoor Bar",
+        "Haven Sundeck",
+        "Haven Lounge",
+        "Mandara Spa & Salon",
+        "Pulse Fitness Center"
+      ]
+    },
+    "17": {
+      "image": "deck17.webp",
+      "venues": [
+        "Aqua Game Zone",
+        "Vibe Beach Club",
+        "Main Pool",
+        "Waves Pool Bar",
+        "Palomar",
+        "Surfside Cafe",
+        "Observation Lounge",
+        "Sukhothai",
+        "Surfside Grill",
+        "The Haven Sundeck"
+      ]
+    },
+    "18": {
+      "image": "deck18.webp",
+      "venues": [
+        "Drop",
+        "Kids Aqua Park",
+        "The Stadium",
+        "Sun Deck",
+        "Aqua Slidecoaster",
+        "Tee Time",
+        "Bull's Eye Bar"
+      ]
+    },
+    "19": {
+      "image": "deck19.webp",
+      "venues": [
+        "Aqua Slidecoaster",
+        "Pickleball Court",
+        "Tee Time"
+      ]
+    },
+    "20": {
+      "image": "deck20.webp",
+      "venues": [
+        "Glow Court"
+      ]
+    }
+  }
+}

@@ -1,5 +1,9 @@
 # Changelog
 
+## [1.5.0] - 2026-09-23
+### Changed
+- Deck plans now download per ship, so the app is much smaller and faster to update. Ships on your trips are saved for offline use automatically. Your trips and pins carry over.
+
 ## [1.4.1] - 2026-09-23
 ### Changed
 - Behind-the-scenes maintenance. Nothing changes in how the app works.

@@ -1,0 +1,174 @@
+{
+  "id": "ncl/getaway",
+  "line": "ncl",
+  "name": "Norwegian Getaway",
+  "itinerary_code": "GETAWAY",
+  "decks": {
+    "5": {
+      "image": "deck5.webp",
+      "venues": [
+        "Staterooms 5100 to 5840",
+        "Medical Center"
+      ]
+    },
+    "6": {
+      "image": "deck6.webp",
+      "venues": [
+        "Getaway Theater",
+        "Illusionarium",
+        "Guest Services",
+        "Shore Excursion Desk",
+        "The Atrium",
+        "Bar at the Atrium",
+        "Starbucks",
+        "Internet Café",
+        "Card Room",
+        "Meeting Rooms",
+        "Perspectives Photo Studio",
+        "The Collection Art Gallery",
+        "Headliners Comedy Club",
+        "Le Bistro French Restaurant",
+        "Teppanyaki",
+        "Mixx Bar",
+        "Savor Restaurant",
+        "Taste Restaurant"
+      ]
+    },
+    "7": {
+      "image": "deck7.webp",
+      "venues": [
+        "Getaway Theater (upper level)",
+        "Box Office",
+        "O'Sheehan's Neighborhood Bar & Grill",
+        "Getaway Casino",
+        "Bliss Ultra Lounge",
+        "Bar 21",
+        "Shanghai's Noodle Bar",
+        "The Manhattan Room"
+      ]
+    },
+    "8": {
+      "image": "deck8.webp",
+      "venues": [
+        "The Waterfront (outdoor promenade)",
+        "La Cucina Italian Restaurant",
+        "Syd Norman's Pour House",
+        "Sunset Bar",
+        "The Humidor Cigar Lounge",
+        "Ice Bar",
+        "Sugarcane Mojito Bar",
+        "The Raw Bar",
+        "Wasabi",
+        "Ocean Blue",
+        "Cagney's Steakhouse",
+        "Moderno Churrascaria",
+        "Prime Meridian Bar",
+        "Dolce Gelato",
+        "The Bake Shop",
+        "Tradewinds Tax & Duty Free",
+        "Tides Boutique",
+        "Photo Gallery",
+        "Staterooms 8100 to 8780 (forward)"
+      ]
+    },
+    "9": {
+      "image": "deck9.webp",
+      "venues": [
+        "Staterooms 9100 to 9922"
+      ]
+    },
+    "10": {
+      "image": "deck10.webp",
+      "venues": [
+        "Staterooms 10100 to 10916",
+        "Studio Lounge"
+      ]
+    },
+    "11": {
+      "image": "deck11.webp",
+      "venues": [
+        "Staterooms 11100 to 11914",
+        "Studio Lounge"
+      ]
+    },
+    "12": {
+      "image": "deck12.webp",
+      "venues": [
+        "Staterooms 12100 to 12910",
+        "Splash Academy"
+      ]
+    },
+    "13": {
+      "image": "deck13.webp",
+      "venues": [
+        "Staterooms 13100 to 13908",
+        "Splash Academy"
+      ]
+    },
+    "14": {
+      "image": "deck14.webp",
+      "venues": [
+        "Staterooms 14100 to 14878",
+        "Spa"
+      ]
+    },
+    "15": {
+      "image": "deck15.webp",
+      "venues": [
+        "Garden Café",
+        "Open-Air Garden Café",
+        "The Market Place",
+        "Pool",
+        "Waves Pool Bar",
+        "Aqua Park",
+        "Kids' Aqua Park",
+        "Sun Deck",
+        "Fitness Center",
+        "Spa",
+        "Spa Thermal Suite",
+        "Salt Room",
+        "Salon",
+        "Barber Shop",
+        "The Haven suites 15100 to 15126"
+      ]
+    },
+    "16": {
+      "image": "deck16.webp",
+      "venues": [
+        "American Diner",
+        "Spice H2O",
+        "Entourage Teen Lounge",
+        "Video Arcade",
+        "Guppies",
+        "The Whip",
+        "Free Fall",
+        "Jogging Track",
+        "Sun Deck",
+        "Bar",
+        "The Haven Courtyard",
+        "The Haven Lounge",
+        "The Haven Restaurant",
+        "Private Spa",
+        "The Haven suites 16100 to 16722"
+      ]
+    },
+    "17": {
+      "image": "deck17.webp",
+      "venues": [
+        "Vibe Beach Club",
+        "Bars",
+        "The Haven Private Sun Deck",
+        "Sports Complex",
+        "Ropes Course",
+        "The Whip and Free Fall (tops)"
+      ]
+    },
+    "18": {
+      "image": "deck18.webp",
+      "venues": [
+        "Sun Deck",
+        "Basketball Court"
+      ]
+    }
+  }
+}

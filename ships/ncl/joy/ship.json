@@ -1,0 +1,163 @@
+{
+  "id": "ncl/joy",
+  "line": "ncl",
+  "name": "Norwegian Joy",
+  "itinerary_code": "JOY",
+  "decks": {
+    "5": {
+      "image": "deck5.webp",
+      "venues": [
+        "Staterooms",
+        "Splash Academy"
+      ]
+    },
+    "6": {
+      "image": "deck6.webp",
+      "venues": [
+        "Joy Theater",
+        "Savor Restaurant",
+        "Taste Restaurant",
+        "Mixx Bar",
+        "Teppanyaki",
+        "Q Texas Smokehouse",
+        "Art Gallery",
+        "Karaoke Rooms",
+        "Joy Atrium",
+        "Starbucks",
+        "678 Place",
+        "Chess & Card Room",
+        "Maltings Beer & Whiskey Bar",
+        "Social Night Club"
+      ]
+    },
+    "7": {
+      "image": "deck7.webp",
+      "venues": [
+        "Joy Theater",
+        "Joy Casino",
+        "Manhattan Room",
+        "678 Place",
+        "Skyline Bar",
+        "Local Bar & Grill"
+      ]
+    },
+    "8": {
+      "image": "deck8.webp",
+      "venues": [
+        "Staterooms",
+        "Le Bistro French Restaurant",
+        "Cagney's Steakhouse",
+        "A-List Bar",
+        "Shops",
+        "La Cucina Italian Restaurant",
+        "Food Republic",
+        "678 Place",
+        "Photo Gallery",
+        "Waterfront",
+        "District Brew House",
+        "Cavern Club",
+        "Ocean Blue",
+        "Humidor Cigar Lounge",
+        "Sugarcane Mojito Bar"
+      ]
+    },
+    "9": {
+      "image": "deck9.webp",
+      "venues": [
+        "Staterooms"
+      ]
+    },
+    "10": {
+      "image": "deck10.webp",
+      "venues": [
+        "Staterooms"
+      ]
+    },
+    "11": {
+      "image": "deck11.webp",
+      "venues": [
+        "Staterooms"
+      ]
+    },
+    "12": {
+      "image": "deck12.webp",
+      "venues": [
+        "Staterooms"
+      ]
+    },
+    "13": {
+      "image": "deck13.webp",
+      "venues": [
+        "Staterooms"
+      ]
+    },
+    "14": {
+      "image": "deck14.webp",
+      "venues": [
+        "Staterooms"
+      ]
+    },
+    "15": {
+      "image": "deck15.webp",
+      "venues": [
+        "Staterooms",
+        "Observation Lounge"
+      ]
+    },
+    "16": {
+      "image": "deck16.webp",
+      "venues": [
+        "Garden Café",
+        "Kids Aqua Park",
+        "Spa & Salon",
+        "Serenity Park",
+        "Pool",
+        "Family Pool",
+        "Entourage Teen Lounge",
+        "Video Arcade",
+        "Thermal Suite"
+      ]
+    },
+    "17": {
+      "image": "deck17.webp",
+      "venues": [
+        "Staterooms",
+        "Haven Courtyard",
+        "Spice H2O",
+        "Horizon Lounge",
+        "American Diner",
+        "Race Car Track",
+        "Jogging Track",
+        "Fitness Center",
+        "Haven Lounge"
+      ]
+    },
+    "18": {
+      "image": "deck18.webp",
+      "venues": [
+        "Staterooms",
+        "Haven Restaurant",
+        "Race Car Track",
+        "Ocean Loops",
+        "Horizon Lounge",
+        "Haven Library"
+      ]
+    },
+    "19": {
+      "image": "deck19.webp",
+      "venues": [
+        "Aqua Racer",
+        "Vibe Beach Club",
+        "Haven Sundeck",
+        "Public Sun Deck",
+        "Mini Golf"
+      ]
+    },
+    "20": {
+      "image": "deck20.webp",
+      "venues": [
+        "Vibe Beach Club Sun Deck"
+      ]
+    }
+  }
+}

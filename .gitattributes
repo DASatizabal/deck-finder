@@ -1,0 +1,5 @@
+# Keep text files byte-identical on every computer and in GitHub Actions,
+# so ship hashes in ships/index.json match everywhere.
+* text=auto eol=lf
+*.webp binary
+*.png binary

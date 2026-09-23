@@ -34,13 +34,19 @@ Changes that only touch `CLAUDE.md` or `README.md` don't need a version bump. Th
 Before pushing, run `python .github/scripts/check_release.py` locally (needs git and Node.js) and fix every FAIL line. It deletes its temporary files when done, but `release_notes.md` may be left behind: never commit it.
 
 ## Keeping every device on the latest version
-- `sw.js` must fetch `index.html` and `version.json` network-first (3-second timeout), falling back to the cache when offline. All other files can be cache-first.
+- `sw.js` must fetch `index.html`, `version.json`, and `ships/index.json` network-first (3-second timeout), falling back to the cache when offline. All other files can be cache-first.
+- Each ship saved for offline lives in its own cache named `deckfinder-ship-<line>-<ship>`. Never delete these when the app version changes. The app re-downloads a saved ship only when its hash in `ships/index.json` changes.
 - The app checks `version.json` with `cache: "no-store"` on open and when it returns to the foreground. If the live version is newer than `APP_VERSION`, show a banner: "Update available (vX.Y.Z). Tap to update." Tapping it activates the new service worker and reloads.
 - The menu shows "Version X.Y.Z (date)" and a "What's new" item that displays the latest `version.json` notes.
 - Never remove the offline fallback. The app must still open with no internet at sea.
 
+## Ship data
+- Deck plans live in `ships/<line>/<ship>/`: a `ship.json` (name, `itinerary_code`, and each deck's `image` and `venues`) plus one `deck<N>.webp` per deck. Each line has `ships/<line>/line.json`.
+- After adding or changing anything under `ships/`, run `python tools/build_index.py` and commit the updated `ships/index.json`. The release check fails if it is out of date.
+- Ship ids are `<line>/<ship>`, like `ncl/getaway`. Saved trips store these ids.
+- The `tools` folder is not published to the website.
+
 ## Warnings
-- `index.html` contains a very long single line: `const IMG = {...};` with every deck plan image as base64 (about 5 MB). NEVER read or print the whole file or that line. Find line numbers with search tools and edit other lines surgically, or use a small Python script for bulk edits.
 - Saved user data lives in the phone's localStorage under the keys `deckfinder` and `deckfinder-trips`. Never rename these keys or change their shape without a migration, and treat that as a MAJOR version.
 - Always start from the latest `main` (`git pull`) before editing, so work from Claude chat and Claude Code never overwrites each other.
 
