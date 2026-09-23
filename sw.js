@@ -1,5 +1,5 @@
 // Bump VERSION on every release (it must match APP_VERSION and version.json), so phones grab the update.
-const VERSION = "deckfinder-v1.4.0";
+const VERSION = "deckfinder-v1.4.1";
 const FILES = ["./", "./index.html", "./version.json", "./manifest.webmanifest", "./icon-192.png", "./icon-512.png"];
 const TIMEOUT_MS = 3000;
 

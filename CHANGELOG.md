@@ -1,5 +1,9 @@
 # Changelog
 
+## [1.4.1] - 2026-09-23
+### Changed
+- Behind-the-scenes maintenance. Nothing changes in how the app works.
+
 ## [1.4.0] - 2026-09-23
 ### Added
 - Deck plans for Norwegian Joy and Norwegian Aqua (Decks 5 to 20), each with an "On this deck" list.
