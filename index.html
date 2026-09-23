@@ -56,9 +56,9 @@ button:focus-visible,input:focus-visible,[tabindex]:focus-visible{outline:3px so
 .list li.cabin{color:var(--accent);font-weight:700}
 .list .note{font-size:13px;color:var(--muted);margin-top:10px}
 
-.mapwrap{position:relative;min-height:0;background:#fff;border-radius:14px;border:1px solid var(--line);overflow:auto;overscroll-behavior:contain}
+.mapwrap{position:relative;min-height:0;background:#fff;border-radius:14px;border:1px solid var(--line);overflow:auto;overscroll-behavior:contain;touch-action:pan-x pan-y}
 .map{position:relative;width:100%;transition:width .2s ease}
-.map.zoomed{width:220%}
+.mapwrap.pinching .map{transition:none}
 .map img{display:block;width:100%;height:auto;user-select:none;-webkit-user-drag:none}
 .pin{position:absolute;width:34px;height:34px;margin:-17px 0 0 -17px;border-radius:50%;border:4px solid #0E2A3B;box-shadow:0 0 0 3px #fff,0 0 0 7px rgba(14,42,59,.35);animation:ping 1.6s ease-out 3}
 @keyframes ping{0%{box-shadow:0 0 0 3px #fff,0 0 0 7px rgba(14,42,59,.5)}100%{box-shadow:0 0 0 3px #fff,0 0 0 22px rgba(14,42,59,0)}}
@@ -206,11 +206,13 @@ const $ = id => document.getElementById(id);
 const esc = s => String(s).replace(/[&<>"]/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
 
 // ---------- saved data (stays on this phone) ----------
-let state = { ship: "getaway", deck: 5, zoomed: false };
+let state = { ship: "getaway", deck: 5, zoom: 1 };
 let data = { trips: [], activeTripId: null, workerUrl: "" };
 try {
   const s = JSON.parse(localStorage.getItem("deckfinder") || "null");
   if (s && SHIPS[s.ship]) state = Object.assign(state, s);
+  if (typeof state.zoom !== "number") state.zoom = state.zoomed ? 2.2 : 1;
+  delete state.zoomed;
   const d = JSON.parse(localStorage.getItem("deckfinder-trips") || "null");
   if (d && Array.isArray(d.trips)) data = Object.assign(data, d);
 } catch (e) {}
@@ -283,11 +285,11 @@ function render(){
   const bar = placing ? `<div class="placebar"><span class="grow">Tap your cabin ${esc(activeTrip()?.cabin || "")} on the plan</span><button id="cancelPlace">Cancel</button></div>` : "";
   wrap.classList.toggle("placing", !!placing);
   wrap.innerHTML = src
-    ? `${bar}<button class="zoom" id="zoomBtn" aria-label="${state.zoomed ? "Zoom out" : "Zoom in"}">${state.zoomed ? "−" : "+"}</button>
-       <div class="map ${state.zoomed ? "zoomed" : ""}" id="map"><img src="${src}" alt="Deck ${d} plan">${pin}</div>`
+    ? `${bar}<button class="zoom" id="zoomBtn" aria-label="${state.zoom > 1 ? "Zoom out" : "Zoom in"}">${state.zoom > 1 ? "−" : "+"}</button>
+       <div class="map" id="map" style="width:${state.zoom * 100}%"><img src="${src}" alt="Deck ${d} plan">${pin}</div>`
     : `<div class="empty"><strong>No plan image</strong>Deck ${d} doesn't have a plan image yet.</div>`;
   if (src){
-    $("zoomBtn").onclick = () => { state.zoomed = !state.zoomed; save(); render(); };
+    $("zoomBtn").onclick = () => { state.zoom = state.zoom > 1 ? 1 : 2.2; save(); render(); };
     if (placing) {
       $("cancelPlace").onclick = () => { placing = null; render(); };
       $("map").onclick = e => {
@@ -351,6 +353,61 @@ function setDeck(d){ if (d === state.deck) return; state.deck = d; if (navigator
   });
 })();
 
+// ---------- pinch to zoom the deck plan (two fingers, or ctrl + trackpad pinch) ----------
+(function(){
+  const wrap = $("mapwrap");
+  const MIN = 1, MAX = 5;
+  let g = null;
+  const clamp = z => Math.min(MAX, Math.max(MIN, z));
+  // Zoom to z, keeping the plan point under screen point (px, py) fixed.
+  function zoomAt(z, px, py, from){
+    const map = $("map"); if (!map) return;
+    const r = wrap.getBoundingClientRect();
+    const cx = (from.left + px - r.left - map.offsetLeft) / from.zoom;
+    const cy = (from.top + py - r.top - map.offsetTop) / from.zoom;
+    state.zoom = clamp(z);
+    map.style.width = state.zoom * 100 + "%";
+    wrap.scrollLeft = cx * state.zoom + map.offsetLeft - (px - r.left);
+    wrap.scrollTop = cy * state.zoom + map.offsetTop - (py - r.top);
+  }
+  function syncBtn(){
+    const b = $("zoomBtn"); if (!b) return;
+    b.textContent = state.zoom > 1 ? "−" : "+";
+    b.setAttribute("aria-label", state.zoom > 1 ? "Zoom out" : "Zoom in");
+  }
+  const dist = t => Math.hypot(t[0].clientX - t[1].clientX, t[0].clientY - t[1].clientY);
+  const mid = t => [(t[0].clientX + t[1].clientX) / 2, (t[0].clientY + t[1].clientY) / 2];
+  wrap.addEventListener("touchstart", e => {
+    if (e.touches.length !== 2 || !$("map")) return;
+    const [mx, my] = mid(e.touches);
+    g = { d: dist(e.touches), mx, my, zoom: state.zoom, left: wrap.scrollLeft, top: wrap.scrollTop };
+    wrap.classList.add("pinching");
+  }, { passive: true });
+  wrap.addEventListener("touchmove", e => {
+    if (!g || e.touches.length !== 2) return;
+    e.preventDefault();
+    const [mx, my] = mid(e.touches);
+    // Anchor on the starting midpoint, then follow the fingers as they move.
+    zoomAt(g.zoom * dist(e.touches) / g.d, g.mx, g.my, g);
+    wrap.scrollLeft -= mx - g.mx; wrap.scrollTop -= my - g.my;
+  }, { passive: false });
+  const end = e => {
+    if (!g || e.touches.length >= 2) return;
+    g = null; wrap.classList.remove("pinching");
+    if (state.zoom < 1.05) { state.zoom = 1; const m = $("map"); if (m) m.style.width = "100%"; }
+    syncBtn(); save();
+  };
+  wrap.addEventListener("touchend", end); wrap.addEventListener("touchcancel", end);
+  wrap.addEventListener("wheel", e => {
+    if (!e.ctrlKey || !$("map")) return;
+    e.preventDefault();
+    wrap.classList.add("pinching");
+    zoomAt(state.zoom * Math.exp(-e.deltaY / 100), e.clientX, e.clientY, { zoom: state.zoom, left: wrap.scrollLeft, top: wrap.scrollTop });
+    wrap.classList.remove("pinching");
+    syncBtn(); clearTimeout(wrap._zt); wrap._zt = setTimeout(save, 300);
+  }, { passive: false });
+})();
+
 // ---------- sheets ----------
 function openSheet(id){ closeSheets(); $("scrim").classList.add("open"); $(id).classList.add("open"); }
 function closeSheets(){ $("scrim").classList.remove("open"); document.querySelectorAll(".sheet").forEach(x=>x.classList.remove("open")); }
@@ -368,7 +425,7 @@ $("menuBtn").onclick = () => {
   $("mTrips").onclick = openTrips;
   $("mItin").onclick = openItinerary;
   $("menuBody").querySelectorAll(".shipopt").forEach(b => b.onclick = () => {
-    state.ship = b.dataset.k; state.zoomed = false; const ds = deckList(state.ship); if (ds.length) state.deck = ds[0];
+    state.ship = b.dataset.k; state.zoom = 1; const ds = deckList(state.ship); if (ds.length) state.deck = ds[0];
     closeSheets(); render();
   });
   openSheet("menuSheet");
@@ -450,7 +507,7 @@ function startPlacing(id){
   const t = data.trips.find(x => x.id === id); if (!t) return;
   const cd = cabinDeckNum(t.cabin);
   if (!hasPlans(t.ship) || !deckList(t.ship).includes(cd)) return;
-  data.activeTripId = id; state.ship = t.ship; state.deck = cd; state.zoomed = true;
+  data.activeTripId = id; state.ship = t.ship; state.deck = cd; state.zoom = 2.2;
   placing = id; closeSheets(); render();
 }
 

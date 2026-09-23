@@ -1,5 +1,5 @@
 // Bump VERSION whenever you upload new files, so phones grab the update.
-const VERSION = "deckfinder-v3";
+const VERSION = "deckfinder-v4";
 const FILES = ["./", "./index.html", "./manifest.webmanifest", "./icon-192.png", "./icon-512.png"];
 
 self.addEventListener("install", e => {
