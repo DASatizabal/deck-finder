@@ -1,5 +1,9 @@
 # Changelog
 
+## [1.8.0] - 2026-09-25
+### Added
+- When you switch decks, the plan now stays at the same spot on the ship, so you can see what's directly above and below you. On Norwegian Getaway, it lines up using the elevators for extra accuracy.
+
 ## [1.7.0] - 2026-09-25
 ### Changed
 - The deck plan now fills the width of your phone. The "On this deck" list opens from a button at the top of the plan. To go back to the old side-by-side view, tap the menu and choose Side by side under Deck plan layout.

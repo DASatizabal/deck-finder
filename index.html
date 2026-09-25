@@ -179,6 +179,8 @@ button:focus-visible,input:focus-visible,[tabindex]:focus-visible{outline:3px so
 .layoutopt small{color:var(--muted);display:block}
 .layoutopt.cur{font-weight:700}
 .layoutopt.cur::after{content:"";width:10px;height:10px;border-radius:50%;background:var(--accent);flex:none}
+.placeline{position:absolute;left:0;right:0;height:0;border-top:2px solid rgba(242,107,29,.7);pointer-events:none;z-index:1;animation:placefade 2s ease-out forwards}
+@keyframes placefade{0%{opacity:1}60%{opacity:.6}100%{opacity:0}}
 @media (prefers-reduced-motion: reduce){*{transition:none!important}.hl{animation:none}}
 </style>
 </head>
@@ -224,7 +226,7 @@ button:focus-visible,input:focus-visible,[tabindex]:focus-visible{outline:3px so
 </div>
 
 <script>
-const APP_VERSION = "1.7.0";
+const APP_VERSION = "1.8.0";
 const APP_DATE = "2026-09-25";
 
 // ---------- ships: loaded at runtime from ships/index.json and each ship's ship.json ----------
@@ -592,6 +594,7 @@ function render(){
     wrap.scrollTop = prevScroll !== null ? prevScroll : 0;
   }
   renderSlider();
+  if (pendingPlace) { if (pendingPlace.deck === d && pendingPlace.ship === state.ship) armPendingPlace(); else pendingPlace = null; }
   save();
 }
 
@@ -629,7 +632,92 @@ function deckFromY(clientY){
   const t = Math.min(1, Math.max(0, (clientY - r.top - 14) / (r.height - 28)));
   return decks[Math.round((1 - t) * (decks.length - 1))];
 }
-function setDeck(d){ if (d === state.deck) return; state.deck = d; if (navigator.vibrate) { try { navigator.vibrate(8); } catch(e){} } render(); }
+function setDeck(d){
+  if (d === state.deck) return;
+  const spot = viewSpot();          // where on the ship you are, before switching
+  state.deck = d;
+  if (navigator.vibrate) { try { navigator.vibrate(8); } catch(e){} }
+  render();
+  if (spot) keepPlace(state.ship, spot, d);
+}
+
+// ---------- keep your place when changing decks ----------
+// Each deck's ship_extent says where the ship's drawing starts and ends on its image, so the
+// same fraction of the ship's length can be found on any deck (the first guess). On ships
+// with geometry, elevator banks that line up between the two decks act as anchor points and
+// correct that guess. Jumps to a specific target (search, list taps, cabin chip, My pins) set
+// the deck directly and never come through here.
+const BANK_GAP = 0.04;      // elevators closer than 4% of the ship's length form one bank
+const ANCHOR_MAX = 0.03;    // a bank matches the nearest bank on the other deck within 3%
+function extentOf(id, d){
+  const e = SHIPS[id]?.decks?.[String(d)]?.ship_extent;
+  return e && e.bottom > e.top ? e : { top: 0, bottom: 100 };
+}
+function toFrac(id, d, yPct){ const e = extentOf(id, d); return (yPct - e.top) / (e.bottom - e.top); }
+function fromFrac(id, d, f){ const e = extentOf(id, d); return e.top + f * (e.bottom - e.top); }
+function elevatorBanks(id, d){
+  const ys = (geoDeck(id, d)?.landmarks || []).filter(l => l.kind === "elevator")
+    .map(l => toFrac(id, d, (l.box[1] + l.box[3]) / 2)).sort((a, b) => a - b);
+  const out = []; let cur = [];
+  const avg = a => a.reduce((x, y) => x + y, 0) / a.length;
+  for (const y of ys){ if (cur.length && y - cur[cur.length - 1] > BANK_GAP){ out.push(avg(cur)); cur = []; } cur.push(y); }
+  if (cur.length) out.push(avg(cur));
+  return out;
+}
+// Map a fraction of the ship's length on deck `from` to deck `to`.
+function mapFraction(id, from, to, f){
+  const a = elevatorBanks(id, from), b = elevatorBanks(id, to);
+  const anchors = [];
+  for (const x of a){
+    let best = null;
+    for (const y of b) if (best === null || Math.abs(y - x) < Math.abs(best - x)) best = y;
+    if (best !== null && Math.abs(best - x) <= ANCHOR_MAX && (!anchors.length || best > anchors[anchors.length - 1][1]))
+      anchors.push([x, best]);
+  }
+  if (!anchors.length) return f;                                   // no anchors: keep the first guess
+  const first = anchors[0], last = anchors[anchors.length - 1];
+  if (f <= first[0]) return f + (first[1] - first[0]);             // before the first anchor: shift
+  if (f >= last[0]) return f + (last[1] - last[0]);                // after the last anchor: shift
+  for (let i = 0; i + 1 < anchors.length; i++){
+    const [x0, y0] = anchors[i], [x1, y1] = anchors[i + 1];
+    if (f >= x0 && f <= x1) return y0 + (f - x0) * (y1 - y0) / (x1 - x0);   // straight line between anchors
+  }
+  return f;
+}
+let placeToken = 0, pendingPlace = null;   // a deck change still waiting for its plan image
+// The spot at the center of the visible plan, in percent of the image, and the side-to-side scroll.
+function viewSpot(){
+  if (pendingPlace) return { deck: pendingPlace.deck, y: pendingPlace.y, left: pendingPlace.left };
+  const map = $("map"), wrap = $("mapwrap");
+  if (!map || !map.offsetHeight) return null;
+  return { deck: state.deck, y: (wrap.scrollTop + wrap.clientHeight / 2 - map.offsetTop) / map.offsetHeight * 100, left: wrap.scrollLeft };
+}
+function keepPlace(id, spot, to){
+  const f = mapFraction(id, spot.deck, to, toFrac(id, spot.deck, spot.y));
+  const y = Math.min(100, Math.max(0, fromFrac(id, to, f)));
+  pendingPlace = { ship: id, deck: to, y, left: spot.left, token: ++placeToken };
+  armPendingPlace();
+}
+// Scroll once the new deck's image has its size; the same zoom and side-to-side position stay.
+function armPendingPlace(){
+  const pp = pendingPlace; if (!pp) return;
+  const img = $("map")?.querySelector("img");
+  const apply = () => {
+    if (pendingPlace !== pp || pp.token !== placeToken) return;
+    pendingPlace = null;
+    const map = $("map"), wrap = $("mapwrap"); if (!map) return;
+    wrap.scrollTop = Math.max(0, map.offsetTop + pp.y / 100 * map.offsetHeight - wrap.clientHeight / 2);
+    wrap.scrollLeft = pp.left;
+    const line = document.createElement("div");
+    line.className = "placeline"; line.style.top = pp.y + "%";
+    map.appendChild(line);
+    setTimeout(() => line.remove(), 2300);
+  };
+  if (img && !img.complete){
+    img.addEventListener("load", apply, { once: true });
+    img.addEventListener("error", () => { if (pendingPlace === pp) pendingPlace = null; }, { once: true });
+  } else apply();
+}
 (function(){
   const s = $("slider"); let dragging = false;
   s.addEventListener("pointerdown", e => { if (!hasPlans(state.ship)) return; dragging = true; s.classList.add("dragging"); s.setPointerCapture(e.pointerId); setDeck(deckFromY(e.clientY)); });

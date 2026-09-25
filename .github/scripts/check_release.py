@@ -12,6 +12,7 @@ Checks:
 7. Every ships/<line>/<ship>/ship.json has the app's format (id, line, name, itinerary_code,
    and decks that each have an image and a venues list), and is not a Deck Vision review file.
 8. Every geometry file named in a ship.json exists and is valid JSON.
+9. Every deck in every ship.json has a ship_extent with top less than bottom, both 0 to 100.
 """
 import json
 import os
@@ -115,6 +116,12 @@ for ship_file in ship_files:
         # 5. Every deck image named in each ship.json exists
         if not (ship_file.parent / info["image"]).is_file():
             fail(f"{folder}: deck {deck} image {info['image']!r} is missing")
+        # 9. Every deck has a ship_extent (from tools/calibrate_decks.py) with 0 <= top < bottom <= 100
+        ext = info.get("ship_extent")
+        ok = isinstance(ext, dict) and all(isinstance(ext.get(k), (int, float)) for k in ("top", "bottom"))
+        if not ok or not (0 <= ext["top"] < ext["bottom"] <= 100):
+            fail(f"{folder}/ship.json deck {deck} needs a \"ship_extent\" with top less than bottom, both "
+                 f"between 0 and 100 (found {ext!r}). Run python tools/calibrate_decks.py.")
 
     # 8. A geometry file named in ship.json exists and is valid JSON
     geo = ship.get("geometry")

@@ -9,7 +9,11 @@
       "venues": [
         "Staterooms",
         "Splash Academy"
-      ]
+      ],
+      "ship_extent": {
+        "top": 0.0,
+        "bottom": 99.37
+      }
     },
     "6": {
       "image": "deck6.webp",
@@ -28,7 +32,11 @@
         "Chess & Card Room",
         "Maltings Beer & Whiskey Bar",
         "Social Night Club"
-      ]
+      ],
+      "ship_extent": {
+        "top": 0.0,
+        "bottom": 100.0
+      }
     },
     "7": {
       "image": "deck7.webp",
@@ -39,7 +47,11 @@
         "678 Place",
         "Skyline Bar",
         "Local Bar & Grill"
-      ]
+      ],
+      "ship_extent": {
+        "top": 0.0,
+        "bottom": 100.0
+      }
     },
     "8": {
       "image": "deck8.webp",
@@ -59,50 +71,82 @@
         "Ocean Blue",
         "Humidor Cigar Lounge",
         "Sugarcane Mojito Bar"
-      ]
+      ],
+      "ship_extent": {
+        "top": 0.0,
+        "bottom": 99.4
+      }
     },
     "9": {
       "image": "deck9.webp",
       "venues": [
         "Staterooms"
-      ]
+      ],
+      "ship_extent": {
+        "top": 0.0,
+        "bottom": 98.92
+      }
     },
     "10": {
       "image": "deck10.webp",
       "venues": [
         "Staterooms"
-      ]
+      ],
+      "ship_extent": {
+        "top": 0.0,
+        "bottom": 99.15
+      }
     },
     "11": {
       "image": "deck11.webp",
       "venues": [
         "Staterooms"
-      ]
+      ],
+      "ship_extent": {
+        "top": 0.0,
+        "bottom": 99.43
+      }
     },
     "12": {
       "image": "deck12.webp",
       "venues": [
         "Staterooms"
-      ]
+      ],
+      "ship_extent": {
+        "top": 0.0,
+        "bottom": 99.39
+      }
     },
     "13": {
       "image": "deck13.webp",
       "venues": [
         "Staterooms"
-      ]
+      ],
+      "ship_extent": {
+        "top": 0.0,
+        "bottom": 99.31
+      }
     },
     "14": {
       "image": "deck14.webp",
       "venues": [
         "Staterooms"
-      ]
+      ],
+      "ship_extent": {
+        "top": 0.0,
+        "bottom": 99.38
+      }
     },
     "15": {
       "image": "deck15.webp",
       "venues": [
         "Staterooms",
         "Observation Lounge"
-      ]
+      ],
+      "ship_extent": {
+        "top": 0.0,
+        "bottom": 98.95
+      }
     },
     "16": {
       "image": "deck16.webp",
@@ -116,7 +160,11 @@
         "Entourage Teen Lounge",
         "Video Arcade",
         "Thermal Suite"
-      ]
+      ],
+      "ship_extent": {
+        "top": 0.0,
+        "bottom": 100.0
+      }
     },
     "17": {
       "image": "deck17.webp",
@@ -130,7 +178,11 @@
         "Jogging Track",
         "Fitness Center",
         "Haven Lounge"
-      ]
+      ],
+      "ship_extent": {
+        "top": 0.0,
+        "bottom": 99.21
+      }
     },
     "18": {
       "image": "deck18.webp",
@@ -141,7 +193,11 @@
         "Ocean Loops",
         "Horizon Lounge",
         "Haven Library"
-      ]
+      ],
+      "ship_extent": {
+        "top": 0.0,
+        "bottom": 98.96
+      }
     },
     "19": {
       "image": "deck19.webp",
@@ -151,13 +207,21 @@
         "Haven Sundeck",
         "Public Sun Deck",
         "Mini Golf"
-      ]
+      ],
+      "ship_extent": {
+        "top": 0.0,
+        "bottom": 100.0
+      }
     },
     "20": {
       "image": "deck20.webp",
       "venues": [
         "Vibe Beach Club Sun Deck"
-      ]
+      ],
+      "ship_extent": {
+        "top": 0.0,
+        "bottom": 100.0
+      }
     }
   }
 }

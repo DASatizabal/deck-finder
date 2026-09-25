@@ -8,7 +8,11 @@
       "image": "deck5.webp",
       "venues": [
         "Staterooms"
-      ]
+      ],
+      "ship_extent": {
+        "top": 0.0,
+        "bottom": 100.0
+      }
     },
     "6": {
       "image": "deck6.webp",
@@ -22,7 +26,11 @@
         "Improv At Sea",
         "Whiskey Bar",
         "Swirl"
-      ]
+      ],
+      "ship_extent": {
+        "top": 0.0,
+        "bottom": 100.0
+      }
     },
     "7": {
       "image": "deck7.webp",
@@ -38,7 +46,11 @@
         "Penrose Atrium",
         "Shops",
         "Nama"
-      ]
+      ],
+      "ship_extent": {
+        "top": 0.0,
+        "bottom": 100.0
+      }
     },
     "8": {
       "image": "deck8.webp",
@@ -56,44 +68,72 @@
         "La Terrazza",
         "Deck 8 Shops",
         "Photo Gallery"
-      ]
+      ],
+      "ship_extent": {
+        "top": 0.0,
+        "bottom": 100.0
+      }
     },
     "9": {
       "image": "deck9.webp",
       "venues": [
         "Staterooms"
-      ]
+      ],
+      "ship_extent": {
+        "top": 0.0,
+        "bottom": 100.0
+      }
     },
     "10": {
       "image": "deck10.webp",
       "venues": [
         "Staterooms"
-      ]
+      ],
+      "ship_extent": {
+        "top": 0.0,
+        "bottom": 100.0
+      }
     },
     "11": {
       "image": "deck11.webp",
       "venues": [
         "Staterooms"
-      ]
+      ],
+      "ship_extent": {
+        "top": 0.0,
+        "bottom": 100.0
+      }
     },
     "12": {
       "image": "deck12.webp",
       "venues": [
         "Staterooms"
-      ]
+      ],
+      "ship_extent": {
+        "top": 0.0,
+        "bottom": 100.0
+      }
     },
     "13": {
       "image": "deck13.webp",
       "venues": [
         "Staterooms"
-      ]
+      ],
+      "ship_extent": {
+        "top": 0.0,
+        "bottom": 100.0
+      }
     },
     "14": {
       "image": "deck14.webp",
       "venues": [
         "Staterooms",
         "Entourage"
-      ]
+      ],
+      "ship_extent": {
+        "top": 0.0,
+        "bottom": 100.0
+      }
     },
     "15": {
       "image": "deck15.webp",
@@ -101,7 +141,11 @@
         "Staterooms",
         "Mandara Spa & Salon",
         "Splash Academy"
-      ]
+      ],
+      "ship_extent": {
+        "top": 0.0,
+        "bottom": 100.0
+      }
     },
     "16": {
       "image": "deck16.webp",
@@ -113,7 +157,11 @@
         "Haven Lounge",
         "Mandara Spa & Salon",
         "Pulse Fitness Center"
-      ]
+      ],
+      "ship_extent": {
+        "top": 0.0,
+        "bottom": 100.0
+      }
     },
     "17": {
       "image": "deck17.webp",
@@ -128,7 +176,11 @@
         "Sukhothai",
         "Surfside Grill",
         "The Haven Sundeck"
-      ]
+      ],
+      "ship_extent": {
+        "top": 0.0,
+        "bottom": 100.0
+      }
     },
     "18": {
       "image": "deck18.webp",
@@ -140,7 +192,11 @@
         "Aqua Slidecoaster",
         "Tee Time",
         "Bull's Eye Bar"
-      ]
+      ],
+      "ship_extent": {
+        "top": 0.0,
+        "bottom": 100.0
+      }
     },
     "19": {
       "image": "deck19.webp",
@@ -148,13 +204,21 @@
         "Aqua Slidecoaster",
         "Pickleball Court",
         "Tee Time"
-      ]
+      ],
+      "ship_extent": {
+        "top": 0.0,
+        "bottom": 100.0
+      }
     },
     "20": {
       "image": "deck20.webp",
       "venues": [
         "Glow Court"
-      ]
+      ],
+      "ship_extent": {
+        "top": 0.0,
+        "bottom": 100.0
+      }
     }
   }
 }

@@ -42,6 +42,7 @@ Before pushing, run `python .github/scripts/check_release.py` locally (needs git
 
 ## Ship data
 - Deck plans live in `ships/<line>/<ship>/`: a `ship.json` (name, `itinerary_code`, and each deck's `image` and `venues`) plus one `deck<N>.webp` per deck. Each line has `ships/<line>/line.json`.
+- After adding or changing deck images, run `python tools/calibrate_decks.py` (needs Pillow and numpy). It stores each deck's `ship_extent` (where the ship's drawing starts and ends), which the app uses to keep your place when you change decks. The release check fails if a deck has none.
 - After adding or changing anything under `ships/`, run `python tools/build_index.py` and commit the updated `ships/index.json`. The release check fails if it is out of date.
 - Ship ids are `<line>/<ship>`, like `ncl/getaway`. Saved trips store these ids.
 - A ship's `ship.json` may name a `"geometry"` file (for example `geometry.json`) with cabin, venue, amenity and landmark boxes. It comes from the private deck-finder-builder repo's `make_app_json.py`, run on a reviewed ship. Never copy a Deck Vision review file over `ship.json`; the release check rejects it.

@@ -1,5 +1,5 @@
 // Bump VERSION on every release (it must match APP_VERSION and version.json), so phones grab the update.
-const VERSION = "deckfinder-v1.7.0";
+const VERSION = "deckfinder-v1.8.0";
 // Each ship saved for offline lives in its own cache, "deckfinder-ship-<line>-<ship>".
 // These are NOT tied to the app version: they stay until that ship's hash in ships/index.json changes.
 const SHIP_CACHE_PREFIX = "deckfinder-ship-";

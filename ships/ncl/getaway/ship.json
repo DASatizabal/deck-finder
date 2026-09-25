@@ -10,7 +10,11 @@
       "venues": [
         "Staterooms 5100 to 5840",
         "Medical Center"
-      ]
+      ],
+      "ship_extent": {
+        "top": 0.0,
+        "bottom": 99.44
+      }
     },
     "6": {
       "image": "deck6.webp",
@@ -33,7 +37,11 @@
         "Mixx Bar",
         "Savor Restaurant",
         "Taste Restaurant"
-      ]
+      ],
+      "ship_extent": {
+        "top": 0.0,
+        "bottom": 100.0
+      }
     },
     "7": {
       "image": "deck7.webp",
@@ -46,7 +54,11 @@
         "Bar 21",
         "Shanghai's Noodle Bar",
         "The Manhattan Room"
-      ]
+      ],
+      "ship_extent": {
+        "top": 0.19,
+        "bottom": 99.92
+      }
     },
     "8": {
       "image": "deck8.webp",
@@ -70,48 +82,76 @@
         "Tides Boutique",
         "Photo Gallery",
         "Staterooms 8100 to 8780 (forward)"
-      ]
+      ],
+      "ship_extent": {
+        "top": 0.0,
+        "bottom": 99.36
+      }
     },
     "9": {
       "image": "deck9.webp",
       "venues": [
         "Staterooms 9100 to 9922"
-      ]
+      ],
+      "ship_extent": {
+        "top": 0.0,
+        "bottom": 99.63
+      }
     },
     "10": {
       "image": "deck10.webp",
       "venues": [
         "Staterooms 10100 to 10916",
         "Studio Lounge"
-      ]
+      ],
+      "ship_extent": {
+        "top": 0.0,
+        "bottom": 99.11
+      }
     },
     "11": {
       "image": "deck11.webp",
       "venues": [
         "Staterooms 11100 to 11914",
         "Studio Lounge"
-      ]
+      ],
+      "ship_extent": {
+        "top": 0.0,
+        "bottom": 99.32
+      }
     },
     "12": {
       "image": "deck12.webp",
       "venues": [
         "Staterooms 12100 to 12910",
         "Splash Academy"
-      ]
+      ],
+      "ship_extent": {
+        "top": 0.0,
+        "bottom": 99.42
+      }
     },
     "13": {
       "image": "deck13.webp",
       "venues": [
         "Staterooms 13100 to 13908",
         "Splash Academy"
-      ]
+      ],
+      "ship_extent": {
+        "top": 0.0,
+        "bottom": 99.41
+      }
     },
     "14": {
       "image": "deck14.webp",
       "venues": [
         "Staterooms 14100 to 14878",
         "Spa"
-      ]
+      ],
+      "ship_extent": {
+        "top": 0.0,
+        "bottom": 99.27
+      }
     },
     "15": {
       "image": "deck15.webp",
@@ -131,7 +171,11 @@
         "Salon",
         "Barber Shop",
         "The Haven suites 15100 to 15126"
-      ]
+      ],
+      "ship_extent": {
+        "top": 0.0,
+        "bottom": 99.33
+      }
     },
     "16": {
       "image": "deck16.webp",
@@ -151,7 +195,11 @@
         "The Haven Restaurant",
         "Private Spa",
         "The Haven suites 16100 to 16722"
-      ]
+      ],
+      "ship_extent": {
+        "top": 0.0,
+        "bottom": 99.18
+      }
     },
     "17": {
       "image": "deck17.webp",
@@ -162,14 +210,22 @@
         "Sports Complex",
         "Ropes Course",
         "The Whip and Free Fall (tops)"
-      ]
+      ],
+      "ship_extent": {
+        "top": 0.0,
+        "bottom": 100.0
+      }
     },
     "18": {
       "image": "deck18.webp",
       "venues": [
         "Sun Deck",
         "Basketball Court"
-      ]
+      ],
+      "ship_extent": {
+        "top": 0.0,
+        "bottom": 100.0
+      }
     }
   }
 }
