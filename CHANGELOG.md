@@ -1,5 +1,9 @@
 # Changelog
 
+## [1.6.1] - 2026-09-25
+### Fixed
+- Deck Finder can now be installed as an app on Android phones, and it gets its own icon and full screen on the iPhone home screen.
+
 ## [1.6.0] - 2026-09-25
 ### Added
 - Your cabin pin now places itself on Norwegian Getaway.
