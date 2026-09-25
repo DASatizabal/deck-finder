@@ -1,5 +1,13 @@
 # Changelog
 
+## [1.7.0] - 2026-09-25
+### Changed
+- The deck plan now fills the width of your phone. The "On this deck" list opens from a button at the top of the plan. To go back to the old side-by-side view, tap the menu and choose Side by side under Deck plan layout.
+### Added
+- A full screen button on the deck plan hides everything else so you can see more of the deck. Tap it again to go back.
+### Fixed
+- The zoom button was hidden behind the pin button. All the buttons on the deck plan now sit side by side.
+
 ## [1.6.1] - 2026-09-25
 ### Fixed
 - Deck Finder can now be installed as an app on Android phones, and it gets its own icon and full screen on the iPhone home screen.

@@ -155,7 +155,10 @@ button:focus-visible,input:focus-visible,[tabindex]:focus-visible{outline:3px so
 .upin{position:absolute;transform:translate(-50%,-100%);display:flex;flex-direction:column;align-items:center;padding:0;z-index:2}
 .upin span{font-size:11px;font-weight:700;background:var(--pc);color:#fff;padding:1px 6px;border-radius:8px;white-space:nowrap;max-width:130px;overflow:hidden;text-overflow:ellipsis;margin-bottom:2px}
 .upin i{display:block;width:18px;height:18px;border-radius:50%;background:var(--pc);border:3px solid #fff;box-shadow:0 1px 4px rgba(0,0,0,.45)}
-.zoom.addpin{margin-right:6px;font-size:18px}
+/* the plan's buttons sit in one row; each floating on its own made them stack on one spot */
+.maptools{position:sticky;top:8px;float:right;margin:8px 8px -52px 0;z-index:2;display:flex;gap:6px}
+.maptools .zoom{position:static;float:none;margin:0}
+.zoom.addpin{font-size:18px}
 .swatches{display:flex;flex-wrap:wrap;gap:8px;margin:6px 0 4px}
 .sw{width:38px;height:38px;border-radius:50%;border:3px solid transparent}
 .sw.on{border-color:var(--ink)}
@@ -163,6 +166,19 @@ button:focus-visible,input:focus-visible,[tabindex]:focus-visible{outline:3px so
 .pinrow .dot{width:16px;height:16px;border-radius:50%;flex:none}
 .pinrow .grow{flex:1;min-width:0;text-align:left}
 .pinrow small{color:var(--muted);display:block}
+/* layout: "wide" (plan fills the width, list in a sheet) is the default; without the class the
+   old side-by-side columns apply unchanged. "full" hides everything but the plan and slider. */
+.app.wide .body{grid-template-columns:minmax(0,1fr) 44px;gap:6px;padding:0 4px 0 8px}
+.listbtn{position:sticky;top:8px;left:8px;float:left;margin:8px 0 -52px 8px;z-index:2;height:40px;padding:0 14px;border-radius:20px;background:var(--ink);color:var(--bg);font-size:14px;font-weight:700;opacity:.92}
+.zoom.fullbtn{font-size:18px}
+.app.full{grid-template-rows:1fr;max-width:none}
+.app.full > div:first-child, .app.full > footer{display:none}
+.app.full .body{padding-top:calc(4px + env(safe-area-inset-top,0px));padding-bottom:calc(4px + env(safe-area-inset-bottom,0px))}
+#listSheet .list{overflow:visible;padding:0}
+.layoutopt{display:flex;justify-content:space-between;align-items:center;width:100%;text-align:left;padding:12px 4px;border-bottom:1px solid var(--line)}
+.layoutopt small{color:var(--muted);display:block}
+.layoutopt.cur{font-weight:700}
+.layoutopt.cur::after{content:"";width:10px;height:10px;border-radius:50%;background:var(--accent);flex:none}
 @media (prefers-reduced-motion: reduce){*{transition:none!important}.hl{animation:none}}
 </style>
 </head>
@@ -199,6 +215,7 @@ button:focus-visible,input:focus-visible,[tabindex]:focus-visible{outline:3px so
 <div class="sheet" id="itinSheet" role="dialog" aria-label="Itinerary"><div class="scroll" id="itinBody"></div></div>
 <div class="sheet" id="newsSheet" role="dialog" aria-label="What's new"><div class="scroll" id="newsBody"></div></div>
 <div class="sheet" id="pinSheet" role="dialog" aria-label="Pins"><div class="scroll" id="pinBody"></div></div>
+<div class="sheet" id="listSheet" role="dialog" aria-label="On this deck"><div class="scroll" id="listHolder"></div></div>
 <button class="updatebar" id="updateBar" hidden></button>
 <div class="sheet" id="findSheet" role="dialog" aria-label="Find">
   <h3>Find a place or cabin</h3>
@@ -207,7 +224,7 @@ button:focus-visible,input:focus-visible,[tabindex]:focus-visible{outline:3px so
 </div>
 
 <script>
-const APP_VERSION = "1.6.1";
+const APP_VERSION = "1.7.0";
 const APP_DATE = "2026-09-25";
 
 // ---------- ships: loaded at runtime from ships/index.json and each ship's ship.json ----------
@@ -275,6 +292,30 @@ function cabinPoint(trip){
   const c = geoCabin(trip.ship, trip.cabin);
   return c ? boxCenter(c.box) : null;
 }
+// ---------- layout: "wide" (default) or "columns" (the side-by-side view from before 1.7.0) ----------
+// Saved as state.layout, an added field: a phone without it gets "wide".
+let fullScreen = false;  // full screen is never saved; the app always opens normally
+const isWide = () => state.layout !== "columns";
+function applyLayout(){
+  const app = document.querySelector(".app"), list = $("list");
+  app.classList.toggle("wide", isWide());
+  app.classList.toggle("full", fullScreen);
+  // The one "On this deck" list moves between the page (columns) and its sheet (wide).
+  if (isWide() && list.parentElement !== $("listHolder")) $("listHolder").appendChild(list);
+  if (!isWide() && list.parentElement !== document.querySelector(".body")) document.querySelector(".body").insertBefore(list, $("mapwrap"));
+}
+function setLayout(layout){ state.layout = layout; closeSheets(); save(); render(); }
+function toggleFullScreen(){
+  fullScreen = !fullScreen;
+  // Use the phone's real full screen where the browser allows it (Android); iPhones just hide the bars.
+  try {
+    if (fullScreen && document.documentElement.requestFullscreen && !document.fullscreenElement) document.documentElement.requestFullscreen().catch(() => {});
+    if (!fullScreen && document.fullscreenElement) document.exitFullscreen().catch(() => {});
+  } catch (e) {}
+  render();
+}
+document.addEventListener("fullscreenchange", () => { if (!document.fullscreenElement && fullScreen) { fullScreen = false; render(); } });
+
 let highlight = null;    // { ship, deck, boxes } shown as pulsing boxes; kept in memory only
 let addingPin = null;    // null, "new", or the id of a pin being moved
 // Smoothly center the plan on a point given in percent, once the image has its size.
@@ -448,6 +489,7 @@ function dayLine(day){
 
 // ---------- main render ----------
 function render(){
+  applyLayout();
   const trip = activeTrip();
   $("shipName").textContent = shipName(state.ship);
   renderStrip();
@@ -486,9 +528,9 @@ function render(){
   $("list").innerHTML = `<h2>On this deck</h2><ul>${mineHere ? `<li class="cabin"><button class="lib" data-cabin="1">Your cabin ${esc(trip.cabin)}</button></li>` : ""}${items.map(i =>
       `<li>${venueBoxes(state.ship, d, i).length ? `<button class="lib" data-name="${esc(i)}">${esc(i)}</button>` : esc(i)}</li>`).join("")}</ul>${
       pinsHere.length ? `<h2>My pins</h2><ul>${pinsHere.map(p => `<li><button class="lib" data-gopin="${esc(p.id)}" style="color:${esc(p.color)}">${esc(p.label)}</button></li>`).join("")}</ul>` : ""}`;
-  $("list").querySelectorAll("[data-name]").forEach(b => b.onclick = () => highlightVenue(state.ship, d, b.dataset.name));
-  $("list").querySelectorAll("[data-cabin]").forEach(b => b.onclick = () => $("cabinChip").onclick());
-  $("list").querySelectorAll("[data-gopin]").forEach(b => b.onclick = () => goToPin(b.dataset.gopin));
+  $("list").querySelectorAll("[data-name]").forEach(b => b.onclick = () => { closeSheets(); highlightVenue(state.ship, d, b.dataset.name); });
+  $("list").querySelectorAll("[data-cabin]").forEach(b => b.onclick = () => { closeSheets(); $("cabinChip").onclick(); });
+  $("list").querySelectorAll("[data-gopin]").forEach(b => b.onclick = () => { closeSheets(); goToPin(b.dataset.gopin); });
 
   const key = state.ship + ":" + d;
   const src = catEntry(state.ship).path + ship.decks[d].image;
@@ -505,12 +547,18 @@ function render(){
   const bar = barText ? `<div class="placebar"><span class="grow">${barText}</span><button id="cancelPlace">Cancel</button></div>` : "";
   wrap.classList.toggle("placing", !!(placing || addingPin));
   wrap.innerHTML = src
-    ? `${bar}<button class="zoom" id="zoomBtn" aria-label="${state.zoom > 1 ? "Zoom out" : "Zoom in"}">${state.zoom > 1 ? "−" : "+"}</button>
-       <button class="zoom addpin" id="addPinBtn" aria-label="Add a pin">📍</button>
+    ? `${bar}<div class="maptools">
+         <button class="zoom fullbtn" id="fullBtn" aria-label="${fullScreen ? "Leave full screen" : "Full screen"}">${fullScreen ? "✕" : "⛶"}</button>
+         <button class="zoom addpin" id="addPinBtn" aria-label="Add a pin">📍</button>
+         <button class="zoom" id="zoomBtn" aria-label="${state.zoom > 1 ? "Zoom out" : "Zoom in"}">${state.zoom > 1 ? "−" : "+"}</button>
+       </div>
+       ${isWide() ? `<button class="listbtn" id="listBtn">On this deck</button>` : ""}
        <div class="map" id="map" style="width:${state.zoom * 100}%"><img src="${src}" alt="Deck ${d} plan" onerror="imgFailed()">${hl}${pin}${upins}</div>`
     : `<div class="empty"><strong>No plan image</strong>Deck ${d} doesn't have a plan image yet.</div>`;
   if (src){
     $("zoomBtn").onclick = () => { state.zoom = state.zoom > 1 ? 1 : 2.2; save(); render(); };
+    $("fullBtn").onclick = toggleFullScreen;
+    if ($("listBtn")) $("listBtn").onclick = () => openSheet("listSheet");
     $("addPinBtn").onclick = () => {
       const t = activeTrip();
       if (!t || t.ship !== state.ship){ alert("Pins belong to a trip. Make a trip on " + shipName(state.ship) + " the active trip first."); return openTrips(); }
@@ -672,6 +720,9 @@ function renderMenu(){
     <button class="menuopt" id="mItin" ${activeTrip() ? "" : "disabled"}>Itinerary</button>
     <button class="menuopt" id="mPins" ${activeTrip() ? "" : "disabled"}>My pins</button>
     <button class="menuopt" id="mNews">What's new</button>
+    <div class="sectionlabel">Deck plan layout</div>
+    <button class="layoutopt ${isWide() ? "cur" : ""}" data-layout="wide"><span>Wide plan<small>The plan fills the screen. "On this deck" opens from a button.</small></span></button>
+    <button class="layoutopt ${isWide() ? "" : "cur"}" data-layout="columns"><span>Side by side<small>The list, the plan and the deck slider next to each other.</small></span></button>
     <div class="sectionlabel">Browse a ship</div>
     ${CATALOG.map(x => `<div class="shiprow"><button class="shipopt ${x.id===state.ship?"cur":""}" data-k="${esc(x.id)}"><span>${esc(x.name)}<br><small>${x.decks ? x.decks + " decks, " + mb(x.bytes) : "Deck plans not added yet"}</small></span></button>${offlineBadge(x.id)}</div>`).join("")}
     <div class="verline">Version ${APP_VERSION} (${APP_DATE})</div>`;
@@ -679,6 +730,7 @@ function renderMenu(){
   $("mNews").onclick = openNews;
   $("mItin").onclick = openItinerary;
   $("mPins").onclick = openPinList;
+  $("menuBody").querySelectorAll("[data-layout]").forEach(b => b.onclick = () => setLayout(b.dataset.layout));
   $("menuBody").querySelectorAll(".shipopt").forEach(b => b.onclick = () => {
     state.ship = b.dataset.k; state.zoom = 1; state.deck = 0; highlight = null; delete shipErrors[state.ship];
     closeSheets(); render();
