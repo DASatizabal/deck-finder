@@ -8,6 +8,7 @@ on:
     paths-ignore:
       - "CLAUDE.md"
       - "README.md"
+      - "NOTES.md"
   workflow_dispatch:
 
 permissions:
@@ -50,7 +51,7 @@ jobs:
       - name: Collect only the app files (no repo notes, tooling, or tools folder)
         run: |
           mkdir _site
-          rsync -a --exclude '.git' --exclude '.github' --exclude '_site' --exclude 'CLAUDE.md' --exclude 'tools' ./ _site/
+          rsync -a --exclude '.git' --exclude '.github' --exclude '_site' --exclude 'CLAUDE.md' --exclude 'NOTES.md' --exclude 'tools' ./ _site/
       - uses: actions/configure-pages@v6
       - uses: actions/upload-pages-artifact@v5
         with:

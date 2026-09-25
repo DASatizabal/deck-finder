@@ -1,5 +1,7 @@
 # Deck Finder: rules for every change
 
+Also read NOTES.md at the start of every session for current state and known issues.
+
 Deck Finder is an offline cruise ship deck map web app (PWA) hosted on GitHub Pages, used by David's family on Android (Chrome), iPhone (Safari home screen), and later an Android Capacitor build. These rules apply to every change, whether made in Claude Code or Claude chat.
 
 ## Version numbers (Semantic Versioning: MAJOR.MINOR.PATCH)
