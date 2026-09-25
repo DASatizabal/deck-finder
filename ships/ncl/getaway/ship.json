@@ -3,6 +3,7 @@
   "line": "ncl",
   "name": "Norwegian Getaway",
   "itinerary_code": "GETAWAY",
+  "geometry": "geometry.json",
   "decks": {
     "5": {
       "image": "deck5.webp",

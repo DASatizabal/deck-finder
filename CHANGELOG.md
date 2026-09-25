@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.6.0] - 2026-09-25
+### Added
+- Your cabin pin now places itself on Norwegian Getaway.
+- Tap a place in the list, or search for it, to see it highlighted on the deck plan.
+- Search now finds any cabin number, plus pools and sun decks.
+- Add your own pins, like Mom's cabin or a meeting spot, from the My pins menu.
+
 ## [1.5.0] - 2026-09-23
 ### Changed
 - Deck plans now download per ship, so the app is much smaller and faster to update. Ships on your trips are saved for offline use automatically. Your trips and pins carry over.

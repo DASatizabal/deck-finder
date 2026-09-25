@@ -9,6 +9,9 @@ Checks:
 4. The JavaScript in index.html has no syntax errors.
 5. Every deck image named in each ships/<line>/<ship>/ship.json exists.
 6. ships/index.json matches what tools/build_index.py would generate right now.
+7. Every ships/<line>/<ship>/ship.json has the app's format (id, line, name, itinerary_code,
+   and decks that each have an image and a venues list), and is not a Deck Vision review file.
+8. Every geometry file named in a ship.json exists and is valid JSON.
 """
 import json
 import os
@@ -88,10 +91,44 @@ for ship_file in ship_files:
     except json.JSONDecodeError as e:
         fail(f"{folder}/ship.json is not valid JSON: {e}")
         continue
-    for deck, info in ship.get("decks", {}).items():
-        image = info.get("image")
-        if not image or not (ship_file.parent / image).is_file():
-            fail(f"{folder}: deck {deck} image {image!r} is missing")
+
+    # 7. ship.json has the app's format. A Deck Vision review file (from the builder repo) has
+    #    "ship", "source_folder" and "generated" at the top and cabin boxes in every deck; the app
+    #    can't read it, so catch it before it is published.
+    review_keys = [k for k in ("source_folder", "generated", "issues", "category_shades") if k in ship]
+    decks = ship.get("decks")
+    if review_keys or (isinstance(decks, dict) and any(isinstance(v, dict) and "cabins" in v for v in decks.values())):
+        fail(f"{folder}/ship.json looks like a Deck Vision review file, not the app's ship.json "
+             f"(it has {', '.join(review_keys) or 'cabin boxes in its decks'}). Restore it with: "
+             f"git restore {folder}/ship.json. Reviewed geometry belongs in geometry.json, made by make_app_json.py.")
+        continue
+    missing = [k for k in ("id", "line", "name", "itinerary_code") if not ship.get(k)]
+    if missing:
+        fail(f"{folder}/ship.json is missing {', '.join(missing)}")
+    if not isinstance(decks, dict) or not decks:
+        fail(f"{folder}/ship.json needs a \"decks\" object with at least one deck")
+        continue
+    for deck, info in decks.items():
+        if not isinstance(info, dict) or not isinstance(info.get("image"), str) or not isinstance(info.get("venues"), list):
+            fail(f"{folder}/ship.json deck {deck} needs an \"image\" file name and a \"venues\" list")
+            continue
+        # 5. Every deck image named in each ship.json exists
+        if not (ship_file.parent / info["image"]).is_file():
+            fail(f"{folder}: deck {deck} image {info['image']!r} is missing")
+
+    # 8. A geometry file named in ship.json exists and is valid JSON
+    geo = ship.get("geometry")
+    if geo is not None:
+        gpath = ship_file.parent / str(geo)
+        if not isinstance(geo, str) or not gpath.is_file():
+            fail(f"{folder}/ship.json names geometry {geo!r}, but that file is missing")
+        else:
+            try:
+                g = json.loads(gpath.read_text(encoding="utf-8"))
+                if not isinstance(g.get("decks"), dict):
+                    fail(f"{folder}/{geo} has no \"decks\" object")
+            except json.JSONDecodeError as e:
+                fail(f"{folder}/{geo} is not valid JSON: {e}")
 
 # 6. ships/index.json is up to date
 sys.path.insert(0, "tools")

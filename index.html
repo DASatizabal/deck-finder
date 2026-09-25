@@ -144,7 +144,22 @@ button:focus-visible,input:focus-visible,[tabindex]:focus-visible{outline:3px so
 .updatebar[hidden]{display:none}
 .verline{font-size:13px;color:var(--muted);padding:14px 4px 2px}
 .news{font-size:15px;padding:6px 4px 4px}
-@media (prefers-reduced-motion: reduce){*{transition:none!important}}
+/* highlights and custom pins */
+.lib{display:block;width:100%;text-align:left;padding:0;color:inherit;font:inherit;text-decoration:underline dotted;text-underline-offset:3px}
+.hl{position:absolute;border:3px solid var(--accent);background:rgba(242,107,29,.25);border-radius:4px;animation:hlpulse 1.2s ease-in-out 5;cursor:pointer;z-index:1}
+@keyframes hlpulse{0%,100%{box-shadow:0 0 0 0 rgba(242,107,29,.75)}50%{box-shadow:0 0 0 12px rgba(242,107,29,0)}}
+.upin{position:absolute;transform:translate(-50%,-100%);display:flex;flex-direction:column;align-items:center;padding:0;z-index:2}
+.upin span{font-size:11px;font-weight:700;background:var(--pc);color:#fff;padding:1px 6px;border-radius:8px;white-space:nowrap;max-width:130px;overflow:hidden;text-overflow:ellipsis;margin-bottom:2px}
+.upin i{display:block;width:18px;height:18px;border-radius:50%;background:var(--pc);border:3px solid #fff;box-shadow:0 1px 4px rgba(0,0,0,.45)}
+.zoom.addpin{margin-right:6px;font-size:18px}
+.swatches{display:flex;flex-wrap:wrap;gap:8px;margin:6px 0 4px}
+.sw{width:38px;height:38px;border-radius:50%;border:3px solid transparent}
+.sw.on{border-color:var(--ink)}
+.pinrow{display:flex;align-items:center;gap:10px;padding:12px 4px;border-bottom:1px solid var(--line)}
+.pinrow .dot{width:16px;height:16px;border-radius:50%;flex:none}
+.pinrow .grow{flex:1;min-width:0;text-align:left}
+.pinrow small{color:var(--muted);display:block}
+@media (prefers-reduced-motion: reduce){*{transition:none!important}.hl{animation:none}}
 </style>
 </head>
 <body>
@@ -179,16 +194,17 @@ button:focus-visible,input:focus-visible,[tabindex]:focus-visible{outline:3px so
 <div class="sheet" id="tripSheet" role="dialog" aria-label="Trip set up"><div class="scroll" id="tripBody"></div></div>
 <div class="sheet" id="itinSheet" role="dialog" aria-label="Itinerary"><div class="scroll" id="itinBody"></div></div>
 <div class="sheet" id="newsSheet" role="dialog" aria-label="What's new"><div class="scroll" id="newsBody"></div></div>
+<div class="sheet" id="pinSheet" role="dialog" aria-label="Pins"><div class="scroll" id="pinBody"></div></div>
 <button class="updatebar" id="updateBar" hidden></button>
 <div class="sheet" id="findSheet" role="dialog" aria-label="Find">
   <h3>Find a place or cabin</h3>
-  <input class="search" id="q" type="search" placeholder="Try Starbucks, pool, or a cabin number" autocomplete="off">
+  <input class="search" id="q" type="search" placeholder="Try Starbucks, pool, a cabin number, or a pin" autocomplete="off">
   <div class="results" id="results"></div>
 </div>
 
 <script>
-const APP_VERSION = "1.5.0";
-const APP_DATE = "2026-09-23";
+const APP_VERSION = "1.6.0";
+const APP_DATE = "2026-09-25";
 
 // ---------- ships: loaded at runtime from ships/index.json and each ship's ship.json ----------
 let CATALOG = [];       // every ship in ships/index.json: {id, name, path, decks, bytes, hash, line}
@@ -205,6 +221,98 @@ const catEntry = id => CATALOG.find(x => x.id === id) || null;
 const shipName = id => SHIPS[id]?.name || catEntry(id)?.name || "";
 const shipCacheName = id => "deckfinder-ship-" + String(id).replace("/", "-");
 const absUrl = path => new URL(path, location.href).href;
+
+// ---------- deck geometry: ships/<line>/<ship>/geometry.json, when the ship's ship.json names one ----------
+// Boxes are [left, top, right, bottom] in percent of the plan image, like the cabin pin.
+// Ships without geometry (no "geometry" in ship.json) keep working exactly as before.
+const GEO = {};          // ship id -> geometry, or null when the ship has none
+async function loadGeo(id, sh){
+  if (GEO[id] !== undefined) return GEO[id];
+  const entry = catEntry(id);
+  if (!sh || !sh.geometry || !entry) return (GEO[id] = null);
+  try {
+    const r = await fetch(entry.path + sh.geometry);
+    GEO[id] = r.ok ? await r.json() : null;
+  } catch (e) { delete GEO[id]; return null; }  // offline and not saved: try again later
+  return GEO[id];
+}
+function geoDeck(id, deck){ return GEO[id]?.decks?.[String(deck)] || null; }
+// The cabin with this number, or the cabin whose deck plan label is this (misprinted) number.
+function geoCabin(id, number){
+  const n = String(number || "").trim(); const d = cabinDeckNum(n); if (!d) return null;
+  const cs = geoDeck(id, d)?.cabins || [];
+  return cs.find(c => c.number === n) || cs.find(c => c.printed_as === n) || null;
+}
+const STOP = new Set(["the", "and", "at", "on", "of", "a", "&"]);
+function normName(x){ return String(x).toLowerCase().replace(/[’']/g, "").replace(/[^a-z0-9]+/g, " ").trim(); }
+function nameTokens(x){ return normName(x).split(" ").filter(w => w && !STOP.has(w)); }
+function sameVenue(a, b){
+  const na = normName(a), nb = normName(b);
+  if (na === nb || na.replace(/ /g, "") === nb.replace(/ /g, "")) return true;
+  const ta = nameTokens(a), tb = nameTokens(b);
+  if (ta.length < 2 || tb.length < 2) return false;      // one-word names must match exactly
+  return ta.filter(w => tb.includes(w)).length / new Set([...ta, ...tb]).size >= 0.5;
+}
+function venueBoxes(id, deck, name){
+  const vs = geoDeck(id, deck)?.venues || [];
+  const exact = vs.filter(v => normName(v.name) === normName(name));
+  const found = exact.length ? exact : vs.filter(v => sameVenue(v.name, name));
+  if (found.length) return found.map(v => v.box);
+  // A listed name like "Pool" is stored as an amenity in the geometry: highlight those.
+  return amenityBoxes(id, deck, name);
+}
+function amenityBoxes(id, deck, name){
+  return (geoDeck(id, deck)?.amenities || []).filter(a => normName(a.kind) === normName(name) || sameVenue(a.kind, name)).map(a => a.box);
+}
+const boxCenter = b => ({ x: (b[0] + b[2]) / 2, y: (b[1] + b[3]) / 2 });
+// Where the cabin pin goes: a pin placed by hand wins, otherwise the center of the cabin's box.
+function cabinPoint(trip){
+  if (trip.pin) return trip.pin;
+  const c = geoCabin(trip.ship, trip.cabin);
+  return c ? boxCenter(c.box) : null;
+}
+let highlight = null;    // { ship, deck, boxes } shown as pulsing boxes; kept in memory only
+let addingPin = null;    // null, "new", or the id of a pin being moved
+// Smoothly center the plan on a point given in percent, once the image has its size.
+function scrollToPct(x, y){
+  const map = $("map"), wrap = $("mapwrap"); if (!map) return;
+  const img = map.querySelector("img");
+  const go = () => wrap.scrollTo({
+    top: Math.max(0, map.offsetTop + y / 100 * map.offsetHeight - wrap.clientHeight / 2),
+    left: Math.max(0, map.offsetLeft + x / 100 * map.offsetWidth - wrap.clientWidth / 2),
+    behavior: "smooth" });
+  // Wait one frame so the new layout exists. Some browsers pause frames (a hidden tab),
+  // so a short timer runs it anyway, and it only ever runs once.
+  let done = false;
+  const once = () => { if (!done) { done = true; go(); } };
+  const soon = () => { requestAnimationFrame(once); setTimeout(once, 120); };
+  if (img && !img.complete) Promise.race([img.decode(), new Promise(r => setTimeout(r, 800))]).then(soon, soon);
+  else soon();
+}
+async function showBoxes(id, deck, boxes){
+  state.ship = id; state.deck = deck;
+  try { await ensureShip(id); } catch (e) {}
+  highlight = { ship: id, deck, boxes };
+  const b = boxes[0];
+  if (b && (b[2] - b[0]) < 25 && state.zoom < 2) state.zoom = 2.2;   // small targets: zoom in
+  render();
+  if (b){ const c = boxCenter(b); scrollToPct(c.x, c.y); }
+}
+function highlightVenue(id, deck, name){
+  const boxes = venueBoxes(id, deck, name);
+  if (boxes.length) showBoxes(id, deck, boxes); else { state.deck = deck; highlight = null; render(); }
+}
+
+// ---------- custom pins: a "pins" array on each trip, saved with the trips ----------
+const PIN_COLORS = ["#8E44AD", "#E74C3C", "#27AE60", "#2980B9", "#F39C12", "#16A085"];
+function tripPins(){ const t = activeTrip(); return t ? (t.pins || (t.pins = [])) : []; }
+async function goToPin(pid){
+  const p = tripPins().find(x => x.id === pid); if (!p) return;
+  state.ship = p.ship; state.deck = p.deck; highlight = null;
+  try { await ensureShip(p.ship); } catch (e) {}
+  if (state.zoom < 2) state.zoom = 2.2;
+  render(); scrollToPct(p.x, p.y);
+}
 
 const $ = id => document.getElementById(id);
 const esc = s => String(s).replace(/[&<>"]/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
@@ -259,7 +367,7 @@ function ensureShip(id){
   delete shipErrors[id];
   shipLoads[id] = fetch(entry.path + "ship.json")
     .then(r => { if (!r.ok) throw new Error("ship.json answered " + r.status); return r.json(); })
-    .then(sh => { SHIPS[id] = sh; return sh; })
+    .then(sh => loadGeo(id, sh).then(() => { SHIPS[id] = sh; return sh; }))
     .catch(e => { shipErrors[id] = true; throw e; })
     .finally(() => { delete shipLoads[id]; });
   return shipLoads[id];
@@ -284,13 +392,14 @@ async function saveShip(id){
     const get = async f => { const r = await fetch(entry.path + f + bust, { cache: "no-store" }); if (!r.ok) throw new Error(f + " answered " + r.status); return r; };
     const shipRes = await get("ship.json");
     const sh = await shipRes.clone().json();
-    const files = [...new Set(Object.values(sh.decks).map(d => d.image))];
+    const files = [...new Set([...Object.values(sh.decks).map(d => d.image), ...(sh.geometry ? [sh.geometry] : [])])];
     const imgs = await Promise.all(files.map(async f => [f, await get(f)]));
     await caches.delete(shipCacheName(id));
     const c = await caches.open(shipCacheName(id));
     await c.put(absUrl(entry.path + "ship.json"), shipRes);
     for (const [f, r] of imgs) await c.put(absUrl(entry.path + f), r);
     await c.put(absUrl(entry.path + "saved.json"), new Response(JSON.stringify({ hash: entry.hash, saved: new Date().toISOString() }), { headers: { "Content-Type": "application/json" } }));
+    delete GEO[id]; await loadGeo(id, sh);
     SAVED[id] = entry.hash; SHIPS[id] = sh; delete shipErrors[id];
     if (navigator.storage && navigator.storage.persist) navigator.storage.persist().catch(() => {});
   } catch (e) {
@@ -368,30 +477,65 @@ function render(){
 
   const mineHere = trip && trip.ship === state.ship && cabinDeckNum(trip.cabin) === d;
   const items = ship.decks[d].venues;
-  $("list").innerHTML = `<h2>On this deck</h2><ul>${mineHere ? `<li class="cabin">Your cabin ${esc(trip.cabin)}</li>` : ""}${items.map(i=>`<li>${esc(i)}</li>`).join("")}</ul>`;
+  const pinsHere = trip && trip.ship === state.ship ? (trip.pins || []).filter(p => p.ship === state.ship && p.deck === d) : [];
+  // Venues with a box on the plan are buttons that highlight it. Amenities are not listed here.
+  $("list").innerHTML = `<h2>On this deck</h2><ul>${mineHere ? `<li class="cabin"><button class="lib" data-cabin="1">Your cabin ${esc(trip.cabin)}</button></li>` : ""}${items.map(i =>
+      `<li>${venueBoxes(state.ship, d, i).length ? `<button class="lib" data-name="${esc(i)}">${esc(i)}</button>` : esc(i)}</li>`).join("")}</ul>${
+      pinsHere.length ? `<h2>My pins</h2><ul>${pinsHere.map(p => `<li><button class="lib" data-gopin="${esc(p.id)}" style="color:${esc(p.color)}">${esc(p.label)}</button></li>`).join("")}</ul>` : ""}`;
+  $("list").querySelectorAll("[data-name]").forEach(b => b.onclick = () => highlightVenue(state.ship, d, b.dataset.name));
+  $("list").querySelectorAll("[data-cabin]").forEach(b => b.onclick = () => $("cabinChip").onclick());
+  $("list").querySelectorAll("[data-gopin]").forEach(b => b.onclick = () => goToPin(b.dataset.gopin));
 
   const key = state.ship + ":" + d;
   const src = catEntry(state.ship).path + ship.decks[d].image;
   const wrap = $("mapwrap");
   const prevScroll = wrap.dataset.key === key ? wrap.scrollTop : null;
   wrap.dataset.key = key;
-  const pin = mineHere && trip.pin ? `<div class="pin" id="pin" style="left:${trip.pin.x}%;top:${trip.pin.y}%"></div>` : "";
-  const bar = placing ? `<div class="placebar"><span class="grow">Tap your cabin ${esc(activeTrip()?.cabin || "")} on the plan</span><button id="cancelPlace">Cancel</button></div>` : "";
-  wrap.classList.toggle("placing", !!placing);
+  const pt = mineHere ? cabinPoint(trip) : null;
+  const pin = pt ? `<div class="pin" id="pin" style="left:${pt.x}%;top:${pt.y}%"></div>` : "";
+  const hl = highlight && highlight.ship === state.ship && highlight.deck === d
+    ? highlight.boxes.map(b => `<div class="hl" style="left:${b[0]}%;top:${b[1]}%;width:${b[2] - b[0]}%;height:${b[3] - b[1]}%"></div>`).join("") : "";
+  const upins = pinsHere.map(p => `<button class="upin" data-pin="${esc(p.id)}" style="left:${p.x}%;top:${p.y}%;--pc:${esc(p.color)}" aria-label="Pin: ${esc(p.label)}"><span>${esc(p.label)}</span><i></i></button>`).join("");
+  const barText = placing ? `Tap your cabin ${esc(activeTrip()?.cabin || "")} on the plan`
+    : addingPin === "new" ? "Tap the plan where the new pin goes" : addingPin ? "Tap the plan where this pin goes" : "";
+  const bar = barText ? `<div class="placebar"><span class="grow">${barText}</span><button id="cancelPlace">Cancel</button></div>` : "";
+  wrap.classList.toggle("placing", !!(placing || addingPin));
   wrap.innerHTML = src
     ? `${bar}<button class="zoom" id="zoomBtn" aria-label="${state.zoom > 1 ? "Zoom out" : "Zoom in"}">${state.zoom > 1 ? "−" : "+"}</button>
-       <div class="map" id="map" style="width:${state.zoom * 100}%"><img src="${src}" alt="Deck ${d} plan" onerror="imgFailed()">${pin}</div>`
+       <button class="zoom addpin" id="addPinBtn" aria-label="Add a pin">📍</button>
+       <div class="map" id="map" style="width:${state.zoom * 100}%"><img src="${src}" alt="Deck ${d} plan" onerror="imgFailed()">${hl}${pin}${upins}</div>`
     : `<div class="empty"><strong>No plan image</strong>Deck ${d} doesn't have a plan image yet.</div>`;
   if (src){
     $("zoomBtn").onclick = () => { state.zoom = state.zoom > 1 ? 1 : 2.2; save(); render(); };
-    if (placing) {
-      $("cancelPlace").onclick = () => { placing = null; render(); };
+    $("addPinBtn").onclick = () => {
+      const t = activeTrip();
+      if (!t || t.ship !== state.ship){ alert("Pins belong to a trip. Make a trip on " + shipName(state.ship) + " the active trip first."); return openTrips(); }
+      addingPin = "new"; placing = null; highlight = null; render();
+    };
+    if (placing || addingPin) {
+      $("cancelPlace").onclick = () => { placing = null; addingPin = null; render(); };
       $("map").onclick = e => {
         const r = e.currentTarget.getBoundingClientRect();
-        const t = data.trips.find(x => x.id === placing);
-        if (t) t.pin = { x: +((e.clientX - r.left) / r.width * 100).toFixed(1), y: +((e.clientY - r.top) / r.height * 100).toFixed(1) };
-        placing = null; save(); render();
+        const x = +((e.clientX - r.left) / r.width * 100).toFixed(1), y = +((e.clientY - r.top) / r.height * 100).toFixed(1);
+        if (placing){
+          const t = data.trips.find(q => q.id === placing);
+          if (t) t.pin = { x, y };
+          placing = null; save(); render();
+        } else if (addingPin === "new"){
+          addingPin = null;
+          const pins = tripPins();
+          const np = { id: "p" + Date.now(), ship: state.ship, deck: d, x, y, label: "New pin", color: PIN_COLORS[pins.length % PIN_COLORS.length] };
+          pins.push(np); save(); render(); openPinEditor(np.id, true);
+        } else {
+          const mp = tripPins().find(q => q.id === addingPin);
+          addingPin = null;
+          if (mp) Object.assign(mp, { ship: state.ship, deck: d, x, y });
+          save(); render();
+        }
       };
+    } else {
+      wrap.querySelectorAll(".upin").forEach(b => b.onclick = e => { e.stopPropagation(); openPinEditor(b.dataset.pin); });
+      wrap.querySelectorAll(".hl").forEach(b => b.onclick = () => { highlight = null; render(); });
     }
     wrap.scrollTop = prevScroll !== null ? prevScroll : 0;
   }
@@ -522,6 +666,7 @@ function renderMenu(){
     <h3>Menu</h3>
     <button class="menuopt" id="mTrips">Trip set up</button>
     <button class="menuopt" id="mItin" ${activeTrip() ? "" : "disabled"}>Itinerary</button>
+    <button class="menuopt" id="mPins" ${activeTrip() ? "" : "disabled"}>My pins</button>
     <button class="menuopt" id="mNews">What's new</button>
     <div class="sectionlabel">Browse a ship</div>
     ${CATALOG.map(x => `<div class="shiprow"><button class="shipopt ${x.id===state.ship?"cur":""}" data-k="${esc(x.id)}"><span>${esc(x.name)}<br><small>${x.decks ? x.decks + " decks, " + mb(x.bytes) : "Deck plans not added yet"}</small></span></button>${offlineBadge(x.id)}</div>`).join("")}
@@ -529,8 +674,9 @@ function renderMenu(){
   $("mTrips").onclick = openTrips;
   $("mNews").onclick = openNews;
   $("mItin").onclick = openItinerary;
+  $("mPins").onclick = openPinList;
   $("menuBody").querySelectorAll(".shipopt").forEach(b => b.onclick = () => {
-    state.ship = b.dataset.k; state.zoom = 1; state.deck = 0; delete shipErrors[state.ship];
+    state.ship = b.dataset.k; state.zoom = 1; state.deck = 0; highlight = null; delete shipErrors[state.ship];
     closeSheets(); render();
   });
   $("menuBody").querySelectorAll("[data-dl]").forEach(b => b.onclick = () => {
@@ -579,7 +725,8 @@ function openTripForm(id){
     <label class="field"><span>Sail date</span><input id="fDate" type="date" value="${esc(t.date)}"></label>
     <label class="field"><span>Cabin number</span><input id="fCabin" inputmode="numeric" placeholder="e.g. 5768" value="${esc(t.cabin)}"></label>
     <button class="btn" id="fSave">Save and look up itinerary</button>
-    ${id && t.ship && shipHasDecks(t.ship) && cabinDeckNum(t.cabin) ? `<button class="btn ghost" id="fPin">${t.pin ? "Move cabin pin" : "Place cabin pin"}</button>` : ""}
+    ${id && t.ship && shipHasDecks(t.ship) && cabinDeckNum(t.cabin) ? `<button class="btn ghost" id="fPin">${t.pin || geoCabin(t.ship, t.cabin) ? "Move cabin pin" : "Place cabin pin"}</button>` : ""}
+    ${id && t.pin && geoCabin(t.ship, t.cabin) ? `<button class="btn ghost" id="fAutoPin">Use automatic position</button>` : ""}
     <button class="btn ghost" id="fBack">Back</button>
     ${id ? `<button class="btn danger" id="fDel">Delete trip</button>` : ""}
     <div class="status" id="fStatus"></div>`;
@@ -591,6 +738,11 @@ function openTripForm(id){
     save(); render(); openTrips();
   };
   if ($("fPin")) $("fPin").onclick = () => startPlacing(id);
+  if ($("fAutoPin")) $("fAutoPin").onclick = () => {
+    const tt = data.trips.find(x => x.id === id);
+    if (tt) tt.pin = null;   // no hand-placed pin: the pin comes from the deck plan geometry
+    save(); render(); openTripForm(id);
+  };
   $("fSave").onclick = async () => {
     const ship = $("fShip").value, date = $("fDate").value, cabin = $("fCabin").value.trim();
     const st = $("fStatus"); st.className = "status";
@@ -610,7 +762,9 @@ function openTripForm(id){
       trip.itinerary = await lookupItinerary(ship, date, msg => st.textContent = msg);
       save(); render();
       st.textContent = "Found " + trip.itinerary.title + ".";
-      if (shipHasDecks(ship) && cabinDeckNum(cabin) && !trip.pin) setTimeout(() => startPlacing(trip.id), 700);
+      try { await ensureShip(ship); } catch (e) {}
+      // Ships with geometry place the cabin pin automatically; others ask you to tap it.
+      if (shipHasDecks(ship) && cabinDeckNum(cabin) && !trip.pin && !geoCabin(ship, cabin)) setTimeout(() => startPlacing(trip.id), 700);
       else setTimeout(openItinerary, 700);
     } catch (e) {
       st.className = "status err"; st.textContent = "Trip saved, but the itinerary lookup failed: " + e.message;
@@ -728,14 +882,47 @@ function openItinerary(){
 function runSearch(){
   const q = $("q").value.trim().toLowerCase(); const out = $("results");
   if (!hasPlans(state.ship)) { out.innerHTML = `<div class="hint">Add deck plans for this ship to search it.</div>`; return; }
-  if (!q) { out.innerHTML = `<div class="hint">Type a place name or a cabin number.</div>`; return; }
-  const res = []; const ship = SHIPS[state.ship];
-  if (/^\d{4,5}$/.test(q)) { const d = cabinDeckNum(q); if (d && ship.decks[String(d)]) res.push({ label: "Cabin " + q, deck: d }); }
-  for (const [d, info] of Object.entries(ship.decks)) info.venues.forEach(i => { if (i.toLowerCase().includes(q)) res.push({ label: i, deck: Number(d) }); });
+  if (!q) { out.innerHTML = `<div class="hint">Type a place name, a cabin number, or one of your pins.</div>`; return; }
+  const res = []; const ship = SHIPS[state.ship]; const id = state.ship;
+  if (/^\d{4,5}$/.test(q)) {
+    const d = cabinDeckNum(q);
+    const exact = (geoDeck(id, d)?.cabins || []).find(c => c.number === q);
+    if (exact) res.push({ label: "Cabin " + q, deck: d, boxes: [exact.box] });
+    // A cabin whose deck plan label is this number (a misprint on the plan).
+    for (const [dk, gd] of Object.entries(GEO[id]?.decks || {}))
+      (gd.cabins || []).filter(c => c.printed_as === q).forEach(c =>
+        res.push({ label: `Cabin ${c.number} (printed on the plan as ${q})`, deck: Number(dk), boxes: [c.box] }));
+    if (!res.length && d && ship.decks[String(d)]) res.push({ label: "Cabin " + q, deck: d });
+  }
+  const seen = new Set();
+  for (const [d, info] of Object.entries(ship.decks)) {
+    const names = [...info.venues];
+    (geoDeck(id, d)?.venues || []).forEach(v => { if (!names.some(n => sameVenue(n, v.name))) names.push(v.name); });
+    names.forEach(i => {
+      const k = d + "|" + normName(i);
+      if (!seen.has(k) && i.toLowerCase().includes(q)) { seen.add(k); res.push({ label: i, deck: Number(d), name: i }); }
+    });
+    // Amenities (pools, hot tubs, sun decks): in search, not in "On this deck".
+    // A kind the deck list already names (like "Pool") is found through that name instead.
+    const byKind = {};
+    (geoDeck(id, d)?.amenities || []).forEach(a => {
+      if (a.kind.toLowerCase().includes(q) && !names.some(n => normName(n) === normName(a.kind)))
+        (byKind[a.kind] = byKind[a.kind] || []).push(a.box);
+    });
+    Object.entries(byKind).forEach(([kind, boxes]) => res.push({ label: boxes.length > 1 ? `${kind} (${boxes.length})` : kind, deck: Number(d), boxes }));
+  }
+  const t = activeTrip();
+  if (t && t.ship === id) (t.pins || []).forEach(p => { if (p.ship === id && p.label.toLowerCase().includes(q)) res.push({ label: "📍 " + p.label, deck: p.deck, pin: p.id }); });
   out.innerHTML = res.length
-    ? res.map(r => `<button class="res" data-d="${r.deck}"><span>${esc(r.label)}</span><span>Deck ${r.deck}</span></button>`).join("")
-    : `<div class="hint">Nothing on ${ship.name} matches "${esc($("q").value.trim())}".</div>`;
-  out.querySelectorAll(".res").forEach(b => b.onclick = () => { state.deck = Number(b.dataset.d); closeSheets(); render(); });
+    ? res.map((r, i) => `<button class="res" data-i="${i}"><span>${esc(r.label)}</span><span>Deck ${r.deck}</span></button>`).join("")
+    : `<div class="hint">Nothing on ${esc(ship.name)} matches "${esc($("q").value.trim())}".</div>`;
+  out.querySelectorAll(".res").forEach(b => b.onclick = () => {
+    const r = res[+b.dataset.i]; closeSheets();
+    if (r.pin) goToPin(r.pin);
+    else if (r.boxes) showBoxes(id, r.deck, r.boxes);
+    else if (r.name) highlightVenue(id, r.deck, r.name);
+    else { state.deck = r.deck; highlight = null; render(); }
+  });
 }
 $("findBtn").onclick = () => { $("q").value = ""; runSearch(); openSheet("findSheet"); setTimeout(()=>$("q").focus(), 150); };
 $("q").addEventListener("input", runSearch);
@@ -745,11 +932,52 @@ $("cabinChip").onclick = () => {
   const t = activeTrip(); if (!t) return;
   const cd = cabinDeckNum(t.cabin);
   if (!deckList(t.ship).includes(cd)) return;
-  if (!t.pin) return startPlacing(t.id);
-  state.ship = t.ship; state.deck = cd; render();
-  const pin = $("pin"), wrap = $("mapwrap");
-  if (pin) wrap.scrollTo({ top: pin.offsetTop - wrap.clientHeight/2, left: Math.max(0, pin.offsetLeft - wrap.clientWidth/2), behavior: "smooth" });
+  const auto = geoCabin(t.ship, t.cabin);
+  if (!t.pin && !auto) return startPlacing(t.id);
+  if (!t.pin) return showBoxes(t.ship, cd, [auto.box]);
+  state.ship = t.ship; state.deck = cd; highlight = null; render();
+  scrollToPct(t.pin.x, t.pin.y);
 };
+
+// ---------- pin editor and "My pins" list ----------
+function openPinEditor(pid, isNew){
+  const p = tripPins().find(x => x.id === pid); if (!p) return;
+  $("pinBody").innerHTML = `
+    <h3>${isNew ? "New pin" : "Edit pin"}</h3>
+    <label class="field"><span>Name</span><input id="pName" maxlength="40" value="${esc(p.label)}" placeholder="Mom's cabin, Meet here"></label>
+    <div class="field"><span>Color</span><div class="swatches">${PIN_COLORS.map(c => `<button class="sw ${c === p.color ? "on" : ""}" data-c="${c}" style="background:${c}" aria-label="Color ${c}"></button>`).join("")}</div></div>
+    <button class="btn" id="pSave">Save</button>
+    <button class="btn ghost" id="pMove">Move this pin</button>
+    <button class="btn danger" id="pDel">Delete pin</button>`;
+  let color = p.color;
+  $("pinBody").querySelectorAll(".sw").forEach(b => b.onclick = () => {
+    color = b.dataset.c; $("pinBody").querySelectorAll(".sw").forEach(x => x.classList.toggle("on", x === b));
+  });
+  const keep = () => { p.label = $("pName").value.trim() || "Pin"; p.color = color; };
+  $("pSave").onclick = () => { keep(); save(); closeSheets(); render(); };
+  $("pMove").onclick = () => { keep(); save(); closeSheets(); addingPin = p.id; placing = null; render(); };
+  $("pDel").onclick = () => {
+    if (!confirm(`Delete the pin "${p.label}"?`)) return;
+    const t = activeTrip(); t.pins = (t.pins || []).filter(x => x.id !== p.id); save(); closeSheets(); render();
+  };
+  openSheet("pinSheet");
+  if (isNew) setTimeout(() => { $("pName").focus(); $("pName").select(); }, 150);
+}
+function openPinList(){
+  const t = activeTrip(); if (!t) return openTrips();
+  const pins = [...(t.pins || [])].sort((a, b) => a.deck - b.deck || a.label.localeCompare(b.label));
+  $("pinBody").innerHTML = `
+    <h3>My pins</h3>
+    ${pins.length ? pins.map(p => `<div class="pinrow"><span class="dot" style="background:${esc(p.color)}"></span>
+        <button class="grow" data-go="${esc(p.id)}"><b>${esc(p.label)}</b><small>${esc(shipName(p.ship))}, deck ${p.deck}</small></button>
+        <button class="edit" data-ed="${esc(p.id)}">Edit</button></div>`).join("")
+      : `<div class="hint">No pins yet. Tap the 📍 button on a deck plan, then tap the spot.</div>`}
+    <button class="btn ghost" id="pBack">Close</button>`;
+  $("pinBody").querySelectorAll("[data-go]").forEach(b => b.onclick = () => { closeSheets(); goToPin(b.dataset.go); });
+  $("pinBody").querySelectorAll("[data-ed]").forEach(b => b.onclick = () => openPinEditor(b.dataset.ed));
+  $("pBack").onclick = closeSheets;
+  openSheet("pinSheet");
+}
 
 // ---------- start up ----------
 (async function boot(){
@@ -764,7 +992,11 @@ $("cabinChip").onclick = () => {
   render();
   syncOfflineShips();
 })();
-window.addEventListener("online", () => { Object.keys(shipErrors).forEach(k => delete shipErrors[k]); render(); syncOfflineShips(); });
+window.addEventListener("online", () => {
+  Object.keys(shipErrors).forEach(k => delete shipErrors[k]);
+  Object.keys(SHIPS).forEach(k => { if (GEO[k] === undefined) loadGeo(k, SHIPS[k]).then(render); });
+  render(); syncOfflineShips();
+});
 
 // offline support: register the service worker (https, or localhost for testing)
 if ("serviceWorker" in navigator && (location.protocol === "https:" || location.hostname === "localhost")) {
