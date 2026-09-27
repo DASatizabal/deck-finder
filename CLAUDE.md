@@ -50,6 +50,12 @@ Before pushing, run `python .github/scripts/check_release.py` locally (needs git
 - A ship's `ship.json` may name a `"geometry"` file (for example `geometry.json`) with cabin, venue, amenity and landmark boxes. It comes from the private deck-finder-builder repo's `make_app_json.py`, run on a reviewed ship. Never copy a Deck Vision review file over `ship.json`; the release check rejects it.
 - The `tools` folder is not published to the website.
 
+## Cloudflare Worker (the backup helper)
+- Its code lives in `worker/worker.js`. The `worker` folder is not published to the website, and Cloudflare does not deploy from this repo: after changing the file, David pastes it into the Cloudflare dashboard.
+- Routes: `/?path=` is the NCL proxy (only the allowed NCL paths). `/itinerary?ship=&line=&date=` asks CruiseFeed for sold-out and past sailings and needs the header `X-DeckFinder-Pass` to match the Worker secret `APP_PASS`.
+- The CruiseFeed key lives only in the Worker secret `CRUISEFEED_KEY` and in `D:\AI-VAULT\secrets\cruisefeed_key.txt`. Never print it, never copy that file, and never put the key in any file in this repo.
+- CruiseFeed's free allowance is 300 results for the life of the key and never resets. Every `/itinerary` lookup that reaches CruiseFeed spends one. Never run CruiseFeed queries without David's say-so, and always use `limit=1`.
+
 ## Warnings
 - Saved user data lives in the phone's localStorage under the keys `deckfinder` and `deckfinder-trips`. Never rename these keys or change their shape without a migration, and treat that as a MAJOR version.
 - Always start from the latest `main` (`git pull`) before editing, so work from Claude chat and Claude Code never overwrites each other.

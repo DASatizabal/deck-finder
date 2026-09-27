@@ -1,5 +1,10 @@
 # Changelog
 
+## [1.9.0] - 2026-09-27
+### Added
+- Trips can now find their itinerary even after the cruise is sold out or has sailed.
+- You can type in or fix an itinerary by hand.
+
 ## [1.8.0] - 2026-09-25
 ### Added
 - When you switch decks, the plan now stays at the same spot on the ship, so you can see what's directly above and below you. On Norwegian Getaway, it lines up using the elevators for extra accuracy.

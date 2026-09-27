@@ -1,5 +1,5 @@
 {
-  "version": "1.8.0",
-  "date": "2026-09-25",
-  "notes": "When you switch decks, the plan stays at the same spot on the ship."
+  "version": "1.9.0",
+  "date": "2026-09-27",
+  "notes": "Trips can find their itinerary even after the cruise is sold out or has sailed, and you can type in or fix an itinerary by hand."
 }

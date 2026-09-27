@@ -138,6 +138,17 @@ button:focus-visible,input:focus-visible,[tabindex]:focus-visible{outline:3px so
 .day .tm{font-size:13px;color:var(--muted)}
 .day.today .d{color:var(--accent);font-weight:700}
 .day.today .p{color:var(--accent)}
+.src{font-size:12px;color:var(--muted);padding:0 4px 6px}
+.dayrow{display:flex;align-items:center;gap:10px;width:100%;text-align:left;padding:10px 4px;border-bottom:1px solid var(--line)}
+.dayrow .d{width:74px;flex:none;font-size:13px;color:var(--muted)}
+.dayrow .grow{flex:1;min-width:0}
+.dayrow small{color:var(--muted);display:block;font-size:13px}
+.dayrow .edit{padding:8px 10px;border-radius:8px;background:var(--chip);font-size:14px;flex:none}
+.check{display:flex;align-items:center;gap:10px;margin:14px 0;font-size:16px}
+.check input{width:22px;height:22px;flex:none}
+.timerow{display:flex;gap:8px;align-items:flex-end}
+.timerow .field{flex:1;min-width:0}
+.clr{padding:11px 12px;border-radius:10px;background:var(--chip);margin:10px 0;font-size:14px}
 /* pin placement */
 .placing .map{cursor:crosshair}
 .placebar{position:sticky;top:0;z-index:3;background:var(--ink);color:var(--bg);padding:10px 12px;font-size:14px;display:flex;gap:8px;align-items:center}
@@ -226,11 +237,11 @@ button:focus-visible,input:focus-visible,[tabindex]:focus-visible{outline:3px so
 </div>
 
 <script>
-const APP_VERSION = "1.8.0";
-const APP_DATE = "2026-09-25";
+const APP_VERSION = "1.9.0";
+const APP_DATE = "2026-09-27";
 
 // ---------- ships: loaded at runtime from ships/index.json and each ship's ship.json ----------
-let CATALOG = [];       // every ship in ships/index.json: {id, name, path, decks, bytes, hash, line}
+let CATALOG = [];       // every ship in ships/index.json: {id, name, path, decks, bytes, hash, line, lineName}
 let catalogReady = false;
 const SHIPS = {};       // ship id ("ncl/getaway") -> its ship.json, once loaded
 const shipLoads = {};   // ship id -> load in progress
@@ -366,7 +377,7 @@ const esc = s => String(s).replace(/[&<>"]/g, c => ({"&":"&amp;","<":"&lt;",">":
 
 // ---------- saved data (stays on this phone) ----------
 let state = { ship: "ncl/getaway", deck: 5, zoom: 1 };
-let data = { trips: [], activeTripId: null, workerUrl: "" };
+let data = { trips: [], activeTripId: null, workerUrl: "", passphrase: "" };
 try {
   const s = JSON.parse(localStorage.getItem("deckfinder") || "null");
   if (s && typeof s === "object") state = Object.assign(state, s);
@@ -403,7 +414,7 @@ async function loadCatalog(){
   const r = await fetch("ships/index.json");
   if (!r.ok) throw new Error("ships/index.json answered " + r.status);
   const idx = await r.json();
-  CATALOG = idx.lines.flatMap(l => l.ships.map(x => Object.assign({ line: l.id }, x)));
+  CATALOG = idx.lines.flatMap(l => l.ships.map(x => Object.assign({ line: l.id, lineName: l.name }, x)));
   catalogReady = true;
 }
 function ensureShip(id){
@@ -483,8 +494,8 @@ function niceTime(hhmm){ if (!hhmm) return ""; let [h,m] = hhmm.split(":").map(N
 function dayLine(day){
   if (day.sea) return "At sea";
   const bits = [];
-  if (day.kind === "embark") return day.port+", sails "+niceTime(day.depart);
-  if (day.kind === "debark") return day.port+", arrive "+niceTime(day.arrive);
+  if (day.kind === "embark") return day.port+(day.depart ? ", sails "+niceTime(day.depart) : "");
+  if (day.kind === "debark") return day.port+(day.arrive ? ", arrive "+niceTime(day.arrive) : "");
   if (day.arrive && day.depart) return day.port+", "+niceTime(day.arrive)+" to "+niceTime(day.depart);
   return day.port;
 }
@@ -843,11 +854,14 @@ function openTrips(){
     <button class="btn" id="addTrip">Add a trip</button>
     <div class="sectionlabel">Connection</div>
     <label class="field"><span>Backup helper address (optional, your Cloudflare Worker)</span>
-      <input id="workerUrl" type="url" inputmode="url" placeholder="https://deck-finder.yourname.workers.dev" value="${esc(data.workerUrl)}"></label>`;
+      <input id="workerUrl" type="url" inputmode="url" placeholder="https://deck-finder.yourname.workers.dev" value="${esc(data.workerUrl)}"></label>
+    <label class="field"><span>Family passphrase (lets the backup helper find sold-out and past sailings; saved on this phone only)</span>
+      <input id="passphrase" type="text" autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false" value="${esc(data.passphrase || "")}"></label>`;
   $("tripBody").querySelectorAll("[data-act]").forEach(b => b.onclick = () => { setActive(b.dataset.act); openTrips(); });
   $("tripBody").querySelectorAll("[data-edit]").forEach(b => b.onclick = () => openTripForm(b.dataset.edit));
   $("addTrip").onclick = () => openTripForm(null);
   $("workerUrl").onchange = e => { data.workerUrl = e.target.value.trim(); save(); };
+  $("passphrase").onchange = e => { data.passphrase = e.target.value.trim(); save(); };
   openSheet("tripSheet");
 }
 function setActive(id){
@@ -861,19 +875,28 @@ function setActive(id){
   }
   save(); render();
 }
-function openTripForm(id){
+function openTripForm(id, msg, isErr){
   const t = data.trips.find(x => x.id === id) || { ship: "ncl/getaway", date: "", cabin: "" };
+  const it = id ? t.itinerary : null;
+  const days = it?.days || [];
   $("tripBody").innerHTML = `
     <h3>${id ? "Edit trip" : "Add a trip"}</h3>
     <label class="field"><span>Ship</span><select id="fShip">${CATALOG.map(x => `<option value="${esc(x.id)}" ${x.id===t.ship?"selected":""}>${esc(x.name)}</option>`).join("")}</select></label>
     <label class="field"><span>Sail date</span><input id="fDate" type="date" value="${esc(t.date)}"></label>
     <label class="field"><span>Cabin number</span><input id="fCabin" inputmode="numeric" placeholder="e.g. 5768" value="${esc(t.cabin)}"></label>
-    <button class="btn" id="fSave">Save and look up itinerary</button>
+    <button class="btn" id="fSave">${it ? "Save" : "Save and look up itinerary"}</button>
+    <div class="status ${isErr ? "err" : ""}" id="fStatus">${esc(msg || "")}</div>
     ${id && t.ship && shipHasDecks(t.ship) && cabinDeckNum(t.cabin) ? `<button class="btn ghost" id="fPin">${t.pin || geoCabin(t.ship, t.cabin) ? "Move cabin pin" : "Place cabin pin"}</button>` : ""}
     ${id && t.pin && geoCabin(t.ship, t.cabin) ? `<button class="btn ghost" id="fAutoPin">Use automatic position</button>` : ""}
+    ${id ? `
+    <div class="sectionlabel">Itinerary</div>
+    ${days.length ? days.map((d, i) => `
+      <button class="dayrow" data-day="${i}"><span class="d">${niceDate(d.date)}</span><span class="grow"><b>${d.sea ? "At sea" : esc(d.port)}</b><small>${esc(dayTimes(d) || (d.sea ? "" : "No times yet"))}</small></span><span class="edit">Edit</span></button>`).join("")
+      : `<div class="hint">No itinerary yet. Tap Save and look up itinerary, or type it in one day at a time.</div>`}
+    <button class="btn ghost" id="fAddDay">${days.length ? "Add a day" : "Type in the itinerary"}</button>
+    ${it ? `<button class="btn ghost" id="fRelook">Look up the itinerary again</button>` : ""}` : ""}
     <button class="btn ghost" id="fBack">Back</button>
-    ${id ? `<button class="btn danger" id="fDel">Delete trip</button>` : ""}
-    <div class="status" id="fStatus"></div>`;
+    ${id ? `<button class="btn danger" id="fDel">Delete trip</button>` : ""}`;
   $("fBack").onclick = openTrips;
   if ($("fDel")) $("fDel").onclick = () => {
     if (!confirm("Delete this trip from your phone?")) return;
@@ -886,6 +909,13 @@ function openTripForm(id){
     const tt = data.trips.find(x => x.id === id);
     if (tt) tt.pin = null;   // no hand-placed pin: the pin comes from the deck plan geometry
     save(); render(); openTripForm(id);
+  };
+  $("tripBody").querySelectorAll("[data-day]").forEach(b => b.onclick = () => openDayForm(id, Number(b.dataset.day)));
+  if ($("fAddDay")) $("fAddDay").onclick = () => openDayForm(id, null);
+  if ($("fRelook")) $("fRelook").onclick = () => {
+    const tt = data.trips.find(x => x.id === id); if (!tt) return;
+    if ((tt.itinerary?.edited || tt.itinerary?.source === "manual") && !confirm("Look it up again? This replaces the itinerary, including anything you typed in by hand.")) return;
+    runLookup(tt, false);
   };
   $("fSave").onclick = async () => {
     const ship = $("fShip").value, date = $("fDate").value, cabin = $("fCabin").value.trim();
@@ -901,21 +931,99 @@ function openTripForm(id){
     data.activeTripId = trip.id; setActive(trip.id);
     syncOfflineShips(); // save this trip's ship for offline use
 
-    $("fSave").disabled = true;
-    try {
-      trip.itinerary = await lookupItinerary(ship, date, msg => st.textContent = msg);
-      save(); render();
-      st.textContent = "Found " + trip.itinerary.title + ".";
+    // 1. The trip's saved itinerary comes first: keep it, and don't look it up again.
+    if (trip.itinerary){
       try { await ensureShip(ship); } catch (e) {}
-      // Ships with geometry place the cabin pin automatically; others ask you to tap it.
-      if (shipHasDecks(ship) && cabinDeckNum(cabin) && !trip.pin && !geoCabin(ship, cabin)) setTimeout(() => startPlacing(trip.id), 700);
-      else setTimeout(openItinerary, 700);
-    } catch (e) {
-      st.className = "status err"; st.textContent = "Trip saved, but the itinerary lookup failed: " + e.message;
-    } finally { $("fSave").disabled = false; }
+      if (needsCabinTap(trip)) setTimeout(() => startPlacing(trip.id), 700);
+      openTripForm(trip.id, "Saved.");
+      return;
+    }
+    runLookup(trip, true);
   };
   openSheet("tripSheet");
 }
+// Ships with geometry place the cabin pin automatically; others ask you to tap it.
+function needsCabinTap(trip){ return shipHasDecks(trip.ship) && cabinDeckNum(trip.cabin) && !trip.pin && !geoCabin(trip.ship, trip.cabin); }
+async function runLookup(trip, afterSave){
+  const st = $("fStatus"); st.className = "status";
+  $("tripBody").querySelectorAll("button").forEach(b => b.disabled = true);
+  try {
+    trip.itinerary = await findItinerary(trip.ship, trip.date, m => st.textContent = m);
+    save(); render();
+    const found = "Found " + trip.itinerary.title + ".";
+    if (!afterSave) return openTripForm(trip.id, found);
+    st.textContent = found;
+    try { await ensureShip(trip.ship); } catch (e) {}
+    if (needsCabinTap(trip)) setTimeout(() => startPlacing(trip.id), 700);
+    else setTimeout(openItinerary, 700);
+  } catch (e) {
+    save(); render();
+    openTripForm(trip.id, "Trip saved, but the itinerary wasn't found: " + e.message + " You can type it in below.", true);
+  }
+}
+
+// ---------- typing in or fixing an itinerary by hand ----------
+function openDayForm(tripId, idx){
+  const t = data.trips.find(x => x.id === tripId); if (!t) return openTrips();
+  const days = t.itinerary?.days || [];
+  const day = idx == null ? null : days[idx];
+  const last = days[days.length - 1];
+  const v = day || { date: last ? addDaysIso(last.date, 1) : t.date, port: "", arrive: "", depart: "" };
+  const timeField = (fid, label, val) => `
+      <div class="timerow"><label class="field"><span>${label}</span><input id="${fid}" type="time" value="${esc(val || "")}"></label><button class="clr" data-clr="${fid}">Clear</button></div>`;
+  $("tripBody").innerHTML = `
+    <h3>${day ? "Edit day" : "Add a day"}</h3>
+    <div class="hint" style="padding-top:0">${esc(shipName(t.ship))}, sailing ${niceDate(t.date)}</div>
+    <label class="field"><span>Date</span><input id="dDate" type="date" value="${esc(v.date || "")}"></label>
+    <label class="check"><input id="dSea" type="checkbox" ${v.sea ? "checked" : ""}> Sea day (no port)</label>
+    <div id="dPortBits" ${v.sea ? "hidden" : ""}>
+      <label class="field"><span>Port name</span><input id="dPort" placeholder="e.g. Nassau" value="${esc(v.port || "")}"></label>
+      ${timeField("dArr", "Arrive time", v.arrive)}
+      ${timeField("dDep", "Depart time", v.depart)}
+      <div class="hint">Use local port time. Leave Arrive empty on the day you board, and Depart empty on the day you get off.</div>
+    </div>
+    <button class="btn" id="dSave">Save day</button>
+    <div class="status" id="dStatus"></div>
+    <button class="btn ghost" id="dBack">Back</button>
+    ${day ? `<button class="btn danger" id="dDel">Delete this day</button>` : ""}`;
+  openSheet("tripSheet");
+  $("dSea").onchange = e => { $("dPortBits").hidden = e.target.checked; };
+  $("tripBody").querySelectorAll("[data-clr]").forEach(b => b.onclick = () => { $(b.dataset.clr).value = ""; });
+  $("dBack").onclick = () => openTripForm(tripId);
+  const edited = it => { if (it.source !== "manual") it.edited = true; };
+  $("dSave").onclick = () => {
+    const date = $("dDate").value, sea = $("dSea").checked, port = $("dPort").value.trim();
+    const st = $("dStatus"); st.className = "status err";
+    if (!date) return st.textContent = "Pick the date for this day.";
+    if (!sea && !port) return st.textContent = "Type the port name, or tick Sea day.";
+    if (days.some((x, i) => i !== idx && x.date === date)) return st.textContent = "There is already a day for " + niceDate(date) + ". Go back and edit that day instead.";
+    const it = t.itinerary || (t.itinerary = { title: "Your itinerary", source: "manual", fetched: new Date().toISOString(), days: [] });
+    const nd = sea ? { date, sea: true } : { date, port, arrive: $("dArr").value, depart: $("dDep").value };
+    if (idx == null) it.days.push(nd); else it.days[idx] = nd;
+    it.days = normalizeDays(it.days);
+    edited(it); save(); render();
+    openTripForm(tripId, "Saved " + niceDate(date) + ".");
+  };
+  if ($("dDel")) $("dDel").onclick = () => {
+    if (!confirm("Delete " + niceDate(day.date) + " from the itinerary?")) return;
+    const it = t.itinerary;
+    it.days.splice(idx, 1);
+    it.days = normalizeDays(it.days);
+    edited(it);
+    if (!it.days.length) t.itinerary = null;
+    save(); render();
+    openTripForm(tripId, "Deleted " + niceDate(day.date) + ".");
+  };
+}
+// Sort the days and mark the first as boarding day and the last as the day you get off.
+function normalizeDays(days){
+  const out = days.slice().sort((a, b) => a.date.localeCompare(b.date))
+    .map(d => d.sea ? { date: d.date, sea: true } : { date: d.date, kind: "port", port: d.port, arrive: d.arrive || "", depart: d.depart || "" });
+  if (out.length && !out[0].sea) out[0].kind = "embark";
+  if (out.length > 1 && !out[out.length - 1].sea) out[out.length - 1].kind = "debark";
+  return out;
+}
+
 async function startPlacing(id){
   const t = data.trips.find(x => x.id === id); if (!t) return;
   try { await ensureShip(t.ship); } catch (e) { return; }
@@ -1002,22 +1110,112 @@ async function lookupItinerary(shipKey, dateIso, progress){
   throw new Error("no " + name + " sailing departs on " + niceDate(dateIso) + ". Double-check the date.");
 }
 
+// The lookup order: (1) the trip's saved itinerary (checked by the trip form), (2) NCL live,
+// (3) CruiseFeed through the backup helper's /itinerary route, which keeps sold-out and past
+// sailings, (4) typing it in by hand.
+async function findItinerary(shipKey, dateIso, progress){
+  let nclErr;
+  try { return Object.assign(await lookupItinerary(shipKey, dateIso, progress), { source: "ncl" }); }
+  catch (e) { nclErr = e; }
+  if (!data.workerUrl || !data.passphrase)
+    throw new Error(nclErr.message + " To find sold-out or past sailings, add the " + (data.workerUrl ? "" : "backup helper address and the ") + "family passphrase in Trip set up.");
+  return await lookupViaHelper(shipKey, dateIso, progress);
+}
+async function lookupViaHelper(shipKey, dateIso, progress){
+  const ship = await ensureShip(shipKey);
+  const line = catEntry(shipKey)?.lineName || "";
+  progress("NCL no longer lists this sailing. Asking the backup helper...");
+  const q = new URLSearchParams({ ship: ship.name, date: dateIso });
+  if (line) q.set("line", line);
+  const ctl = new AbortController(); const timer = setTimeout(() => ctl.abort(), 30000);
+  let r, body = null;
+  try {
+    // encodeURIComponent keeps any passphrase (spaces, accents) safe to send in a header.
+    r = await fetch(data.workerUrl.replace(/\/+$/,"") + "/itinerary?" + q, { headers: { "X-DeckFinder-Pass": encodeURIComponent(data.passphrase) }, signal: ctl.signal });
+    body = await r.json().catch(() => null);
+  } catch (e) {
+    if (e.name === "AbortError") throw new Error("the backup helper took too long to answer. Try again.");
+    throw new Error("couldn't reach the backup helper. Check your internet connection, the helper address in Trip set up, and that the helper has the Worker code from version 1.9.0.");
+  } finally { clearTimeout(timer); }
+  const code = body && body.code;
+  if (r.status === 401 || code === "bad_pass") throw new Error("the family passphrase wasn't accepted. Check it in Trip set up. It must match the passphrase saved in the backup helper.");
+  if (!body || (!r.ok && !code)) throw new Error("the backup helper can't look up itineraries yet. It needs the Worker code from version 1.9.0.");
+  if (code === "not_found") throw new Error("neither NCL nor CruiseFeed lists a " + ship.name + " sailing on " + niceDate(dateIso) + ". Double-check the date.");
+  if (code === "allowance") throw new Error("the backup helper has used up its CruiseFeed lookups.");
+  if (code === "not_configured") throw new Error("the backup helper isn't fully set up yet. It needs its CRUISEFEED_KEY and APP_PASS secrets.");
+  if (!r.ok) throw new Error("the backup helper had a problem: " + (body.error || "error " + r.status) + " Try again later.");
+  const days = cruiseFeedDays(body);
+  if (!days.length) throw new Error("CruiseFeed has this sailing, but not its day-by-day stops.");
+  return { title: body.title || ship.name + " sailing", fetched: new Date().toISOString(), source: "cruisefeed", days };
+}
+const addDaysIso = (iso, n) => new Date(Date.parse(iso + "T00:00:00Z") + n * 86400000).toISOString().slice(0, 10);
+// CruiseFeed times can come as "16:00", "16:00:00", "4:00 PM" or a full date and time. The app stores "HH:MM".
+function cfTime(v){
+  const m = String(v || "").match(/(\d{1,2}):(\d{2})(?::\d{2})?\s*([AaPp])?/);
+  if (!m) return "";
+  let h = Number(m[1]); const ap = (m[3] || "").toUpperCase();
+  if (ap === "P" && h < 12) h += 12;
+  if (ap === "A" && h === 12) h = 0;
+  return h < 24 ? String(h).padStart(2, "0") + ":" + m[2] : "";
+}
+// Turn CruiseFeed's list of stops into one entry per calendar day, like the NCL lookup makes.
+function cruiseFeedDays(r){
+  const start = r.departure_date;
+  const stops = (Array.isArray(r.stops) ? r.stops : []).filter(s => s && typeof s === "object").sort((a, b) => (a.seq || 0) - (b.seq || 0));
+  if (!start || !stops.some(s => s.port)) return [];
+  const nights = r.return_date ? Math.round((Date.parse(r.return_date) - Date.parse(start)) / 86400000) : stops.length - 1;
+  if (!(nights >= 0 && nights < 100)) return [];
+  const byPosition = stops.length === nights + 1; // undated stops, one per day
+  const dated = stops.map((s, i) => ({ s, date: s.date || (s.day_number ? addDaysIso(start, s.day_number - 1) : byPosition ? addDaysIso(start, i) : null) })).filter(x => x.date);
+  const days = []; let overnight = null;
+  for (let i = 0; i <= nights; i++){
+    const iso = addDaysIso(start, i);
+    const here = dated.filter(x => x.date === iso && x.s.port && !x.s.is_sea_day).map(x => x.s);
+    if (here.length){
+      days.push({ date: iso, port: [...new Set(here.map(s => s.port))].join(" and "), arrive: cfTime(here[0].arrive), depart: cfTime(here[here.length - 1].depart) });
+      overnight = here[here.length - 1].overnight ? here[here.length - 1].port : null;
+    } else if (overnight){ days.push({ date: iso, port: overnight }); overnight = null; }
+    else days.push({ date: iso, sea: true });
+  }
+  return normalizeDays(days);
+}
+
 // ---------- itinerary sheet ----------
+const SOURCE_TEXT = { ncl: "Found on NCL's website", cruisefeed: "Found through CruiseFeed", manual: "Typed in by hand" };
+function itinSource(it){
+  const src = SOURCE_TEXT[it.source] ? it.source : "ncl"; // itineraries saved before 1.9.0 all came from NCL
+  let s = SOURCE_TEXT[src];
+  if (src !== "manual" && it.fetched) s += " on " + niceDate(it.fetched.slice(0, 10));
+  if (it.edited) s += ", then edited by hand";
+  if (src === "cruisefeed") s += ". NCL no longer lists this sailing";
+  return s + ".";
+}
+// Arrive and depart times for one day, without hiding any time that was typed in.
+function dayTimes(day){
+  if (day.sea) return "";
+  const a = day.arrive ? "arrive " + niceTime(day.arrive) : "", d = day.depart ? (day.kind === "embark" ? "sails " : "depart ") + niceTime(day.depart) : "";
+  const s = [a, d].filter(Boolean).join(", ");
+  return s.charAt(0).toUpperCase() + s.slice(1);
+}
+const missingTime = d => !d.sea && (d.kind === "embark" ? !d.depart : d.kind === "debark" ? !d.arrive : !(d.arrive && d.depart));
 function openItinerary(){
   const t = activeTrip(); if (!t) return openTrips();
   const today = ymd(new Date());
   const it = t.itinerary;
+  const gaps = it && it.days.some(missingTime);
   $("itinBody").innerHTML = `
     <h3>${esc(shipName(t.ship))}</h3>
     <div class="hint" style="padding-top:0">${it ? esc(it.title) : "No itinerary yet"}${t.cabin ? ", cabin " + esc(t.cabin) : ""}</div>
-    ${it ? it.days.map(day => `
+    ${it ? `<div class="src">${esc(itinSource(it))}</div>` + it.days.map(day => `
       <div class="day ${day.date===today?"today":""}">
         <div class="d">${niceDate(day.date)}</div>
         <div><div class="p">${day.sea ? "At sea" : esc(day.port)}</div>
-        <div class="tm">${day.kind==="embark" ? "Sails " + niceTime(day.depart) : day.kind==="debark" ? "Arrive " + niceTime(day.arrive) : day.sea ? "" : [day.arrive && "Arrive " + niceTime(day.arrive), day.depart && "depart " + niceTime(day.depart)].filter(Boolean).join(", ")}</div></div>
-      </div>`).join("") + `<div class="hint">Times are from NCL's website, local port time. Check your ship's daily planner for all-aboard times.</div>`
-    : `<div class="hint">Open Trip set up and tap Save and look up itinerary while you have internet.</div>`}
+        <div class="tm">${esc(dayTimes(day))}</div></div>
+      </div>`).join("") + `<div class="hint">${gaps ? "Some times aren't listed. Tap Edit itinerary to add them from your cruise documents. " : ""}Times are local port time. Check your ship's daily planner for all-aboard times.</div>`
+    : `<div class="hint">Open Trip set up and tap Save and look up itinerary while you have internet, or tap Type in the itinerary.</div>`}
+    <button class="btn ghost" id="iFix">${it ? "Edit itinerary" : "Type in the itinerary"}</button>
     <button class="btn ghost" id="iEdit">Trip set up</button>`;
+  $("iFix").onclick = () => openTripForm(t.id);
   $("iEdit").onclick = openTrips;
   openSheet("itinSheet");
 }
