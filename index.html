@@ -279,6 +279,38 @@ button:focus-visible,input:focus-visible,[tabindex]:focus-visible{outline:3px so
 .bigcount{font-size:44px;font-weight:700;text-align:center;padding:10px 0;font-variant-numeric:tabular-nums}
 .steps{margin:6px 0 10px;padding-left:22px}
 .steps li{margin:4px 0}
+/* 1.11.0: your cabin, welcome screen, messages, Ready for sea, Advanced settings */
+.map{margin:0 auto}
+.mycabin{position:absolute;border:3px solid #1FA55A;background:rgba(31,165,90,.22);border-radius:4px;box-shadow:0 0 8px 3px rgba(31,165,90,.8);pointer-events:none;z-index:1}
+.cabpin{position:absolute;width:24px;height:31px;transform:translate(-50%,-100%);pointer-events:none;z-index:2}
+.cabpin svg{display:block;width:100%;height:100%;filter:drop-shadow(0 1px 2px rgba(0,0,0,.5))}
+.welcome{position:fixed;inset:0;z-index:8;background:var(--bg);display:flex;flex-direction:column;justify-content:center;max-width:720px;margin:0 auto;padding:calc(24px + env(safe-area-inset-top,0px)) 20px calc(24px + env(safe-area-inset-bottom,0px));text-align:center}
+.welcome[hidden]{display:none}
+.welcome .logo{font-size:56px;line-height:1}
+.welcome h1{font-size:30px;margin:8px 0 6px}
+.welcome .lead{color:var(--muted);margin:0 0 22px}
+.welcome .big{display:block;width:100%;padding:18px;border-radius:14px;font-size:18px;font-weight:700;margin-top:12px;background:var(--ink);color:var(--bg)}
+.welcome .big.ghost{background:var(--chip);color:var(--ink)}
+.welcome .small{font-size:14px;color:var(--muted);margin-top:22px}
+.toast{position:fixed;left:12px;right:12px;bottom:calc(72px + env(safe-area-inset-bottom,0px));max-width:560px;margin:0 auto;z-index:20;padding:12px 16px;border-radius:12px;background:#2E8B57;color:#fff;font-weight:700;text-align:center;box-shadow:0 4px 14px rgba(0,0,0,.3)}
+.toast.err{background:#C0392B}
+.toast[hidden]{display:none}
+.readybar{display:flex;align-items:center;gap:4px;margin:0 12px 8px;border-radius:12px;background:#2E8B57;color:#fff}
+.readybar[hidden]{display:none}
+.readybar .grow{flex:1;min-width:0;text-align:left;padding:9px 4px 9px 12px;font-weight:700;font-size:14px;color:#fff}
+.readybar .x{color:#fff;padding:9px 12px;font-size:15px}
+.rcheck{display:flex;align-items:center;gap:10px;padding:12px 4px;border-bottom:1px solid var(--line)}
+.rcheck .mark{width:28px;height:28px;border-radius:50%;display:grid;place-items:center;flex:none;font-weight:700;color:#fff}
+.rcheck.ok .mark{background:#2E8B57}
+.rcheck.bad .mark{background:#C0392B}
+.rcheck .grow{flex:1;min-width:0}
+.rcheck small{display:block;color:var(--muted);font-size:13px}
+.rcheck .fix{padding:8px 14px;border-radius:8px;background:var(--ink);color:var(--bg);font-weight:700;font-size:14px;flex:none}
+.rsum{font-weight:700;padding:4px 4px 6px}
+.rsum.ok{color:#2E8B57}.rsum.bad{color:#C0392B}
+details.adv{margin-top:20px;border-top:1px solid var(--line);padding-top:6px}
+details.adv summary{cursor:pointer;font-size:15px;font-weight:600;padding:10px 4px;color:var(--muted)}
+.linkbox{width:100%;font:inherit;font-size:13px;padding:10px;border-radius:10px;border:1px solid var(--line);background:var(--bg);color:var(--ink);margin-top:8px}
 @media (prefers-reduced-motion: reduce){*{transition:none!important}.hl{animation:none}}
 </style>
 </head>
@@ -295,6 +327,7 @@ button:focus-visible,input:focus-visible,[tabindex]:focus-visible{outline:3px so
     </button>
   </header>
   <div class="stripwrap"><button class="strip" id="strip"></button><button class="stripisl" id="stripIsland" hidden>Island map</button></div>
+  <div class="readybar" id="readyBar" hidden><button class="grow" id="readyGo"></button><button class="x" id="readyX" aria-label="Hide until tomorrow">✕</button></div>
   </div>
 
   <main class="body">
@@ -348,9 +381,20 @@ button:focus-visible,input:focus-visible,[tabindex]:focus-visible{outline:3px so
   </div>
 </div>
 <div class="sheet" id="islandSheet" role="dialog" aria-label="Island"><div class="scroll" id="islandBody"></div></div>
+<div class="sheet" id="readySheet" role="dialog" aria-label="Ready for sea"><div class="scroll" id="readyBody"></div></div>
+<div class="sheet" id="linkSheet" role="dialog" aria-label="Shared trip"><div class="scroll" id="linkBody"></div></div>
+<div class="welcome" id="welcome" hidden role="dialog" aria-label="Welcome">
+  <div class="logo" aria-hidden="true">🛳️</div>
+  <h1>Deck Finder</h1>
+  <p class="lead">Deck plans, your cabin, your itinerary and island maps, all working with no internet at sea.</p>
+  <button class="big" id="wTrip">Set up a trip</button>
+  <button class="big ghost" id="wBrowse">Browse ships</button>
+  <p class="small">Got an invite link from family? Just tap it.</p>
+</div>
+<div class="toast" id="toast" hidden role="status"></div>
 
 <script>
-const APP_VERSION = "1.10.1";
+const APP_VERSION = "1.11.0";
 const APP_DATE = "2026-09-28";
 
 // ---------- ships: loaded at runtime from ships/index.json and each ship's ship.json ----------
@@ -418,6 +462,14 @@ function cabinPoint(trip){
   const c = geoCabin(trip.ship, trip.cabin);
   return c ? boxCenter(c.box) : null;
 }
+// The green square on your cabin: the geometry's box, unless a pin placed by hand sits somewhere else.
+function myCabinBox(trip){
+  const c = geoCabin(trip.ship, trip.cabin); if (!c) return null;
+  const b = c.box, p = trip.pin;
+  if (p && (p.x < b[0] - 1 || p.x > b[2] + 1 || p.y < b[1] - 1 || p.y > b[3] + 1)) return null;
+  return b;
+}
+const CABIN_PIN_SVG = `<svg viewBox="0 0 24 31" aria-hidden="true"><path d="M12 1C5.9 1 1 5.8 1 11.8 1 19.8 12 30 12 30s11-10.2 11-18.2C23 5.8 18.1 1 12 1z" fill="#1FA55A" stroke="#fff" stroke-width="2"/><circle cx="12" cy="11.5" r="4.2" fill="#fff"/></svg>`;
 // ---------- layout: "wide" (default) or "columns" (the side-by-side view from before 1.7.0) ----------
 // Saved as state.layout, an added field: a phone without it gets "wide".
 let fullScreen = false;  // full screen is never saved; the app always opens normally
@@ -444,30 +496,49 @@ document.addEventListener("fullscreenchange", () => { if (!document.fullscreenEl
 
 let highlight = null;    // { ship, deck, boxes } shown as pulsing boxes; kept in memory only
 let addingPin = null;    // null, "new", or the id of a pin being moved
-// Smoothly center the plan on a point given in percent, once the image has its size.
-function scrollToPct(x, y){
-  const map = $("map"), wrap = $("mapwrap"); if (!map) return;
-  const img = map.querySelector("img");
-  const go = () => wrap.scrollTo({
-    top: Math.max(0, map.offsetTop + y / 100 * map.offsetHeight - wrap.clientHeight / 2),
-    left: Math.max(0, map.offsetLeft + x / 100 * map.offsetWidth - wrap.clientWidth / 2),
-    behavior: "smooth" });
-  // Wait one frame so the new layout exists. Some browsers pause frames (a hidden tab),
-  // so a short timer runs it anyway, and it only ever runs once.
+// Run fn once the plan image has its size. Wait one frame so the new layout exists. Some browsers
+// pause frames (a hidden tab), so a short timer runs it anyway, and it only ever runs once.
+function whenPlanReady(fn){
+  const img = $("map")?.querySelector("img");
   let done = false;
-  const once = () => { if (!done) { done = true; go(); } };
+  const once = () => { if (!done) { done = true; syncAutoWidth(); fn(); } };
   const soon = () => { requestAnimationFrame(once); setTimeout(once, 120); };
   if (img && !img.complete) Promise.race([img.decode(), new Promise(r => setTimeout(r, 800))]).then(soon, soon);
   else soon();
+}
+// Center the plan on a point given in percent of the image.
+function scrollNow(x, y, smooth){
+  const map = $("map"), wrap = $("mapwrap"); if (!map) return;
+  wrap.scrollTo({
+    top: Math.max(0, map.offsetTop + y / 100 * map.offsetHeight - wrap.clientHeight / 2),
+    left: Math.max(0, map.offsetLeft + x / 100 * map.offsetWidth - wrap.clientWidth / 2),
+    behavior: smooth ? "smooth" : "auto" });
+}
+function scrollToPct(x, y){ whenPlanReady(() => scrollNow(x, y, true)); }
+// Show a target (a box, or a point) at the current zoom. Since 1.11.0 selecting something never
+// zooms in; it zooms out only when the target's box is bigger than the part of the plan on screen.
+function centerTarget(box, pt){
+  whenPlanReady(() => {
+    const map = $("map"), wrap = $("mapwrap"); if (!map) return;
+    if (box){
+      const bw = (box[2] - box[0]) / 100 * map.offsetWidth, bh = (box[3] - box[1]) / 100 * map.offsetHeight;
+      const k = Math.min(wrap.clientWidth / bw, wrap.clientHeight / bh);
+      if (k < 1){
+        state.zoomAuto = false;
+        state.zoom = Math.max(zoomMin(srcNow()), state.zoom * k * 0.9);
+        syncAutoWidth(); save();
+      }
+    }
+    const c = box ? boxCenter(box) : pt;
+    scrollNow(c.x, c.y, true);
+  });
 }
 async function showBoxes(id, deck, boxes){
   state.ship = id; state.deck = deck;
   try { await ensureShip(id); } catch (e) {}
   highlight = { ship: id, deck, boxes };
-  const b = boxes[0];
-  if (b && (b[2] - b[0]) < 25 && state.zoom < 2) state.zoom = 2.2;   // small targets: zoom in
   render();
-  if (b){ const c = boxCenter(b); scrollToPct(c.x, c.y); }
+  if (boxes[0]) centerTarget(boxes[0]);
 }
 function highlightVenue(id, deck, name){
   const boxes = venueBoxes(id, deck, name);
@@ -481,21 +552,22 @@ async function goToPin(pid){
   const p = tripPins().find(x => x.id === pid); if (!p) return;
   state.ship = p.ship; state.deck = p.deck; highlight = null;
   try { await ensureShip(p.ship); } catch (e) {}
-  if (state.zoom < 2) state.zoom = 2.2;
-  render(); scrollToPct(p.x, p.y);
+  render(); centerTarget(null, { x: p.x, y: p.y });
 }
 
 const $ = id => document.getElementById(id);
 const esc = s => String(s).replace(/[&<>"]/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
 
 // ---------- saved data (stays on this phone) ----------
-let state = { ship: "ncl/getaway", deck: 5, zoom: 1 };
+let state = { ship: "ncl/getaway", deck: 5, zoom: 1, zoomAuto: true };
 let data = { trips: [], activeTripId: null, workerUrl: "", passphrase: "" };
 try {
   const s = JSON.parse(localStorage.getItem("deckfinder") || "null");
   if (s && typeof s === "object") state = Object.assign(state, s);
   if (typeof state.zoom !== "number") state.zoom = state.zoomed ? 2.2 : 1;
   delete state.zoomed;
+  // 1.11.0 added zoomAuto (the default view). The old default zoom of 1 becomes the new default view.
+  if (typeof state.zoomAuto !== "boolean") state.zoomAuto = state.zoom === 1;
   const d = JSON.parse(localStorage.getItem("deckfinder-trips") || "null");
   if (d && Array.isArray(d.trips)) data = Object.assign(data, d);
 } catch (e) {}
@@ -517,6 +589,10 @@ migrateShipIds();
 let placing = null; // trip id while placing a cabin pin
 
 function activeTrip(){ return data.trips.find(t => t.id === data.activeTripId) || null; }
+// The backup helper (Cloudflare Worker) is built in since 1.11.0. Its address isn't secret: the family
+// passphrase protects the route that costs money. An address typed in Trip set up, Advanced, wins.
+const DEFAULT_WORKER = "https://deck-finder.dasatizabal.workers.dev";
+const workerBase = () => (data.workerUrl || DEFAULT_WORKER).replace(/\/+$/, "");
 function deckList(shipKey){ const sh = SHIPS[shipKey]; return sh ? Object.keys(sh.decks).map(Number).sort((a,b)=>a-b) : []; }
 function hasPlans(shipKey){ return deckList(shipKey).length > 0; }
 // Works before a ship is loaded, using the deck count from ships/index.json.
@@ -619,6 +695,8 @@ function dayLine(day){
 // ---------- main render ----------
 function render(){
   applyLayout();
+  renderWelcome();
+  renderReadyBar();
   const trip = activeTrip();
   $("shipName").textContent = shipName(state.ship);
   renderStrip();
@@ -666,8 +744,11 @@ function render(){
   const wrap = $("mapwrap");
   const prevScroll = wrap.dataset.key === key ? wrap.scrollTop : null;
   wrap.dataset.key = key;
-  const pt = mineHere ? cabinPoint(trip) : null;
-  const pin = pt ? `<div class="pin" id="pin" style="left:${pt.x}%;top:${pt.y}%"></div>` : "";
+  // Your cabin (1.11.0): a steady green square on its box and a green pin on it, part of the plan
+  // so both stay on the cabin while you pan and zoom.
+  const pt = mineHere ? cabinPoint(trip) : null, cbox = mineHere ? myCabinBox(trip) : null;
+  const pin = (cbox ? `<div class="mycabin" id="myCabin" style="left:${cbox[0]}%;top:${cbox[1]}%;width:${cbox[2] - cbox[0]}%;height:${cbox[3] - cbox[1]}%"></div>` : "")
+    + (pt ? `<div class="cabpin" id="pin" style="left:${pt.x}%;top:${pt.y}%">${CABIN_PIN_SVG}</div>` : "");
   const hl = highlight && highlight.ship === state.ship && highlight.deck === d
     ? highlight.boxes.map(b => `<div class="hl" style="left:${b[0]}%;top:${b[1]}%;width:${b[2] - b[0]}%;height:${b[3] - b[1]}%"></div>`).join("") : "";
   const upins = pinsHere.map(p => `<button class="upin" data-pin="${esc(p.id)}" style="left:${p.x}%;top:${p.y}%;--pc:${esc(p.color)}" aria-label="Pin: ${esc(p.label)}"><span>${esc(p.label)}</span><i></i></button>`).join("");
@@ -675,17 +756,29 @@ function render(){
     : addingPin === "new" ? "Tap the plan where the new pin goes" : addingPin ? "Tap the plan where this pin goes" : "";
   const bar = barText ? `<div class="placebar"><span class="grow">${barText}</span><button id="cancelPlace">Cancel</button></div>` : "";
   wrap.classList.toggle("placing", !!(placing || addingPin));
+  if (state.zoomAuto) state.zoom = defaultZoom(src);
   wrap.innerHTML = src
     ? `${bar}<div class="maptools">
          <button class="zoom fullbtn" id="fullBtn" aria-label="${fullScreen ? "Leave full screen" : "Full screen"}">${fullScreen ? "✕" : "⛶"}</button>
          <button class="zoom addpin" id="addPinBtn" aria-label="Add a pin">📍</button>
-         <button class="zoom" id="zoomBtn" aria-label="${state.zoom > 1 ? "Zoom out" : "Zoom in"}">${state.zoom > 1 ? "−" : "+"}</button>
+         <button class="zoom" id="zoomBtn" aria-label="Zoom in">+</button>
        </div>
        ${isWide() ? `<button class="listbtn" id="listBtn">On this deck</button>` : ""}
        <div class="map" id="map" style="width:${state.zoom * 100}%"><img src="${src}" alt="Deck ${d} plan" onerror="imgFailed()">${hl}${pin}${upins}</div>`
     : `<div class="empty"><strong>No plan image</strong>Deck ${d} doesn't have a plan image yet.</div>`;
   if (src){
-    $("zoomBtn").onclick = () => { state.zoom = state.zoom > 1 ? 1 : 2.2; save(); render(); };
+    // Keep the plan's width right once the image's size is known, before any scroll below runs.
+    const im = $("map").querySelector("img");
+    if (!im.complete) im.addEventListener("load", syncAutoWidth, { once: true });
+    syncAutoWidth();
+    // Zoom in to 2.2 times the default view, or back out to the default view, around the middle.
+    $("zoomBtn").onclick = () => {
+      const c = viewCenterPct();
+      if (zoomedIn()) state.zoomAuto = true;
+      else { state.zoomAuto = false; state.zoom = Math.min(ZOOM_MAX, defaultZoom(srcNow()) * 2.2); }
+      save(); syncAutoWidth();
+      if (c) scrollNow(c.x, c.y, false);
+    };
     $("fullBtn").onclick = toggleFullScreen;
     if ($("listBtn")) $("listBtn").onclick = () => openSheet("listSheet");
     $("addPinBtn").onclick = () => {
@@ -864,34 +957,91 @@ function armPendingPlace(){
   });
 })();
 
-// ---------- pinch to zoom the deck plan (two fingers, or ctrl + trackpad pinch) ----------
+// ---------- zoom ----------
+// state.zoom is the plan's width as a multiple of the plan area's width. state.zoomAuto (added in
+// 1.11.0) means the default view: in the wide layout it shows VIEW_SHARE of the ship's length on
+// every deck of every ship, so state.zoom is worked out again for each deck. Pinching, the zoom
+// button, or zooming out to fit a big target turn it off, and that zoom then stays when you change
+// decks. The side by side layout's default view is the old one: the plan fills the column's width.
+// VIEW_SHARE is calibrated on Norwegian Getaway deck 5, where the view runs from the bow to just past
+// the first cluster of interior cabins, right before the forward-most stairs (geometry.json: stairs
+// start at 37.65% of the image; ship_extent 0 to 99.44%), plus a margin of 1%: (37.65 + 1) / 99.44.
+const VIEW_SHARE = 0.389;
+const ZOOM_MAX = 5;
+const AR = {};        // plan image src -> height / width, once it has loaded
+let lastAR = 7.8;     // a typical deck plan, used until an image has loaded
+function srcNow(){ return $("map")?.querySelector("img")?.getAttribute("src") || ""; }
+function arFor(src){
+  const img = $("map")?.querySelector("img");
+  if (img && src && img.getAttribute("src") === src && img.naturalWidth) lastAR = AR[src] = img.naturalHeight / img.naturalWidth;
+  return AR[src] || lastAR;
+}
+// As far out as pinching goes: the whole deck in view (never below 12% of the width, never above 1).
+function zoomMin(src){
+  const wrap = $("mapwrap");
+  if (!wrap.clientWidth || !wrap.clientHeight) return 1;
+  return Math.min(1, Math.max(0.12, wrap.clientHeight / (arFor(src) * wrap.clientWidth)));
+}
+function defaultZoom(src){
+  const wrap = $("mapwrap");
+  if (!isWide() || !wrap.clientWidth || !wrap.clientHeight) return 1;
+  const e = extentOf(state.ship, state.deck), len = (e.bottom - e.top) / 100;
+  // The plan is (zoom * width * aspect) tall and the ship is `len` of that: VIEW_SHARE of it fills the view.
+  const z = wrap.clientHeight / (VIEW_SHARE * len * arFor(src) * wrap.clientWidth);
+  return Math.min(ZOOM_MAX, Math.max(zoomMin(src), z));
+}
+const zoomedIn = () => !state.zoomAuto && state.zoom > defaultZoom(srcNow()) * 1.05;
+function syncZoomBtn(){
+  const b = $("zoomBtn"); if (!b) return;
+  const z = zoomedIn();
+  b.textContent = z ? "−" : "+";
+  b.setAttribute("aria-label", z ? "Zoom out" : "Zoom in");
+}
+// Set the plan's width again: after an image loads (its shape is known then), or the screen changes size.
+function syncAutoWidth(){
+  const map = $("map"); if (!map) return;
+  if (state.zoomAuto) state.zoom = defaultZoom(srcNow());
+  map.style.transition = "none";
+  map.style.width = state.zoom * 100 + "%";
+  syncZoomBtn();
+}
+function viewCenterPct(){
+  const map = $("map"), wrap = $("mapwrap");
+  if (!map || !map.offsetHeight) return null;
+  return { x: (wrap.scrollLeft + wrap.clientWidth / 2 - map.offsetLeft) / map.offsetWidth * 100,
+           y: (wrap.scrollTop + wrap.clientHeight / 2 - map.offsetTop) / map.offsetHeight * 100 };
+}
+window.addEventListener("resize", () => { if (state.zoomAuto && $("map")){ const c = viewCenterPct(); syncAutoWidth(); if (c) scrollNow(c.x, c.y, false); } });
+
+// Pinch to zoom the deck plan (two fingers, or ctrl + trackpad pinch).
 (function(){
   const wrap = $("mapwrap");
-  const MIN = 1, MAX = 5;
   let g = null;
-  const clamp = z => Math.min(MAX, Math.max(MIN, z));
+  const clamp = z => Math.min(ZOOM_MAX, Math.max(zoomMin(srcNow()), z));
+  const start = () => { const m = $("map"); return { zoom: state.zoom, left: wrap.scrollLeft, top: wrap.scrollTop, ox: m.offsetLeft, oy: m.offsetTop }; };
   // Zoom to z, keeping the plan point under screen point (px, py) fixed.
   function zoomAt(z, px, py, from){
     const map = $("map"); if (!map) return;
     const r = wrap.getBoundingClientRect();
-    const cx = (from.left + px - r.left - map.offsetLeft) / from.zoom;
-    const cy = (from.top + py - r.top - map.offsetTop) / from.zoom;
+    const cx = (from.left + px - r.left - from.ox) / from.zoom;
+    const cy = (from.top + py - r.top - from.oy) / from.zoom;
+    state.zoomAuto = false;
     state.zoom = clamp(z);
     map.style.width = state.zoom * 100 + "%";
     wrap.scrollLeft = cx * state.zoom + map.offsetLeft - (px - r.left);
     wrap.scrollTop = cy * state.zoom + map.offsetTop - (py - r.top);
   }
-  function syncBtn(){
-    const b = $("zoomBtn"); if (!b) return;
-    b.textContent = state.zoom > 1 ? "−" : "+";
-    b.setAttribute("aria-label", state.zoom > 1 ? "Zoom out" : "Zoom in");
+  // Ending a pinch close to the default view goes back to it.
+  function settle(){
+    if (Math.abs(state.zoom / defaultZoom(srcNow()) - 1) < 0.05) state.zoomAuto = true;
+    syncZoomBtn();
   }
   const dist = t => Math.hypot(t[0].clientX - t[1].clientX, t[0].clientY - t[1].clientY);
   const mid = t => [(t[0].clientX + t[1].clientX) / 2, (t[0].clientY + t[1].clientY) / 2];
   wrap.addEventListener("touchstart", e => {
     if (e.touches.length !== 2 || !$("map")) return;
     const [mx, my] = mid(e.touches);
-    g = { d: dist(e.touches), mx, my, zoom: state.zoom, left: wrap.scrollLeft, top: wrap.scrollTop };
+    g = Object.assign(start(), { d: dist(e.touches), mx, my });
     wrap.classList.add("pinching");
   }, { passive: true });
   wrap.addEventListener("touchmove", e => {
@@ -905,17 +1055,16 @@ function armPendingPlace(){
   const end = e => {
     if (!g || e.touches.length >= 2) return;
     g = null; wrap.classList.remove("pinching");
-    if (state.zoom < 1.05) { state.zoom = 1; const m = $("map"); if (m) m.style.width = "100%"; }
-    syncBtn(); save();
+    settle(); save();
   };
   wrap.addEventListener("touchend", end); wrap.addEventListener("touchcancel", end);
   wrap.addEventListener("wheel", e => {
     if (!e.ctrlKey || !$("map")) return;
     e.preventDefault();
     wrap.classList.add("pinching");
-    zoomAt(state.zoom * Math.exp(-e.deltaY / 100), e.clientX, e.clientY, { zoom: state.zoom, left: wrap.scrollLeft, top: wrap.scrollTop });
+    zoomAt(state.zoom * Math.exp(-e.deltaY / 100), e.clientX, e.clientY, start());
     wrap.classList.remove("pinching");
-    syncBtn(); clearTimeout(wrap._zt); wrap._zt = setTimeout(save, 300);
+    syncZoomBtn(); clearTimeout(wrap._zt); wrap._zt = setTimeout(() => { settle(); save(); }, 300);
   }, { passive: false });
 })();
 
@@ -939,12 +1088,14 @@ function renderMenu(){
     <h3>Menu</h3>
     <button class="menuopt" id="mTrips">Trip set up</button>
     <button class="menuopt" id="mItin" ${activeTrip() ? "" : "disabled"}>Itinerary</button>
+    <button class="menuopt" id="mReady">Ready for sea</button>
     <button class="menuopt" id="mPins" ${activeTrip() ? "" : "disabled"}>My pins</button>
+    ${data.passphrase ? `<button class="menuopt" id="mInvite">Invite family</button><div class="status" id="mInviteMsg"></div>` : ""}
     <button class="menuopt" id="mNews">What's new</button>
     <div class="sectionlabel">Deck plan layout</div>
     <button class="layoutopt ${isWide() ? "cur" : ""}" data-layout="wide"><span>Wide plan<small>The plan fills the screen. "On this deck" opens from a button.</small></span></button>
     <button class="layoutopt ${isWide() ? "" : "cur"}" data-layout="columns"><span>Side by side<small>The list, the plan and the deck slider next to each other.</small></span></button>
-    <div class="sectionlabel">Browse a ship</div>
+    <div class="sectionlabel" id="mBrowseLabel">Browse a ship</div>
     ${CATALOG.map(x => `<div class="shiprow"><button class="shipopt ${x.id===state.ship?"cur":""}" data-k="${esc(x.id)}"><span>${esc(x.name)}<br><small>${x.decks ? x.decks + " decks, " + mb(x.bytes) : "Deck plans not added yet"}</small></span></button>${offlineBadge(x.id)}</div>`).join("")}
     ${PLACES.length ? `<div class="sectionlabel">Island maps</div>
     ${PLACES.map(x => `<div class="shiprow"><button class="shipopt" data-isl="${esc(x.id)}"><span>${esc(x.name)}<br><small>Island map, ${mb(x.bytes)}</small></span></button>${placeBadge(x.id)}</div>`).join("")}
@@ -954,9 +1105,12 @@ function renderMenu(){
   $("mNews").onclick = openNews;
   $("mItin").onclick = openItinerary;
   $("mPins").onclick = openPinList;
+  $("mReady").onclick = () => openReady();
+  if ($("mInvite")) $("mInvite").onclick = () => shareOrCopy("Deck Finder family invite",
+    "Tap this link to connect Deck Finder to our family's itinerary lookups.", inviteLink(), "mInviteMsg");
   $("menuBody").querySelectorAll("[data-layout]").forEach(b => b.onclick = () => setLayout(b.dataset.layout));
   $("menuBody").querySelectorAll(".shipopt").forEach(b => b.onclick = () => {
-    state.ship = b.dataset.k; state.zoom = 1; state.deck = 0; highlight = null; delete shipErrors[state.ship];
+    state.ship = b.dataset.k; state.zoomAuto = true; state.deck = 0; highlight = null; delete shipErrors[state.ship];
     closeSheets(); render();
   });
   $("menuBody").querySelectorAll("[data-isl]").forEach(b => b.onclick = () => openIsland(b.dataset.isl));
@@ -986,16 +1140,17 @@ function openTrips(){
         <button class="edit" data-edit="${t.id}">Edit</button>
       </div>`).join("") : `<div class="hint">No trips yet. Add one to see your itinerary and cabin.</div>`}
     <button class="btn" id="addTrip">Add a trip</button>
-    <div class="sectionlabel">Connection</div>
-    <label class="field"><span>Backup helper address (optional, your Cloudflare Worker)</span>
-      <input id="workerUrl" type="url" inputmode="url" placeholder="https://deck-finder.yourname.workers.dev" value="${esc(data.workerUrl)}"></label>
-    <label class="field"><span>Family passphrase (lets the backup helper find sold-out and past sailings; saved on this phone only)</span>
-      <input id="passphrase" type="text" autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false" value="${esc(data.passphrase || "")}"></label>`;
+    <details class="adv"><summary>Advanced</summary>
+    <label class="field"><span>Backup helper address (leave it empty to use the one built into the app)</span>
+      <input id="workerUrl" type="url" inputmode="url" placeholder="${esc(DEFAULT_WORKER)}" value="${esc(data.workerUrl)}"></label>
+    <label class="field"><span>Family passphrase (lets the backup helper find sold-out and past sailings; saved on this phone only). You can also paste a family invite link here.</span>
+      <input id="passphrase" type="text" autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false" value="${esc(data.passphrase || "")}"></label>
+    </details>`;
   $("tripBody").querySelectorAll("[data-act]").forEach(b => b.onclick = () => { setActive(b.dataset.act); openTrips(); });
   $("tripBody").querySelectorAll("[data-edit]").forEach(b => b.onclick = () => openTripForm(b.dataset.edit));
   $("addTrip").onclick = () => openTripForm(null);
   $("workerUrl").onchange = e => { data.workerUrl = e.target.value.trim(); save(); };
-  $("passphrase").onchange = e => { data.passphrase = e.target.value.trim(); save(); };
+  $("passphrase").onchange = e => { data.passphrase = passFromInput(e.target.value); e.target.value = data.passphrase; save(); };
   openSheet("tripSheet");
 }
 function setActive(id){
@@ -1029,7 +1184,10 @@ function openTripForm(id, msg, isErr){
       <button class="dayrow" data-day="${i}"><span class="d">${niceDate(d.date)}</span><span class="grow"><b>${d.sea ? "At sea" : esc(d.port)}</b><small>${esc(dayTimes(d) || (d.sea ? "" : "No times yet"))}</small></span><span class="edit">Edit</span></button>`).join("")
       : `<div class="hint">No itinerary yet. Tap Save and look up itinerary, or type it in one day at a time.</div>`}
     <button class="btn ghost" id="fAddDay">${days.length ? "Add a day" : "Type in the itinerary"}</button>
-    ${it ? `<button class="btn ghost" id="fRelook">Look up the itinerary again</button>` : ""}` : ""}
+    ${it ? `<button class="btn ghost" id="fRelook">Look up the itinerary again</button>` : ""}
+    <div class="sectionlabel">Share</div>
+    <button class="btn ghost" id="fShare">Share trip</button>
+    <div class="status" id="fShareMsg"></div>` : ""}
     <button class="btn ghost" id="fBack">Back</button>
     ${id ? `<button class="btn danger" id="fDel">Delete trip</button>` : ""}`;
   $("fBack").onclick = openTrips;
@@ -1040,6 +1198,10 @@ function openTripForm(id, msg, isErr){
     save(); render(); openTrips();
   };
   if ($("fPin")) $("fPin").onclick = () => startPlacing(id);
+  if ($("fShare")) $("fShare").onclick = () => {
+    const tt = data.trips.find(x => x.id === id); if (!tt) return;
+    shareOrCopy("Deck Finder trip", "Our " + shipName(tt.ship) + " trip, sailing " + niceDate(tt.date) + ". Tap the link to add it to Deck Finder.", tripLink(tt), "fShareMsg");
+  };
   if ($("fAutoPin")) $("fAutoPin").onclick = () => {
     const tt = data.trips.find(x => x.id === id);
     if (tt) tt.pin = null;   // no hand-placed pin: the pin comes from the deck plan geometry
@@ -1166,7 +1328,7 @@ async function startPlacing(id){
   try { await ensureShip(t.ship); } catch (e) { return; }
   const cd = cabinDeckNum(t.cabin);
   if (!hasPlans(t.ship) || !deckList(t.ship).includes(cd)) return;
-  data.activeTripId = id; state.ship = t.ship; state.deck = cd; state.zoom = 2.2;
+  data.activeTripId = id; state.ship = t.ship; state.deck = cd; state.zoomAuto = false; state.zoom = Math.max(state.zoom, 2.2);
   placing = id; closeSheets(); render();
 }
 
@@ -1186,11 +1348,7 @@ async function getText(url, timeoutMs){
 async function viaWorker(path, timeoutMs){
   try { return await getText("https://www.ncl.com" + path, timeoutMs); }
   catch (direct) {
-    if (!data.workerUrl) {
-      if (direct instanceof TypeError) throw new Error("couldn't reach NCL. Check your internet connection.");
-      throw direct;
-    }
-    try { return await getText(data.workerUrl.replace(/\/+$/,"") + "/?path=" + encodeURIComponent(path), timeoutMs); }
+    try { return await getText(workerBase() + "/?path=" + encodeURIComponent(path), timeoutMs); }
     catch (e) {
       if (e instanceof TypeError) throw new Error("couldn't reach NCL or the backup helper. Check your internet connection.");
       throw e;
@@ -1256,8 +1414,8 @@ async function findItinerary(shipKey, dateIso, progress){
   let nclErr;
   try { return Object.assign(await lookupItinerary(shipKey, dateIso, progress), { source: "ncl" }); }
   catch (e) { nclErr = e; }
-  if (!data.workerUrl || !data.passphrase)
-    throw new Error(nclErr.message + " To find sold-out or past sailings, add the " + (data.workerUrl ? "" : "backup helper address and the ") + "family passphrase in Trip set up.");
+  if (!data.passphrase)
+    throw new Error(nclErr.message + " To find sold-out or past sailings, tap the family invite link, or add the family passphrase in Trip set up under Advanced.");
   return await lookupViaHelper(shipKey, dateIso, progress);
 }
 async function lookupViaHelper(shipKey, dateIso, progress){
@@ -1270,14 +1428,14 @@ async function lookupViaHelper(shipKey, dateIso, progress){
   let r, body = null;
   try {
     // encodeURIComponent keeps any passphrase (spaces, accents) safe to send in a header.
-    r = await fetch(data.workerUrl.replace(/\/+$/,"") + "/itinerary?" + q, { headers: { "X-DeckFinder-Pass": encodeURIComponent(data.passphrase) }, signal: ctl.signal });
+    r = await fetch(workerBase() + "/itinerary?" + q, { headers: { "X-DeckFinder-Pass": encodeURIComponent(data.passphrase) }, signal: ctl.signal });
     body = await r.json().catch(() => null);
   } catch (e) {
     if (e.name === "AbortError") throw new Error("the backup helper took too long to answer. Try again.");
-    throw new Error("couldn't reach the backup helper. Check your internet connection, the helper address in Trip set up, and that the helper has the Worker code from version 1.9.0.");
+    throw new Error("couldn't reach the backup helper. Check your internet connection, the helper address in Trip set up under Advanced, and that the helper has the Worker code from version 1.9.0.");
   } finally { clearTimeout(timer); }
   const code = body && body.code;
-  if (r.status === 401 || code === "bad_pass") throw new Error("the family passphrase wasn't accepted. Check it in Trip set up. It must match the passphrase saved in the backup helper.");
+  if (r.status === 401 || code === "bad_pass") throw new Error("the family passphrase wasn't accepted. Check it in Trip set up under Advanced. It must match the passphrase saved in the backup helper.");
   if (!body || (!r.ok && !code)) throw new Error("the backup helper can't look up itineraries yet. It needs the Worker code from version 1.9.0.");
   if (code === "not_found") throw new Error("neither NCL nor CruiseFeed lists a " + ship.name + " sailing on " + niceDate(dateIso) + ". Double-check the date.");
   if (code === "allowance") throw new Error("the backup helper has used up its CruiseFeed lookups.");
@@ -1420,11 +1578,11 @@ $("cabinChip").onclick = () => {
   const t = activeTrip(); if (!t) return;
   const cd = cabinDeckNum(t.cabin);
   if (!deckList(t.ship).includes(cd)) return;
-  const auto = geoCabin(t.ship, t.cabin);
-  if (!t.pin && !auto) return startPlacing(t.id);
-  if (!t.pin) return showBoxes(t.ship, cd, [auto.box]);
+  const pt = cabinPoint(t);
+  if (!pt) return startPlacing(t.id);
+  // Center your cabin at the current zoom. Its green square and pin are always drawn on its deck.
   state.ship = t.ship; state.deck = cd; highlight = null; render();
-  scrollToPct(t.pin.x, t.pin.y);
+  centerTarget(null, pt);
 };
 
 // ---------- pin editor and "My pins" list ----------
@@ -2402,7 +2560,307 @@ async function exportSurvey(placeId){
   return "Saved " + name + " to your downloads.";
 }
 
+// ---------- messages ----------
+function toast(msg, isErr){
+  const t = $("toast");
+  t.textContent = msg; t.className = "toast" + (isErr ? " err" : ""); t.hidden = false;
+  clearTimeout(t._t); t._t = setTimeout(() => { t.hidden = true; }, 5000);
+}
+$("toast").onclick = () => { $("toast").hidden = true; };
+
+// ---------- welcome screen: shown when there are no trips yet ----------
+let welcomeSeen = false;   // "Browse ships" or "Set up a trip" hides it until the app is opened again
+function renderWelcome(){ $("welcome").hidden = !!(data.trips.length || welcomeSeen); }
+$("wTrip").onclick = () => { welcomeSeen = true; render(); openTripForm(null); };
+$("wBrowse").onclick = () => {
+  welcomeSeen = true; render();
+  renderMenu(); openSheet("menuSheet");
+  const l = $("mBrowseLabel"); if (l) l.scrollIntoView({ block: "start" });
+  refreshSaved().then(refreshMenu);
+};
+
+// ---------- links: the part after # never goes to any server ----------
+// #join=<passphrase> is a family invite. #trip=<data> is a shared trip. Both are taken out of the
+// address bar and this page's history entry as soon as the app reads them.
+function readLinkHash(){
+  const m = (location.hash || "").match(/^#(join|trip)=([\s\S]+)$/);
+  if (!m) return null;
+  try { history.replaceState(history.state, "", location.pathname + location.search); } catch (e) {}
+  return { kind: m[1], value: m[2] };
+}
+const appBase = () => new URL("./", location.href).href.split("#")[0];
+const inviteLink = () => appBase() + "#join=" + encodeURIComponent(data.passphrase || "");
+// A pasted invite link in the passphrase field counts as its passphrase.
+function passFromInput(v){
+  const m = String(v || "").match(/#join=([^\s&]+)/);
+  if (m){ try { return decodeURIComponent(m[1]).trim(); } catch (e) {} }
+  return String(v || "").trim();
+}
+function handleJoin(v){
+  let pass = "";
+  try { pass = decodeURIComponent(v).trim(); } catch (e) {}
+  if (!pass || pass.length > 200) return toast("That invite link didn't work. Ask your family for a new one.", true);
+  data.passphrase = pass; save();
+  toast("You're connected to your family's lookups.");
+  refreshMenu();
+}
+// The phone's share sheet, or copy the link, or show it to copy by hand.
+async function shareOrCopy(title, text, url, statusId){
+  const st = () => $(statusId) || { set textContent(v){}, set innerHTML(v){} };
+  if (navigator.share){
+    try { await navigator.share({ title, text, url }); st().textContent = "Shared."; return; }
+    catch (e) { if (e.name === "AbortError"){ st().textContent = ""; return; } }
+  }
+  try { await navigator.clipboard.writeText(url); st().textContent = "Link copied. Paste it into a message."; return; } catch (e) {}
+  st().innerHTML = `Copy this link and send it:<input class="linkbox" readonly value="${esc(url)}">`;
+  const box = $(statusId)?.querySelector("input"); if (box){ box.focus(); box.select(); }
+}
+
+// ---------- share trip: ship, date, cabin, itinerary, all-aboard setting and custom pins ----------
+// Never the passphrase, Save my spot, or survey data: only the fields named here go in the link.
+function b64uEncode(str){
+  const bytes = new TextEncoder().encode(str); let bin = "";
+  for (let i = 0; i < bytes.length; i++) bin += String.fromCharCode(bytes[i]);
+  return btoa(bin).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
+}
+function b64uDecode(str){ return new TextDecoder().decode(Uint8Array.from(atob(str.replace(/-/g, "+").replace(/_/g, "/")), c => c.charCodeAt(0))); }
+function tripPayload(t){
+  const o = { v: 1, ship: t.ship, date: t.date };
+  if (t.cabin) o.cabin = t.cabin;
+  if (t.pin) o.pin = { x: t.pin.x, y: t.pin.y };
+  if (Number.isFinite(t.allAboard)) o.allAboard = t.allAboard;
+  const it = t.itinerary;
+  if (it && Array.isArray(it.days) && it.days.length){
+    o.itinerary = { title: it.title, source: it.source, fetched: it.fetched, days: it.days.map(d => d.sea ? { date: d.date, sea: true }
+      : Object.assign({ date: d.date, port: d.port, arrive: d.arrive || "", depart: d.depart || "" }, d.code ? { code: d.code } : {})) };
+    if (it.code) o.itinerary.code = it.code;
+    if (it.sourceLabel) o.itinerary.sourceLabel = it.sourceLabel;
+    if (it.edited) o.itinerary.edited = true;
+  }
+  if ((t.pins || []).length) o.pins = t.pins.map(p => ({ id: p.id, ship: p.ship, deck: p.deck, x: p.x, y: p.y, label: p.label, color: p.color }));
+  return o;
+}
+const tripLink = t => appBase() + "#trip=" + b64uEncode(JSON.stringify(tripPayload(t)));
+// Read a shared trip, keeping only well-formed fields. Returns null when the link is broken.
+function parseSharedTrip(v){
+  let o; try { o = JSON.parse(b64uDecode(v)); } catch (e) { return null; }
+  const ISO = /^\d{4}-\d{2}-\d{2}$/, HM = /^([01]\d|2[0-3]):[0-5]\d$/;
+  if (!o || o.v !== 1 || !catEntry(o.ship) || !ISO.test(o.date)) return null;
+  const str = (x, n) => typeof x === "string" ? x.trim().slice(0, n) : "";
+  const pct = x => typeof x === "number" && isFinite(x) && x >= 0 && x <= 100;
+  const t = { ship: o.ship, date: o.date, cabin: cabinDeckNum(o.cabin) ? String(o.cabin).trim() : "", itinerary: null, pins: [] };
+  if (t.cabin && o.pin && pct(o.pin.x) && pct(o.pin.y)) t.pin = { x: o.pin.x, y: o.pin.y };
+  if (Number.isInteger(o.allAboard) && o.allAboard >= 0 && o.allAboard <= 240) t.allAboard = o.allAboard;
+  const it = o.itinerary;
+  if (it && Array.isArray(it.days)){
+    const days = it.days.slice(0, 60).filter(d => d && ISO.test(d.date)).map(d => d.sea ? { date: d.date, sea: true }
+      : Object.assign({ date: d.date, port: str(d.port, 80) || "Port", arrive: HM.test(d.arrive) ? d.arrive : "", depart: HM.test(d.depart) ? d.depart : "" },
+        /^[A-Z0-9]{2,6}$/.test(d.code || "") ? { code: d.code } : {}));
+    if (days.length){
+      t.itinerary = { title: str(it.title, 120) || "Shared itinerary", source: ["ncl", "cruisefeed", "manual"].includes(it.source) ? it.source : "manual",
+        fetched: /^\d{4}-\d{2}-\d{2}T/.test(it.fetched || "") ? it.fetched.slice(0, 40) : new Date().toISOString(), days: normalizeDays(days) };
+      if (str(it.code, 40)) t.itinerary.code = str(it.code, 40);
+      if (str(it.sourceLabel, 80)) t.itinerary.sourceLabel = str(it.sourceLabel, 80);
+      if (it.edited === true) t.itinerary.edited = true;
+    }
+  }
+  t.pins = (Array.isArray(o.pins) ? o.pins : []).slice(0, 200)
+    .filter(p => p && catEntry(p.ship) && Number.isInteger(p.deck) && pct(p.x) && pct(p.y))
+    .map((p, i) => ({ id: /^[\w-]{1,40}$/.test(p.id || "") ? p.id : "p" + Date.now() + "-" + i, ship: p.ship, deck: p.deck, x: p.x, y: p.y,
+      label: str(p.label, 40) || "Pin", color: /^#[0-9A-Fa-f]{6}$/.test(p.color || "") ? p.color : PIN_COLORS[0] }));
+  return t;
+}
+function openSharedTrip(v){
+  const t = parseSharedTrip(v), body = $("linkBody");
+  if (!t){
+    body.innerHTML = `<h3>This trip link didn't work</h3><div class="hint" style="padding-top:0">It may have been cut off when it was sent. Ask for the link again.</div><button class="btn ghost" id="lkNo">Close</button>`;
+    $("lkNo").onclick = closeSheets; return openSheet("linkSheet");
+  }
+  const same = data.trips.find(x => x.ship === t.ship && x.date === t.date);
+  const n = t.pins.length;
+  const summary = `<div class="trip"><div class="grow"><b>${esc(shipName(t.ship))}</b><small>Sailing ${niceDate(t.date)}${t.cabin ? ", cabin " + esc(t.cabin) : ""}</small>
+    <small>${t.itinerary ? t.itinerary.days.length + " days in the itinerary" : "No itinerary"}, ${n} custom ${n === 1 ? "pin" : "pins"}</small></div></div>`;
+  if (!same){
+    body.innerHTML = `<h3>Add this trip to your phone?</h3>${summary}
+      <button class="btn" id="lkAdd">Add this trip</button><button class="btn ghost" id="lkNo">Not now</button>`;
+    $("lkAdd").onclick = () => { const nt = Object.assign({ id: "t" + Date.now() }, t); data.trips.push(nt); finishShared(nt.id, "Trip added."); };
+  } else {
+    body.innerHTML = `<h3>Add this trip to your phone?</h3>${summary}
+      <div class="hint">You already have a trip on ${esc(shipName(t.ship))} sailing ${niceDate(t.date)}. Add the custom pins from this link to it, or replace your trip with this one? Replacing keeps your saved spots.</div>
+      <button class="btn" id="lkMerge">Merge the custom pins</button>
+      <button class="btn ghost" id="lkReplace">Replace the trip</button>
+      <button class="btn ghost" id="lkNo">Cancel</button>`;
+    $("lkMerge").onclick = () => {
+      const pins = same.pins || (same.pins = []); let added = 0;
+      t.pins.forEach(p => {
+        if (pins.some(q => q.id === p.id || (q.ship === p.ship && q.deck === p.deck && q.x === p.x && q.y === p.y && q.label === p.label))) return;
+        pins.push(p); added++;
+      });
+      finishShared(same.id, added ? "Added " + added + (added === 1 ? " pin." : " pins.") : "No new pins to add.");
+    };
+    $("lkReplace").onclick = () => {
+      ["cabin", "pin", "itinerary", "allAboard", "pins"].forEach(k => delete same[k]);
+      Object.assign(same, t);
+      finishShared(same.id, "Trip replaced.");
+    };
+  }
+  $("lkNo").onclick = closeSheets;
+  openSheet("linkSheet");
+}
+function finishShared(id, msg){ closeSheets(); save(); setActive(id); syncOfflineShips(); toast(msg); }
+
+// ---------- Ready for sea: a checklist to go through while there's still Wi-Fi ----------
+let installEvt = null;   // Android Chrome's install prompt, used by the Fix button when it's offered
+window.addEventListener("beforeinstallprompt", e => { installEvt = e; });
+const isInstalled = () => ["standalone", "fullscreen", "minimal-ui"].some(m => matchMedia("(display-mode: " + m + ")").matches) || navigator.standalone === true;
+const tripEnd = t => { const d = t.itinerary?.days || []; return d.length ? d[d.length - 1].date : t.date; };
+// The trip to check: the active one unless it's over, otherwise the next one.
+function readyTrip(){
+  const today = ymd(new Date()), a = activeTrip();
+  if (a && tripEnd(a) >= today) return a;
+  return data.trips.filter(t => tripEnd(t) >= today).sort((x, y) => x.date.localeCompare(y.date))[0] || a || null;
+}
+async function locationState(){
+  if (!("geolocation" in navigator)) return "unsupported";
+  try { return (await navigator.permissions.query({ name: "geolocation" })).state; }
+  catch (e) { return gps.err && gps.err.code === 1 ? "denied" : gps.fix ? "granted" : "prompt"; }
+}
+function askLocation(){
+  return new Promise(res => navigator.geolocation.getCurrentPosition(() => res(), e => { if (e.code === 1) gps.err = { code: 1 }; res(); }, { timeout: 20000, maximumAge: 600000 }));
+}
+async function installApp(){
+  if (installEvt){
+    try { installEvt.prompt(); await installEvt.userChoice; installEvt = null; return openReady(); } catch (e) { installEvt = null; }
+  }
+  $("readyBody").innerHTML = `<h3>Install Deck Finder</h3>
+    <div class="hint" style="padding-top:0">Installed, Deck Finder opens from its own icon, like an app, and works best with no internet.</div>
+    <div class="sectionlabel">Android phone (Chrome)</div>
+    <ol class="steps">
+      <li>Open Deck Finder in Chrome.</li>
+      <li>Tap the three dots in the top right corner.</li>
+      <li>Tap Add to Home screen, or Install app.</li>
+      <li>Tap Install.</li>
+      <li>Close Chrome, and open Deck Finder from its new icon on your home screen.</li>
+    </ol>
+    <div class="sectionlabel">iPhone (Safari)</div>
+    <ol class="steps">
+      <li>Open Deck Finder in Safari.</li>
+      <li>Tap the Share button (the square with an arrow pointing up).</li>
+      <li>Scroll down and tap Add to Home Screen.</li>
+      <li>Tap Add.</li>
+      <li>Open Deck Finder from its new icon on your home screen.</li>
+      <li>Your trips don't move over by themselves on an iPhone. In the new icon's app, tap Set up a trip, or tap a Share trip link someone sent you, and make sure Invite family is set up again.</li>
+    </ol>
+    <button class="btn ghost" id="rBack">Back to Ready for sea</button>`;
+  $("rBack").onclick = () => openReady();
+}
+async function readyChecks(t){
+  const checks = [];
+  const e = catEntry(t.ship);
+  if (e && e.decks){
+    const ok = SAVED[t.ship] === e.hash;
+    checks.push({ key: "ship", ok, title: shipName(t.ship) + " deck plans saved for offline",
+      detail: ok ? "They open with no internet." : SAVED[t.ship] ? "A newer copy is on the website. Tap Fix to download it." : "Not saved on this phone yet. Tap Fix to download them.",
+      fix: () => saveShip(t.ship) });
+  }
+  for (const pl of new Map(islandDays(t).map(x => [x.place.id, x.place])).values()){
+    const ok = PLACE_SAVED[pl.id] === pl.hash;
+    checks.push({ key: "island:" + pl.id, ok, title: pl.name + " island map saved for offline",
+      detail: ok ? "It opens with no internet." : PLACE_SAVED[pl.id] ? "A newer copy is on the website. Tap Fix to download it." : "Not saved on this phone yet. Tap Fix to download it.",
+      fix: () => savePlace(pl.id) });
+  }
+  const days = t.itinerary?.days || [];
+  const noDep = days.filter(d => !d.sea && d.kind !== "debark" && !d.depart);
+  checks.push({ key: "times", ok: !!days.length && !noDep.length, title: "Itinerary has departure times", opens: true, fix: () => openTripForm(t.id),
+    detail: !days.length ? "No itinerary yet. Tap Fix to look it up or type it in."
+      : noDep.length ? "No departure time for " + noDep.map(d => niceDate(d.date)).join(", ") + ". Tap Fix and add it from your cruise documents."
+      : "Every day in port has a departure time." });
+  const loc = await locationState();
+  checks.push({ key: "location", ok: loc === "granted", title: "Location allowed",
+    detail: loc === "granted" ? "The island map can show where you are." : loc === "denied" ? "Location is turned off for Deck Finder. Tap Fix for the steps to turn it on."
+      : loc === "unsupported" ? "This browser can't share your location." : "Deck Finder hasn't asked for it yet. Tap Fix, then tap Allow.",
+    fix: loc === "unsupported" ? null : loc === "denied" ? openLocationHelp : askLocation, opens: loc === "denied" });
+  let info = null;
+  try { const r = await fetch("version.json", { cache: "no-store" }); if (r.ok) info = await r.json(); } catch (x) {}
+  const latest = !!info && !newer(info.version, APP_VERSION);
+  checks.push({ key: "version", ok: latest, title: "Latest version of the app",
+    detail: latest ? "Version " + APP_VERSION + "." : info ? "Version " + info.version + " is available. Tap Fix to update." : "Couldn't check. Connect to the internet, then tap Fix to check again.",
+    fix: info ? applyUpdate : async () => {} });
+  const inst = isInstalled();
+  checks.push({ key: "installed", ok: inst, title: "Installed on this phone",
+    detail: inst ? "Deck Finder opens from its own icon." : "It's open in a browser tab. Tap Fix to install it, then open it from its icon.",
+    fix: installApp, opens: true });
+  return checks;
+}
+let readyToken = 0, lastReady = null;   // lastReady: { tripId, ok } from the last full check
+async function openReady(tripId){
+  const t = data.trips.find(x => x.id === tripId) || readyTrip();
+  const body = $("readyBody");
+  if (!t){
+    body.innerHTML = `<h3>Ready for sea</h3><div class="hint" style="padding-top:0">Set up your trip first, then come back here to check everything works at sea.</div>
+      <button class="btn" id="rTrips">Set up a trip</button><button class="btn ghost" id="rClose">Close</button>`;
+    $("rTrips").onclick = () => openTripForm(null); $("rClose").onclick = closeSheets;
+    return openSheet("readySheet");
+  }
+  if (!$("readySheet").classList.contains("open")){
+    body.innerHTML = `<h3>Ready for sea</h3><div class="hint" style="padding-top:0">Checking...</div>`;
+    openSheet("readySheet");
+  }
+  const token = ++readyToken;
+  await refreshSaved();
+  const checks = await readyChecks(t);
+  if (token !== readyToken || !$("readySheet").classList.contains("open")) return;
+  const bad = checks.filter(c => !c.ok).length;
+  lastReady = { tripId: t.id, ok: !bad }; renderReadyBar();
+  body.innerHTML = `<h3>Ready for sea</h3>
+    <div class="hint" style="padding-top:0">${esc(shipName(t.ship))}, sailing ${niceDate(t.date)}</div>
+    <div class="rsum ${bad ? "bad" : "ok"}" id="rSum">${bad ? bad + (bad === 1 ? " thing" : " things") + " to fix. Do these while you still have Wi-Fi, before you sail." : "All set. Everything you need works with no internet at sea."}</div>
+    ${checks.map((c, i) => `<div class="rcheck ${c.ok ? "ok" : "bad"}" data-key="${esc(c.key)}"><span class="mark" role="img" aria-label="${c.ok ? "Done" : "Needs fixing"}">${c.ok ? "✓" : "✗"}</span>
+      <div class="grow"><b>${esc(c.title)}</b><small>${esc(c.detail)}</small></div>${!c.ok && c.fix ? `<button class="fix" data-fix="${i}">Fix</button>` : ""}</div>`).join("")}
+    <button class="btn ghost" id="rAgain">Check again</button>
+    <button class="btn ghost" id="rClose">Close</button>`;
+  body.querySelectorAll("[data-fix]").forEach(b => b.onclick = async () => {
+    const c = checks[+b.dataset.fix];
+    if (c.opens) return c.fix();
+    b.disabled = true; b.textContent = "Working...";
+    try { await c.fix(); } catch (x) {}
+    openReady(t.id);
+  });
+  $("rAgain").onclick = () => openReady(t.id);
+  $("rClose").onclick = closeSheets;
+}
+// The banner: from 3 days before a trip's sail date through that day, until everything checks out.
+function soonTrip(){
+  const today = ymd(new Date()), last = addDaysIso(today, 3);
+  const within = t => t.date >= today && t.date <= last;
+  const a = activeTrip();
+  return a && within(a) ? a : data.trips.filter(within).sort((x, y) => x.date.localeCompare(y.date))[0] || null;
+}
+function renderReadyBar(){
+  const t = soonTrip(), bar = $("readyBar"), today = ymd(new Date());
+  const show = !!t && state.readyHidden !== t.id + ":" + today && !(lastReady && lastReady.tripId === t.id && lastReady.ok);
+  bar.hidden = !show;
+  if (!show) return;
+  const n = Math.round((Date.parse(t.date) - Date.parse(today)) / 86400000);
+  $("readyGo").textContent = (n === 0 ? "Sailing today." : n === 1 ? "Sailing tomorrow." : "Sailing in " + n + " days.") + " Tap to check you're Ready for sea.";
+  $("readyGo").onclick = () => openReady(t.id);
+  $("readyX").onclick = () => { state.readyHidden = t.id + ":" + today; save(); renderReadyBar(); };
+}
+// In the background: hide the banner once everything is ready.
+async function refreshReady(){
+  const t = soonTrip();
+  if (t){ try { await refreshSaved(); const cs = await readyChecks(t); lastReady = { tripId: t.id, ok: cs.every(c => c.ok) }; } catch (e) {} }
+  renderReadyBar();
+}
+
 // ---------- start up ----------
+const startLink = readLinkHash();
+if (startLink && startLink.kind === "join") handleJoin(startLink.value);
+window.addEventListener("hashchange", () => {
+  const l = readLinkHash(); if (!l) return;
+  if (l.kind === "join") handleJoin(l.value);
+  else if (catalogReady) openSharedTrip(l.value);
+});
 (async function boot(){
   render(); // shows "Loading deck plans..." until the ship list arrives
   try { await loadCatalog(); }
@@ -2415,7 +2873,9 @@ async function exportSurvey(placeId){
   render();
   if (state.island && placeEntry(state.island)) openIsland(state.island);   // it was open when the app closed
   else delete state.island;
+  if (startLink && startLink.kind === "trip") openSharedTrip(startLink.value);
   syncOfflineShips();
+  refreshReady();
 })();
 window.addEventListener("online", () => {
   Object.keys(shipErrors).forEach(k => delete shipErrors[k]);
@@ -2468,7 +2928,7 @@ async function applyUpdate(){
 }
 $("updateBar").onclick = applyUpdate;
 checkForUpdate();
-document.addEventListener("visibilitychange", () => { if (document.visibilityState === "visible") checkForUpdate(); });
+document.addEventListener("visibilitychange", () => { if (document.visibilityState === "visible"){ checkForUpdate(); if (catalogReady) refreshReady(); } });
 
 // ---------- what's new ----------
 async function openNews(){

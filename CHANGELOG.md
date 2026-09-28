@@ -1,5 +1,17 @@
 # Changelog
 
+## [1.11.0] - 2026-09-28
+### Added
+- A welcome screen when the app has no trips yet, with Set up a trip and Browse ships.
+- Family invite links: tap the link your family sends you, and your phone is connected to the family's itinerary lookups. Invite family in the menu sends the link.
+- Your cabin now glows green, with a green pin on it, whenever you look at its deck.
+- Ready for sea in the menu: a checklist that makes sure everything works with no internet before you sail, with a Fix button for anything missing. A reminder shows up 3 days before you sail.
+- Share trip: send your trip, its itinerary and your custom pins to family in one link. Opening the link adds the trip to their phone.
+### Changed
+- Deck plans now open showing the front of the ship back to the first stairs, the same share of the ship on every deck of every ship.
+- Tapping a place, a search result, a pin, or your cabin now moves the plan to it without zooming in.
+- The backup helper is built into the app. Its address and the family passphrase moved to Advanced at the bottom of Trip set up.
+
 ## [1.10.1] - 2026-09-28
 ### Changed
 - Great Stirrup Cay places now use the names from the official island map, including first aid, and more places have positions.
