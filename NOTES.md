@@ -1,10 +1,10 @@
 # Deck Finder: handoff notes
 
-Read this with `CLAUDE.md` at the start of every session. CLAUDE.md holds the rules; this file holds the current state, known issues, lessons learned, and parked work. Last updated 2026-09-28 (version 1.10.0).
+Read this with `CLAUDE.md` at the start of every session. CLAUDE.md holds the rules; this file holds the current state, known issues, lessons learned, and parked work. Last updated 2026-09-28 (version 1.10.1).
 
 ## Current state
 
-- **Live version:** 1.10.0, at https://dasatizabal.github.io/deck-finder/ (check `version.json` there). Confirmed live on 2026-09-28.
+- **Live version:** 1.10.1, at https://dasatizabal.github.io/deck-finder/ (check `version.json` there). Confirmed live on 2026-09-28.
 - **Priority ship:** Norwegian Getaway, which the family sails first (Oct 2, 2026). Joy and Aqua trips follow later. Trip details and cabin numbers live only in the saved trips on the phones, not in this public repo.
 - **Worker status (2026-09-27):** deployed at https://deck-finder.dasatizabal.workers.dev with the KV version of `worker/worker.js`, the secrets `CRUISEFEED_KEY` and `APP_PASS`, and the KV namespace `deck-finder-itineraries` bound as `ITINERARIES`. The Getaway Oct 2 sailing is seeded in KV with full times, and the live route returned it. The phones still need to re-run the Oct 2 lookup (Trip set up, Edit, Save and look up itinerary).
 - **Install status:** David was installing the app on his Android phone for the first time. The first attempt failed with "This app cannot be installed", which 1.6.1 fixed. A successful install on a real phone has not been confirmed yet.
@@ -25,10 +25,10 @@ Inside `deck-finder`:
 - `ships/index.json`: the catalog, with a hash per ship, and since 1.10.0 a `places` list of island maps (port code, port name, `port_match`, bounds, hash).
 - `ships/ncl/line.json`.
 - `ships/ncl/<ship>/`: `ship.json`, one `deck<N>.webp` per deck, and for Getaway only, `geometry.json`.
-- `places/great-stirrup-cay/`: the island map (1.10.0). `place.json` (name, port code `NPI`, port name, `port_match` "Great Stirrup", `bounds`, and the file names), `basemap.json` (OpenStreetMap shapes as GeoJSON, with the attribution in the file), `places.json` (venues shown on the map), `survey-list.json` (the full 100-venue checklist for Survey mode).
+- `places/great-stirrup-cay/`: the island map (1.10.0). `place.json` (name, port code `NPI`, port name, `port_match` "Great Stirrup", `bounds`, and the file names), `basemap.json` (OpenStreetMap shapes as GeoJSON, with the attribution in the file), `places.json` (venues shown on the map), `survey-list.json` (the full venue checklist for Survey mode, 112 venues since 1.10.1).
 - `worker/worker.js`: the Cloudflare Worker (backup helper). Not published; pasted into the Cloudflare dashboard by hand.
 - `tools/kv_put.py` and `tools/itineraries/`: write one itinerary into the Worker's KV namespace by hand.
-- `tools/`: `build_index.py`, `calibrate_decks.py`, `split_images.py` (one-time, already used), and since 1.10.0 `build_island.py` (downloads the island from the Overpass API and writes `basemap.json`) and `import_island_data.py` (copies `places.json` and `survey-list.json` from the builder). Not published.
+- `tools/`: `build_index.py`, `calibrate_decks.py`, `split_images.py` (one-time, already used), and since 1.10.0 `build_island.py` (downloads the island from the Overpass API and writes `basemap.json`) and `import_island_data.py` (copies `places.json` and `survey-list.json` from the builder; since 1.10.1 it also copies `official_area`, `official_number` and `not_on_official_map`). Not published.
 - `.github/scripts/check_release.py`: the release gate.
 
 Inside `deck-finder-builder/deck-vision`:
@@ -53,6 +53,7 @@ Inside `deck-finder-builder/deck-vision`:
 | 1.7.0 | Wide plan layout by default, with "On this deck" in a sheet. Full screen button. Menu switch back to the old Side by side layout (`state.layout`). Fixed the zoom button hiding behind the pin button. |
 | 1.8.0 | Keeping your place when changing decks, using each deck's `ship_extent` (from `tools/calibrate_decks.py`) and, on Getaway, elevator banks as anchors. A faint line marks the spot. |
 | 1.10.0 | Great Stirrup Cay island map, drawn by the app from `basemap.json` (no map tiles), with pinch zoom, search, and place markers by category. Blue dot from GPS with an accuracy circle. Save my spot and Take me back (compass arrow, or a line on the map without a compass; screen kept awake). Survey mode (tag venues with a 5-second averaged position, rename, doesn't exist, new places, record a walk, export). All-aboard countdown on island day. Islands saved for offline like ships. The itinerary sheet shows the Worker's source label. |
+| 1.10.1 | Great Stirrup Cay data refreshed from the builder with the official island map names and positions: 52 places (was 7), 112 survey venues (was 100). Place cards and Survey show the sign's legend ("On the island map sign: Beaches 7"). Survey rows and venue sheets say "Not on the official map" for the 61 venues the sign doesn't show. |
 | 1.9.0 | Itinerary lookup order: the trip's saved itinerary, NCL live, then CruiseFeed through the Worker's `/itinerary` route, then typing it in. Itinerary sheet shows where it came from. Manual day editor in the trip editor. Family passphrase in Trip set up. Worker code moved into `worker/`. |
 
 ### Saved data on the phone
@@ -102,7 +103,12 @@ Fields have only been added, never renamed or reshaped.
 - **NCL lists the Getaway Oct 2 sailing again (2026-09-28).** In the 1.10.0 tests the NCL live lookup found it (3-Day Bahamas Round-Trip Miami) before the backup helper was needed. The helper label was tested by calling the helper route directly (a KV hit, no CruiseFeed result spent).
 - **The NCL search API works directly from the browser** (it failed through Cloudflare because NCL blocks data center addresses). In the 1.9.0 tests, both NCL steps succeeded directly from Chrome, and the Worker's NCL proxy was not needed.
 - **The Worker's `/itinerary` route asks for `ship`, `date` and an optional `line`.** The request in the 1.9.0 brief read `ship=<cruise_line ship_name>`; it was built as two parameters.
-- **Island map data is thin.** OpenStreetMap has almost none of the 2025 and 2026 construction (the new pier, Great Tides Waterpark, Vibe Shore Club), so the basemap shows the older island. Only 7 of the 100 venues are placed (the builder export of 2026-09-28): the cruise pier, the tender landing, two tram stops, Jumbey Beach, Silver Cove and Silver Cove Pool. None were west of -77.9300, so none were rejected as CocoCay. Survey mode is how the rest gets placed.
+- **Island map data (1.10.1).** OpenStreetMap has almost none of the 2025 and 2026 construction (the new pier, Great Tides Waterpark, Vibe Shore Club), so the basemap shows the older island. The builder export of 2026-09-28 12:35 places 52 of 109 venues (0 approximate, 57 to do), most from the georeferenced official island map. None were west of -77.9300. Survey mode is how the rest gets placed.
+  - **Legend fields:** `places.json` and `survey-list.json` entries carry `official_area` and `official_number` (both, or neither) from `venues-to-place.json`. 44 of the 52 places have them. The app shows them as "On the island map sign: <area> <number>". The survey list also carries `not_on_official_map: true` (61 venues).
+  - **Tram stop names:** only `tram-stop-welcome-plaza` has `confirmed_by` exactly "official island map" (General 2, "Tram Stop & Restrooms"), so it is the only stop without "(name unconfirmed)". Great Life Lagoon and Silver Cove stops are "official island map (icon, not named)" and keep the suffix. The other three stops are not on the sign.
+  - **Gone from the map in 1.10.1:** Jumbey Beach, Silver Cove (the area label) and Silver Cove Pool. The builder deleted the first two in the place editor (`deleted_ids`) and set Silver Cove Pool back to to do; Silver Cove Gazebo & Pool (Silver Cove 10) sits at nearly the same spot. All three stay in the survey list, so survey entries for them still work.
+  - **Data quirks to fix in the builder:** three names carry the builder's marker suffix ("Beaches Bar (marker 3-b)", "Silver Cove Lagoon Villas (marker 8)", "Silver Cove Bar (marker 3-b)" and similar); the app copies names as they are. "Tram Stop: Great Life Lagoon" and "Tram Stop: Main Beach and Jumbey Beach Grill" have the identical position, and First Aid and Ocean Adventure Rentals are 0.5 m apart, so their labels overlap. The waterpark entrance is Waterpark 1, which the old sign calls Coming Soon.
+  - **Survey data on the phones is keyed by venue id,** never by name, so renamed venues keep their recorded positions, renames and doesn't-exist marks. No venue id was removed in 1.10.1 (all 100 old ids are among the 112). Never change a venue id in the builder without a migration.
 - **Island map features not yet tried on a real phone:** the compass arrow (iPhone motion permission, Android absolute orientation), the Screen Wake Lock, sharing the export file, and GPS accuracy under trees. The tests used headless Chrome with a simulated GPS and a simulated compass event.
 - **The island is saved for offline only when a trip has an island day** (port code `NPI`, or a port name containing "Great Stirrup"), or when someone taps Download for offline in the menu.
 - **All-aboard uses the phone's clock** and the itinerary's departure time, both assumed to be local time. Great Stirrup Cay and Miami share Eastern time, so this holds for the Bahamas sailings.
@@ -133,6 +139,7 @@ Fields have only been added, never renamed or reshaped.
 - **Simulating GPS:** an init script that defines `Navigator.prototype.geolocation` with a fake `watchPosition` (emitting every second, plus on demand) lets tests move the blue dot, set a poor accuracy, and deny permission. A compass reading can be simulated with `window.dispatchEvent(new DeviceOrientationEvent("deviceorientationabsolute", {alpha, absolute: true}))`.
 - **Page-wide CSS selectors catch new elements.** `.imap svg` (meant for the map) also caught the Take me back arrow and made it overlap the text. Scope such rules by id (`#isvg`).
 - **`grep -c $'\r'` in Git Bash is not a reliable line-ending check.** It reported CR on files that had none. Count `\r` bytes with Python instead.
+- **Playwright's persistent profile breaks Cache Storage here.** In `launch_persistent_context` with a profile folder in the scratchpad, every `cache.put` failed with "Entry already exists", even a fresh cache with a one-line Response. A normal `browser.new_context(service_workers="allow")` works, and localStorage survives reloads within it, which is enough to test an update from the old build to the new one on the same origin (serve a `git archive HEAD` copy first, then copy the new files over it and reload).
 - **Local preview:** a session needs its own `.claude/launch.json` running `python -m http.server <port> -d D:/AI-VAULT/projects/deck-finder`. The one from the 2026-09-23 session lived in a scratch folder.
 
 ## Parked work
