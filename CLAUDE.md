@@ -25,7 +25,7 @@ Deck Finder is an offline cruise ship deck map web app (PWA) hosted on GitHub Pa
 4. Push to main. Do NOT create or push git tags. The GitHub Action creates the tag and the Release page after the checks pass.
 5. Wait about 3 minutes, then confirm the Action passed and the live site's `version.json` shows the new version.
 
-Changes that only touch `CLAUDE.md` or `README.md` don't need a version bump. The Action ignores them.
+Changes that only touch `CLAUDE.md`, `README.md`, `NOTES.md`, the `worker` folder, or the `tools` folder don't need a version bump. The Action ignores them (see `paths-ignore` in `publish.yml`). A commit that also touches any app file still runs the Action and needs the full release steps.
 
 ## The GitHub Action is the final gate
 `.github/workflows/publish.yml` runs `.github/scripts/check_release.py` on every push to main. It publishes the site ONLY if:
@@ -54,7 +54,8 @@ Before pushing, run `python .github/scripts/check_release.py` locally (needs git
 - Its code lives in `worker/worker.js`. The `worker` folder is not published to the website, and Cloudflare does not deploy from this repo: after changing the file, David pastes it into the Cloudflare dashboard.
 - Routes: `/?path=` is the NCL proxy (only the allowed NCL paths). `/itinerary?ship=&line=&date=` asks CruiseFeed for sold-out and past sailings and needs the header `X-DeckFinder-Pass` to match the Worker secret `APP_PASS`.
 - The CruiseFeed key lives only in the Worker secret `CRUISEFEED_KEY` and in `D:\AI-VAULT\secrets\cruisefeed_key.txt`. Never print it, never copy that file, and never put the key in any file in this repo.
-- CruiseFeed's free allowance is 300 results for the life of the key and never resets. Every `/itinerary` lookup that reaches CruiseFeed spends one. Never run CruiseFeed queries without David's say-so, and always use `limit=1`.
+- The Worker keeps every itinerary it finds in the KV namespace bound as `ITINERARIES` (key `itin:<cruise line>:<ship>:<YYYY-MM-DD>`, no expiry), shared by every phone. It checks KV before CruiseFeed. KV holds only public sailing data, never anything from the request. `python tools/kv_put.py <file>` writes one itinerary there by hand (examples in `tools/itineraries/`).
+- CruiseFeed's free allowance is 300 results for the life of the key and never resets. Every `/itinerary` lookup that isn't in KV yet spends one. To check what is left for free, run a `/v1/cruises` query that matches nothing (for example a 1990 departure date) and read `x-results-remaining`; `/v1/stats` doesn't report it. Never run CruiseFeed queries without David's say-so, and always use `limit=1`.
 
 ## Warnings
 - Saved user data lives in the phone's localStorage under the keys `deckfinder` and `deckfinder-trips`. Never rename these keys or change their shape without a migration, and treat that as a MAJOR version.

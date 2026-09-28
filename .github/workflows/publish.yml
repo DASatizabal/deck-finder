@@ -9,6 +9,8 @@ on:
       - "CLAUDE.md"
       - "README.md"
       - "NOTES.md"
+      - "worker/**"
+      - "tools/**"
   workflow_dispatch:
 
 permissions:

@@ -1,0 +1,15 @@
+{
+  "cruise_line": "Norwegian Cruise Line",
+  "ship": "Norwegian Getaway",
+  "departure_date": "2026-10-02",
+  "return_date": "2026-10-05",
+  "nights": 3,
+  "title": "3-Day Bahamas Round-Trip Miami: Nassau & Great Stirrup Cay",
+  "source": "NCL website, captured 2026-09-23",
+  "stops": [
+    { "seq": 1, "day_number": 1, "date": "2026-10-02", "port": "Miami, Florida", "arrive": null, "depart": "16:00", "is_embark": true, "is_disembark": false, "is_sea_day": false, "overnight": false },
+    { "seq": 2, "day_number": 2, "date": "2026-10-03", "port": "Nassau, Bahamas", "arrive": "07:00", "depart": "17:00", "is_embark": false, "is_disembark": false, "is_sea_day": false, "overnight": false },
+    { "seq": 3, "day_number": 3, "date": "2026-10-04", "port": "Great Stirrup Cay, Bahamas", "arrive": "07:00", "depart": "17:00", "is_embark": false, "is_disembark": false, "is_sea_day": false, "overnight": false },
+    { "seq": 4, "day_number": 4, "date": "2026-10-05", "port": "Miami, Florida", "arrive": "07:00", "depart": null, "is_embark": false, "is_disembark": true, "is_sea_day": false, "overnight": false }
+  ]
+}

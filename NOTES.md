@@ -1,12 +1,12 @@
 # Deck Finder: handoff notes
 
-Read this with `CLAUDE.md` at the start of every session. CLAUDE.md holds the rules; this file holds the current state, known issues, lessons learned, and parked work. Last updated 2026-09-27 (version 1.9.0).
+Read this with `CLAUDE.md` at the start of every session. CLAUDE.md holds the rules; this file holds the current state, known issues, lessons learned, and parked work. Last updated 2026-09-27 (version 1.9.0, plus the Worker's shared KV cache).
 
 ## Current state
 
 - **Live version:** 1.9.0, at https://dasatizabal.github.io/deck-finder/ (check `version.json` there).
 - **Priority ship:** Norwegian Getaway, which the family sails first (Oct 2, 2026). Joy and Aqua trips follow later. Trip details and cabin numbers live only in the saved trips on the phones, not in this public repo.
-- **Worker status (2026-09-27):** the new `worker/worker.js` (with the `/itinerary` route) is committed but NOT yet pasted into the Cloudflare dashboard, and the `CRUISEFEED_KEY` and `APP_PASS` secrets are not yet added. Until David does that, the app's CruiseFeed step answers "the backup helper can't look up itineraries yet". The Getaway Oct 2 trip on the phones still needs its lookup re-run after that.
+- **Worker status (2026-09-27):** deployed at https://deck-finder.dasatizabal.workers.dev with the KV version of `worker/worker.js`, the secrets `CRUISEFEED_KEY` and `APP_PASS`, and the KV namespace `deck-finder-itineraries` bound as `ITINERARIES`. The Getaway Oct 2 sailing is seeded in KV with full times, and the live route returned it. The phones still need to re-run the Oct 2 lookup (Trip set up, Edit, Save and look up itinerary).
 - **Install status:** David was installing the app on his Android phone for the first time. The first attempt failed with "This app cannot be installed", which 1.6.1 fixed. A successful install on a real phone has not been confirmed yet.
 
 ### Repo layout
@@ -26,6 +26,7 @@ Inside `deck-finder`:
 - `ships/ncl/line.json`.
 - `ships/ncl/<ship>/`: `ship.json`, one `deck<N>.webp` per deck, and for Getaway only, `geometry.json`.
 - `worker/worker.js`: the Cloudflare Worker (backup helper). Not published; pasted into the Cloudflare dashboard by hand.
+- `tools/kv_put.py` and `tools/itineraries/`: write one itinerary into the Worker's KV namespace by hand.
 - `tools/`: `build_index.py`, `calibrate_decks.py`, and `split_images.py` (one-time, already used). Not published.
 - `.github/scripts/check_release.py`: the release gate.
 
@@ -79,7 +80,19 @@ Fields have only been added, never renamed or reshaped.
 - **The cruisedeckplans.com cabin list is partial.** It lists only cabins with photos, about a fifth of a deck. It confirms readings, but it can't prove a cabin is missing.
 - **`tools/calibrate_decks.py` needs Pillow and numpy,** which aren't installed by anything in this repo. The builder's `deck-vision\.venv` has both.
 - **CruiseFeed has no port times for the Getaway Oct 2 sailing.** The one probe (2026-09-27) confirmed the stops and dates (Miami Oct 2, Nassau Oct 3, Great Stirrup Cay Oct 4, Miami Oct 5, title "Bahamas: Great Stirrup Cay & Nassau") but every `arrive` and `depart` was null. The app shows "Some times aren't listed" and the family adds times with Edit itinerary. The expected times (Miami sails 4:00 PM, Nassau and Great Stirrup Cay 7:00 AM to 5:00 PM, Miami arrives 7:00 AM) come from David, not from CruiseFeed.
-- **CruiseFeed allowance:** the free tier is 300 results for the life of the key (not 1,000), and never resets. 298 left after this session: 1 for the probe, 1 for the local Worker test. The Worker caches found itineraries for 30 days with Cloudflare's Cache API, but that cache may do nothing on a `workers.dev` address, so do not count on it. The app saves the itinerary in the trip, so a trip only asks once unless someone taps Look up the itinerary again.
+- **CruiseFeed allowance:** the free tier is 300 results for the life of the key (not 1,000), and never resets. 298 left on 2026-09-27: 1 for the probe, 1 for the local Worker test. To check it for free, run a `/v1/cruises` query that matches nothing (for example `ship_name=Norwegian Getaway`, `departure_from` and `departure_to` both `1990-01-01`, `limit=1`) and read `x-results-remaining` or the `allowance` object; a zero-row query costs nothing (confirmed: `used` stayed at 2). `/v1/stats` doesn't report the allowance, and `/v1/account` needs a dashboard login, not the API key.
+- **KV holds the shared itinerary cache.** The Worker's `/itinerary` route checks the KV namespace `deck-finder-itineraries` (bound as `ITINERARIES`) before CruiseFeed, so each sailing costs at most one CruiseFeed result, shared by every phone.
+  - Key: `itin:<cruise line>:<ship>:<YYYY-MM-DD>`, built from the request's `line`, `ship` and `date` exactly as sent. The app sends the `line.json` and `ship.json` names, for example `itin:Norwegian Cruise Line:Norwegian Getaway:2026-10-02`.
+  - Value: public sailing data only, as JSON: `cruise_line`, `ship`, `departure_date`, `return_date`, `nights`, `title`, `source` (a label such as `CruiseFeed` or `NCL website, captured 2026-09-23`), `saved_at` (YYYY-MM-DD), and `stops` (each with `seq`, `day_number`, `date`, `port`, `arrive`, `depart` as `HH:MM` local time or null, `is_embark`, `is_disembark`, `is_sea_day`, `overnight`). Nothing from the request is ever stored. No expiry.
+  - On a miss the Worker calls CruiseFeed and saves the cleaned result. Without the `ITINERARIES` binding the route answers `not_configured` and spends nothing.
+  - The app (unchanged) labels any itinerary from this route "Found through CruiseFeed", even the seeded NCL one. Showing the Worker's `source` label instead would need an app release.
+- **Seeding an itinerary with `tools/kv_put.py`.** Write a JSON file in the value format above into `tools/itineraries/` (copy `ncl-getaway-2026-10-02.json`), then:
+  1. `python tools/kv_put.py tools/itineraries/<file>.json --dry-run` checks the file and shows the key. It contacts nothing.
+  2. `python tools/kv_put.py tools/itineraries/<file>.json` writes it (replacing any entry for that sailing), sets `saved_at` to today, and reads it back.
+  3. `python tools/kv_put.py <file> --delete` removes that sailing's entry.
+
+  It reads `D:\AI-VAULT\secrets\cloudflare_kv_token.txt` (an API token with only Account, Workers KV Storage, Edit) and `D:\AI-VAULT\secrets\cloudflare_account_id.txt`, and never prints them. It refuses fields outside the value format.
+- **Testing the live Worker for free:** seed a dummy entry for a 1990 date with `kv_put.py`, call `/itinerary` for that date with the passphrase (from `D:\AI-VAULT\secrets\deckfinder_app_pass.txt`), and expect the dummy back. If an old Worker were deployed, it would ask CruiseFeed for 1990, get zero rows, and still spend nothing. Delete the dummy afterwards with `--delete`.
 - **CruiseFeed facts:** send `Authorization: Bearer <key>`. Exact names are cruise line `Norwegian Cruise Line` and ships `Norwegian Getaway`, `Norwegian Joy`, `Norwegian Aqua`; the app sends each ship's `ship.json` name and its `line.json` name. `include_past` is ignored when a departure date filter is set, so the exact-date query finds past sailings anyway. `/v1/stats`, `/v1/ship-names` and `/v1/cruise-lines` cost nothing. `/v1/cruises` answers carry `x-results-remaining`.
 - **The NCL search API works directly from the browser** (it failed through Cloudflare because NCL blocks data center addresses). In the 1.9.0 tests, both NCL steps succeeded directly from Chrome, and the Worker's NCL proxy was not needed.
 - **The Worker's `/itinerary` route asks for `ship`, `date` and an optional `line`.** The request in the 1.9.0 brief read `ship=<cruise_line ship_name>`; it was built as two parameters.
@@ -102,13 +115,20 @@ Fields have only been added, never renamed or reshaped.
 - **`.gitattributes` forces LF line endings.** Without it, Windows checkouts change the bytes of JSON files, and the ship hashes in `ships/index.json` stop matching in the GitHub Action.
 - **Floating buttons with negative margins stack on top of each other.** The plan's buttons now sit in one `.maptools` row.
 - **An app manifest does nothing unless `index.html` links it.** Check `<link rel="manifest">` if installing ever breaks again.
-- **Test the Worker locally with a Node harness, never against the real CruiseFeed more than once.** The 1.9.0 session ran `worker/worker.js` under Node 22 (plain `import` of the file works, `caches` is absent so caching is skipped) on port 8787, with the key read from the secrets file into memory and a guard that blocked every CruiseFeed call after the first. It also fed a saved CruiseFeed reply through the Worker with `fetch` mocked, which tests the whole conversion for free.
+- **Test the Worker locally with a Node harness, never against the real CruiseFeed more than once.** The 1.9.0 session ran `worker/worker.js` under Node 22 (plain `import` of the file works; pass a fake `ITINERARIES` object with `get(key, "json")` and `put(key, value)` methods) on port 8787, with the key read from the secrets file into memory and a guard that blocked every CruiseFeed call after the first. It also fed a saved CruiseFeed reply through the Worker with `fetch` mocked, which tests the whole conversion for free.
 - **Python's `Path.write_text` writes CRLF on Windows.** It turned `index.html` into CRLF line endings. Use `write_bytes` or `open(f, "w", newline="\n")`.
 - **Headless Chrome through Playwright works for app tests** (`python -m playwright`, `channel="chrome"`, `service_workers="block"`), and avoids picking between the two Chrome browsers connected to the Claude in Chrome extension. Seed trips by setting the page's `data` and calling `save()`, because the app overwrites localStorage written from outside. The day editor must be reached with its sheet open.
 - **Check what is listening on a port before stopping it.** The 1.9.0 session stopped a `pythonw` process on port 8000 that it had not started, probably an older local preview server.
 - **Local preview:** a session needs its own `.claude/launch.json` running `python -m http.server <port> -d D:/AI-VAULT/projects/deck-finder`. The one from the 2026-09-23 session lived in a scratch folder.
 
 ## Parked work
+
+- **Weekly NCL archive job on the AI PC (idea, not built).** NCL drops a sailing from its website once it stops selling it, and CruiseFeed has no port times for at least some of those (Getaway Oct 2). A scheduled job on the AI PC could, once a week:
+  1. For Norwegian Getaway, Joy and Aqua, run the same NCL lookup the app does (the search API by month, then each `/cruises/<code>` page) for the coming months.
+  2. Turn each sailing into the KV value format above, with `source` set to "NCL website, captured <date>".
+  3. Write each sailing that isn't in KV yet with the `kv_put.py` logic, so its times survive after NCL delists it.
+
+  Open questions: how many months ahead, how to stay polite to ncl.com (wait between requests, like the builder's scraper), and whether it should also replace an entry that came from CruiseFeed without times.
 
 - **Great Stirrup Cay island map.** A plan exists, but it is not in either repo or in `C:\DeckPlans`, and it wasn't made in the session that wrote these notes. It is probably in a Claude chat. It is waiting on two decisions from David:
   - how new venues on the island should be placed on the map,

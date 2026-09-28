@@ -9,6 +9,9 @@
 // It needs two Worker secrets (Settings, Variables and Secrets):
 //   CRUISEFEED_KEY  the CruiseFeed API key. Never put it in this file or anywhere in the repo.
 //   APP_PASS        the family passphrase the app sends.
+// and one KV namespace binding (Bindings), shared by every phone:
+//   ITINERARIES     saved itineraries, key "itin:<cruise line>:<ship>:<YYYY-MM-DD>", no expiry.
+//                   tools/kv_put.py writes to it too (for example an itinerary captured from NCL).
 // This folder is not published to the website. Paste this file into the Cloudflare dashboard.
 
 const ALLOWED = [
@@ -46,9 +49,10 @@ export default {
 
 // ---------- /itinerary: CruiseFeed lookup for sold-out and past sailings ----------
 // Each CruiseFeed lookup spends one result from a small allowance that never resets, so:
-// the passphrase is checked first, the query always asks for exactly one sailing, and a
-// found itinerary is kept in Cloudflare's cache for 30 days (where the cache is available).
-const CACHE_DAYS = 30;
+// the passphrase is checked first, the ITINERARIES KV namespace is checked next, and only a
+// sailing that isn't saved there yet costs one CruiseFeed result (asking for exactly one sailing).
+// The found itinerary is saved to KV with no expiry, so every phone shares it from then on.
+// KV holds only public sailing data, never anything from the request (passphrase, IP, phone).
 
 function reply(obj, status, cors) {
   const headers = new Headers(cors);
@@ -88,12 +92,13 @@ async function itinerary(request, url, env, ctx, cors) {
     return reply({ code: "bad_request", error: "Send ship (the ship name), date (YYYY-MM-DD), and optionally line (the cruise line)." }, 400, cors);
   }
 
-  const cache = typeof caches !== "undefined" ? caches.default : null;
-  const cacheKey = new Request("https://deckfinder-itinerary.cache/?" + new URLSearchParams({ line: line.toLowerCase(), ship: ship.toLowerCase(), date }));
-  if (cache) {
-    const hit = await cache.match(cacheKey);
-    if (hit) return reply(await hit.json(), 200, cors);
+  if (!env.ITINERARIES) {
+    return reply({ code: "not_configured", error: "The helper needs its ITINERARIES KV binding." }, 500, cors);
   }
+  const key = "itin:" + line + ":" + ship + ":" + date;
+  let saved = null;
+  try { saved = await env.ITINERARIES.get(key, "json"); } catch (e) { saved = null; } // unreadable entry: look it up again
+  if (saved && Array.isArray(saved.stops)) return reply(saved, 200, cors);
 
   const q = new URLSearchParams({
     ship_name: ship,
@@ -128,14 +133,16 @@ async function itinerary(request, url, env, ctx, cors) {
   const c = body.items[0];
   if (!c) return reply({ code: "not_found", error: "CruiseFeed has no sailing for that ship on that date." }, 404, cors);
 
-  // Only the ship, dates, title and stops go back to the app: never the key or account details.
+  // Only public sailing data is saved and sent back: never the key, account details, or the request.
   const out = {
-    ship: c.ship_name || ship,
     cruise_line: c.cruise_line || line || null,
-    title: c.title || null,
+    ship: c.ship_name || ship,
     departure_date: c.departure_date || date,
     return_date: c.return_date || null,
     nights: c.nights ?? null,
+    title: c.title || null,
+    source: "CruiseFeed",
+    saved_at: new Date().toISOString().slice(0, 10),
     stops: (Array.isArray(c.itinerary) ? c.itinerary : []).map(s => ({
       seq: s.seq ?? null,
       day_number: s.day_number ?? null,
@@ -149,10 +156,8 @@ async function itinerary(request, url, env, ctx, cors) {
       overnight: !!s.overnight
     }))
   };
-  if (cache && ctx && ctx.waitUntil) {
-    ctx.waitUntil(cache.put(cacheKey, new Response(JSON.stringify(out), {
-      headers: { "Content-Type": "application/json", "Cache-Control": "max-age=" + CACHE_DAYS * 86400 }
-    })));
-  }
+  // No expiry: past sailings don't change. If saving fails, the phone still gets its itinerary.
+  try { await env.ITINERARIES.put(key, JSON.stringify(out)); }
+  catch (e) { console.log("Could not save to KV:", e.message); }
   return reply(out, 200, cors);
 }
