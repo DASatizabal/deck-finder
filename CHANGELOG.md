@@ -1,5 +1,14 @@
 # Changelog
 
+## [1.11.1] - 2026-09-28
+### Added
+- Great Stirrup Cay neighborhoods in the same colors as the island signs, with area buttons and a 'You're in' line.
+- Add from a link, for family invites and shared trips on iPhone.
+### Fixed
+- Cleaner place names, and places that sit next to each other can each be tapped.
+### Removed
+- Items that weren't real places (Jumbey Beach and Silver Cove) and a duplicate pool.
+
 ## [1.11.0] - 2026-09-28
 ### Added
 - A welcome screen when the app has no trips yet, with Set up a trip and Browse ships.

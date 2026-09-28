@@ -311,6 +311,32 @@ button:focus-visible,input:focus-visible,[tabindex]:focus-visible{outline:3px so
 details.adv{margin-top:20px;border-top:1px solid var(--line);padding-top:6px}
 details.adv summary{cursor:pointer;font-size:15px;font-weight:600;padding:10px 4px;color:var(--muted)}
 .linkbox{width:100%;font:inherit;font-size:13px;padding:10px;border-radius:10px;border:1px solid var(--line);background:var(--bg);color:var(--ink);margin-top:8px}
+/* 1.11.1: island areas (the five areas on NCL's island sign), fanned markers, Add from a link */
+.a-fill{fill-opacity:.15;stroke-opacity:.45;stroke-width:1.5;vector-effect:non-scaling-stroke}
+.a-fill.on{fill-opacity:.22;stroke-opacity:.7}
+.a-fill.dim{fill-opacity:.04;stroke-opacity:.12}
+.alabel{position:absolute;left:0;top:0;padding:0;margin:0;z-index:0;border:0;background:none}
+.alabel span{display:block;transform:translate(-50%,-50%);font-size:var(--afs,18px);font-weight:800;letter-spacing:.08em;text-transform:uppercase;white-space:nowrap;color:var(--ac);opacity:.55;text-shadow:0 0 3px rgba(255,255,255,.95),0 0 9px rgba(255,255,255,.8)}
+.alabel.dim span{opacity:.15}
+.imap.nolabels .alabel{display:none}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]) .alabel span{color:color-mix(in srgb,var(--ac) 55%,#fff);text-shadow:0 0 4px rgba(0,0,0,.85)}}
+:root[data-theme="dark"] .alabel span{color:color-mix(in srgb,var(--ac) 55%,#fff);text-shadow:0 0 4px rgba(0,0,0,.85)}
+.mk.inarea{box-shadow:0 0 0 1.5px #fff,0 0 0 4.5px var(--ac),0 1px 5px rgba(0,0,0,.35)}
+.svmk.inarea{box-shadow:0 0 0 2px var(--ac),0 1px 3px rgba(0,0,0,.4)}
+.mk.dim,.svmk.dim{opacity:.28}
+.mk.fan-r span{top:50%;left:100%;transform:translateY(-50%);margin:0 0 0 5px}
+.mk.fan-l span{top:50%;left:auto;right:100%;transform:translateY(-50%);margin:0 5px 0 0}
+.arow{display:flex;gap:6px;overflow-x:auto;scrollbar-width:none;padding:1px}
+.arow::-webkit-scrollbar{display:none}
+.abtn{flex:none;padding:7px 11px;border-radius:999px;background:var(--surface);color:var(--ink);border:2px solid var(--ac);font-weight:700;font-size:13px;box-shadow:0 1px 4px rgba(0,0,0,.25);display:flex;align-items:center;gap:6px}
+.abtn i{width:10px;height:10px;border-radius:50%;background:var(--ac);flex:none}
+.abtn.on{background:var(--ac);color:#fff}
+.abtn.on i{background:#fff}
+.inarea-line{align-self:flex-start;display:flex;align-items:center;gap:8px;background:var(--surface);color:var(--ink);border-radius:999px;padding:6px 12px;font-size:14px;box-shadow:0 1px 6px rgba(0,0,0,.25)}
+.inarea-line[hidden]{display:none}
+.adot{display:inline-block;width:12px;height:12px;border-radius:50%;background:var(--ac);flex:none;vertical-align:0}
+.sectionlabel .adot{margin-right:6px}
+textarea.search{resize:vertical;min-height:84px}
 @media (prefers-reduced-motion: reduce){*{transition:none!important}.hl{animation:none}}
 </style>
 </head>
@@ -363,9 +389,9 @@ details.adv summary{cursor:pointer;font-size:15px;font-weight:600;padding:10px 4
   </div>
   <div class="aboard" id="iAboard" hidden></div>
   <div class="imap" id="imap">
-    <svg id="isvg" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><g id="igeo"></g><g id="iover"></g></svg>
+    <svg id="isvg" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><g id="igeo"></g><g id="iarea"></g><g id="iover"></g></svg>
     <div class="imarks" id="imarks"></div>
-    <div class="itopstack"><div class="ibanner" id="iBanner" hidden></div><div class="recbar" id="iRec" hidden></div></div>
+    <div class="itopstack"><div class="arow" id="iAreas"></div><div class="inarea-line" id="iInArea" hidden></div><div class="ibanner" id="iBanner" hidden></div><div class="recbar" id="iRec" hidden></div></div>
     <div class="itools">
       <button class="zoom" id="iZoomIn" aria-label="Zoom in">+</button>
       <button class="zoom" id="iZoomOut" aria-label="Zoom out">−</button>
@@ -389,12 +415,13 @@ details.adv summary{cursor:pointer;font-size:15px;font-weight:600;padding:10px 4
   <p class="lead">Deck plans, your cabin, your itinerary and island maps, all working with no internet at sea.</p>
   <button class="big" id="wTrip">Set up a trip</button>
   <button class="big ghost" id="wBrowse">Browse ships</button>
-  <p class="small">Got an invite link from family? Just tap it.</p>
+  <button class="big ghost" id="wLink">Add from a link</button>
+  <p class="small">Got an invite link from family? Just tap it. On an iPhone, copy it and tap Add from a link.</p>
 </div>
 <div class="toast" id="toast" hidden role="status"></div>
 
 <script>
-const APP_VERSION = "1.11.0";
+const APP_VERSION = "1.11.1";
 const APP_DATE = "2026-09-28";
 
 // ---------- ships: loaded at runtime from ships/index.json and each ship's ship.json ----------
@@ -1091,6 +1118,7 @@ function renderMenu(){
     <button class="menuopt" id="mReady">Ready for sea</button>
     <button class="menuopt" id="mPins" ${activeTrip() ? "" : "disabled"}>My pins</button>
     ${data.passphrase ? `<button class="menuopt" id="mInvite">Invite family</button><div class="status" id="mInviteMsg"></div>` : ""}
+    <button class="menuopt" id="mLink">Add from a link</button>
     <button class="menuopt" id="mNews">What's new</button>
     <div class="sectionlabel">Deck plan layout</div>
     <button class="layoutopt ${isWide() ? "cur" : ""}" data-layout="wide"><span>Wide plan<small>The plan fills the screen. "On this deck" opens from a button.</small></span></button>
@@ -1106,6 +1134,7 @@ function renderMenu(){
   $("mItin").onclick = openItinerary;
   $("mPins").onclick = openPinList;
   $("mReady").onclick = () => openReady();
+  $("mLink").onclick = openAddLink;
   if ($("mInvite")) $("mInvite").onclick = () => shareOrCopy("Deck Finder family invite",
     "Tap this link to connect Deck Finder to our family's itinerary lookups.", inviteLink(), "mInviteMsg");
   $("menuBody").querySelectorAll("[data-layout]").forEach(b => b.onclick = () => setLayout(b.dataset.layout));
@@ -1654,8 +1683,13 @@ function ensurePlace(id){
   const get = f => fetch(e.path + f).then(r => { if (!r.ok) throw new Error(f + " answered " + r.status); return r.json(); });
   placeLoads[id] = (async () => {
     const info = await get("place.json");
-    const [base, pl, sv] = await Promise.all([get(info.basemap), get(info.places), get(info.survey_list)]);
-    return (PLACE_DATA[id] = { info, base, places: pl.places || [], survey: sv.venues || [], categories: sv.categories || [] });
+    const [base, pl, sv, ar] = await Promise.all([get(info.basemap), get(info.places), get(info.survey_list),
+      info.areas ? get(info.areas).catch(() => null) : null]);
+    // Since 1.11.1 the files carry display_name (the name without builder notes); the app shows it as name.
+    const named = list => (list || []).map(x => Object.assign({}, x, { name: x.display_name || x.name || x.id }));
+    return (PLACE_DATA[id] = { info, base, places: named(pl.places), survey: named(sv.venues), categories: sv.categories || [],
+      areas: (ar && Array.isArray(ar.areas) ? ar.areas : []).filter(a => a && a.id && Array.isArray(a.outline) && a.outline.length >= 3),
+      merged: sv.merged || {}, removed: sv.removed || [] });
   })().finally(() => { delete placeLoads[id]; });
   return placeLoads[id];
 }
@@ -1678,7 +1712,7 @@ async function savePlace(id){
     const get = async f => { const r = await fetch(e.path + f + bust, { cache: "no-store" }); if (!r.ok) throw new Error(f + " answered " + r.status); return r; };
     const infoRes = await get("place.json");
     const info = await infoRes.clone().json();
-    const files = await Promise.all([...new Set([info.basemap, info.places, info.survey_list])].map(async f => [f, await get(f)]));
+    const files = await Promise.all([...new Set([info.basemap, info.places, info.survey_list, info.areas].filter(Boolean))].map(async f => [f, await get(f)]));
     await caches.delete(placeCacheName(id));
     const c = await caches.open(placeCacheName(id));
     await c.put(absUrl(e.path + "place.json"), infoRes);
@@ -1902,6 +1936,11 @@ function islSetup(d){
     if (g.type === "LineString") return `<path class="${k === "pier" ? "g-pierl" : cls[k]}" d="${ptsD(g.coordinates)}"/>`;
     return "";
   }).join("");
+  // The areas on the island sign: a soft tint of each sign color, under the places.
+  d.areas.forEach(a => { if (!a.label) a.label = areaLabelPoint(a.outline); });
+  $("iarea").innerHTML = d.areas.map(a => `<path class="a-fill" data-area="${esc(a.id)}" fill="${esc(a.color)}" stroke="${esc(a.color)}" d="${ptsD(a.outline.map(c => [c[1], c[0]])) + "Z"}"/>`).join("");
+  adoptMerged(isl.id, d);
+  renderAreaRow();
   const at = d.base.attribution || "© OpenStreetMap contributors";
   $("iAttr").innerHTML = `<a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">${esc(at)}</a>`;
   $("iMsg").hidden = true;
@@ -1938,12 +1977,49 @@ function zoomAt(f, px, py){
 function applyView(){
   if (!isl || !isl.d) return;
   const m = `matrix(${isl.s} 0 0 ${isl.s} ${isl.tx} ${isl.ty})`;
-  $("igeo").setAttribute("transform", m); $("iover").setAttribute("transform", m);
+  $("igeo").setAttribute("transform", m); $("iarea").setAttribute("transform", m); $("iover").setAttribute("transform", m);
   $("imap").classList.toggle("labels", isl.s >= LABEL_S);
-  $("imarks").querySelectorAll("[data-lat]").forEach(el => {
-    const [x, y] = toScreen(+el.dataset.lat, +el.dataset.lon);
-    el.style.transform = `translate(${x.toFixed(1)}px,${y.toFixed(1)}px)`;
+  // Area names grow with the zoom, from small on the whole island to large, and hide when tiny.
+  $("imarks").style.setProperty("--afs", Math.min(22, Math.max(10, isl.s * 45)).toFixed(1) + "px");
+  $("imap").classList.toggle("nolabels", isl.s < 0.06);
+  const els = [...$("imarks").querySelectorAll("[data-lat]")];
+  const pos = els.map(el => toScreen(+el.dataset.lat, +el.dataset.lon));
+  const off = fanOut(els, pos);
+  els.forEach((el, i) => {
+    const o = off[i];
+    el.style.transform = `translate(${(pos[i][0] + (o ? o.dx : 0)).toFixed(1)}px,${(pos[i][1] + (o ? o.dy : 0)).toFixed(1)}px)`;
+    el.classList.toggle("fan-r", !!o && o.dx >= -0.5);
+    el.classList.toggle("fan-l", !!o && o.dx < -0.5);
   });
+}
+// Markers within a few meters of each other that overlap on screen fan out around their shared spot,
+// so each one can be tapped. Their labels go to the outer side so they don't overlap either.
+const FAN_M = 6, FAN_PX = 30;
+function fanOut(els, pos){
+  const idx = els.map((el, i) => el.classList.contains("mk") ? i : -1).filter(i => i >= 0);
+  const parent = new Map(idx.map(i => [i, i]));
+  const root = i => { while (parent.get(i) !== i) i = parent.get(i); return i; };
+  for (let a = 0; a < idx.length; a++) for (let b = a + 1; b < idx.length; b++){
+    const i = idx[a], j = idx[b];
+    if (Math.hypot(pos[i][0] - pos[j][0], pos[i][1] - pos[j][1]) >= FAN_PX) continue;
+    const ei = els[i].dataset, ej = els[j].dataset;
+    if (distM({ lat: +ei.lat, lon: +ei.lon }, { lat: +ej.lat, lon: +ej.lon }) > FAN_M) continue;
+    parent.set(root(i), root(j));
+  }
+  const groups = new Map();
+  idx.forEach(i => { const r = root(i); (groups.get(r) || groups.set(r, []).get(r)).push(i); });
+  const off = {};
+  groups.forEach(g => {
+    if (g.length < 2) return;
+    g.sort((a, b) => (els[a].dataset.k || "").localeCompare(els[b].dataset.k || ""));   // steady order
+    const n = g.length, cx = g.reduce((t, i) => t + pos[i][0], 0) / n, cy = g.reduce((t, i) => t + pos[i][1], 0) / n;
+    const r = n === 2 ? 17 : 22 + (n - 3) * 4, start = n === 2 ? Math.PI : -Math.PI / 2;
+    g.forEach((i, k) => {
+      const t = start + 2 * Math.PI * k / n;
+      off[i] = { dx: cx - pos[i][0] + r * Math.cos(t), dy: cy - pos[i][1] + r * Math.sin(t) };
+    });
+  });
+  return off;
 }
 window.addEventListener("resize", () => {
   if (!isl || !isl.d || !isl.lastSize) return;
@@ -1954,22 +2030,29 @@ function islSpots(){ const t = activeTrip(); return t && isl ? (t.spots || []).f
 function renderIslMarks(){
   if (!isl || !isl.d) return;
   isl.lastSize = mapSize();
-  const d = isl.d, S = sv(isl.id), sel = isl.sel, hot = isl.hot;
+  const d = isl.d, S = sv(isl.id), sel = isl.sel, hot = isl.hot, af = isl.areaFilter;
   const cls = k => (sel === k ? " sel" : "") + (hot === k ? " hot" : "");
-  let h = d.places.map(p => `<button class="mk${p.approximate ? " approx" : ""}${cls("place:" + p.id)}" data-k="place:${esc(p.id)}" data-lat="${p.lat}" data-lon="${p.lon}" style="--c:${cat(p.category).color}" aria-label="${esc(placeLabel(p))}"><i>${cat(p.category).icon}</i><span>${esc(placeLabel(p))}</span></button>`).join("");
+  // Each marker keeps its category color and icon, with an outline in its area's color (1.11.1).
+  const ac = v => { const a = areaOf(v.area_id); return a ? `;--ac:${esc(a.color)}` : ""; };
+  const ain = (v, k) => (areaOf(v.area_id) ? " inarea" : "") + (af && v.area_id !== af && sel !== k ? " dim" : "");
+  let h = d.areas.map(a => `<button class="alabel${af && af !== a.id ? " dim" : ""}" data-area="${esc(a.id)}" data-lat="${a.label.lat}" data-lon="${a.label.lon}" style="--ac:${esc(a.color)}" aria-label="Area: ${esc(a.name)}"><span>${esc(a.name)}</span></button>`).join("");
+  h += d.places.map(p => `<button class="mk${p.approximate ? " approx" : ""}${ain(p, "place:" + p.id)}${cls("place:" + p.id)}" data-k="place:${esc(p.id)}" data-lat="${p.lat}" data-lon="${p.lon}" style="--c:${cat(p.category).color}${ac(p)}" aria-label="${esc(placeLabel(p))}"><i>${cat(p.category).icon}</i><span>${esc(placeLabel(p))}</span></button>`).join("");
   d.survey.forEach(v => { const r = S.venues[v.id]; if (r && typeof r.lat === "number")
-    h += `<button class="svmk${cls("tag:" + v.id)}" data-k="tag:${esc(v.id)}" data-lat="${r.lat}" data-lon="${r.lon}" style="--c:${cat(v.category).color}" aria-label="Survey: ${esc(r.rename || v.name)}"><span>${esc(r.rename || v.name)}</span></button>`; });
+    h += `<button class="svmk${ain(v, "tag:" + v.id)}${cls("tag:" + v.id)}" data-k="tag:${esc(v.id)}" data-lat="${r.lat}" data-lon="${r.lon}" style="--c:${cat(v.category).color}${ac(v)}" aria-label="Survey: ${esc(r.rename || v.name)}"><span>${esc(r.rename || v.name)}</span></button>`; });
   S.added.forEach(a => { h += `<button class="svmk new${cls("new:" + a.id)}" data-k="new:${esc(a.id)}" data-lat="${a.lat}" data-lon="${a.lon}" aria-label="New place: ${esc(a.name)}"><span>${esc(a.name)}</span></button>`; });
   islSpots().forEach(s => { h += `<button class="mk spotmk${cls("spot:" + s.id)}" data-k="spot:${esc(s.id)}" data-lat="${s.lat}" data-lon="${s.lon}" aria-label="Saved spot: ${esc(s.name)}"><i>⭐</i><span>${esc(s.name)}</span></button>`; });
   h += `<div class="me" id="iMe" hidden></div>`;
   $("imarks").innerHTML = h;
   $("imarks").querySelectorAll("[data-k]").forEach(b => b.onclick = e => { e.stopPropagation(); selectMark(b.dataset.k); });
-  updateMe(); applyView(); drawOverlay(); renderCard();
+  $("imarks").querySelectorAll(".alabel").forEach(b => b.onclick = e => { e.stopPropagation(); openAreaCard(b.dataset.area); });
+  $("iarea").querySelectorAll("[data-area]").forEach(el => el.classList.toggle("dim", !!af && el.dataset.area !== af));
+  $("iarea").querySelectorAll("[data-area]").forEach(el => el.classList.toggle("on", el.dataset.area === af));
+  updateMe(); applyView(); drawOverlay(); renderCard(); renderInArea();
 }
 function markInfo(k){
   if (!isl?.d || !k) return null;
   const i = k.indexOf(":"), kind = k.slice(0, i), id = k.slice(i + 1), S = sv(isl.id);
-  if (kind === "place"){ const p = isl.d.places.find(x => x.id === id); return p && { kind, id, lat: p.lat, lon: p.lon, name: placeLabel(p), sub: cat(p.category).label, leg: legend(p), p }; }
+  if (kind === "place"){ const p = isl.d.places.find(x => x.id === id); return p && { kind, id, lat: p.lat, lon: p.lon, name: placeLabel(p), sub: cat(p.category).label + (areaOf(p.area_id) ? ", " + areaOf(p.area_id).name : ""), leg: legend(p), p }; }
   if (kind === "spot"){ const s = islSpots().find(x => x.id === id); return s && { kind, id, lat: s.lat, lon: s.lon, name: s.name, sub: "Your saved spot", s }; }
   if (kind === "tag"){ const v = isl.d.survey.find(x => x.id === id), r = S.venues[id]; return v && r && typeof r.lat === "number" && { kind, id, lat: r.lat, lon: r.lon, name: r.rename || v.name, sub: "Survey: recorded within " + r.acc + " m", leg: legend(v) }; }
   if (kind === "new"){ const a = S.added.find(x => x.id === id); return a && { kind, id, lat: a.lat, lon: a.lon, name: a.name, sub: "Survey: new place, within " + a.acc + " m" }; }
@@ -1992,6 +2075,7 @@ function renderCard(){
   c.innerHTML = `<div class="row"><div class="grow"><b>${esc(m.name)}</b><small>${esc(m.sub)}</small>
       ${m.leg ? `<small>On the island map sign: ${esc(m.leg)}</small>` : ""}
       ${m.p && m.p.approximate ? `<small>Approximate location. The real spot may be a short walk away.</small>` : ""}
+      ${m.p && m.p.status === "surveyed" ? `<small>Measured on the island${typeof m.p.accuracy_m === "number" ? ", within " + esc(distText(m.p.accuracy_m)) : ""}${/^\d{4}-\d{2}-\d{2}$/.test(m.p.survey_date || "") ? ", on " + esc(niceDate(m.p.survey_date)) : ""}.</small>` : ""}
       ${far ? `<small>${esc(far)}</small>` : ""}</div><button class="x" id="cClose" aria-label="Close">✕</button></div>
     ${m.kind === "spot" ? `<div class="acts"><button id="cBack">Take me back</button><button id="cRename">Rename</button><button id="cDel">Delete</button></div>` : ""}
     ${m.kind === "tag" || m.kind === "new" ? `<div class="acts"><button id="cSurvey">Open in Survey</button></div>` : ""}`;
@@ -2030,7 +2114,7 @@ function islGpsChanged(){
   b.hidden = !html; b.innerHTML = html;
   if ($("bHelp")) $("bHelp").onclick = openLocationHelp;
   if (!isl.d) return;
-  updateMe();
+  updateMe(); renderInArea();
   if (gps.fix && onIsland() && !isl.moved && !isl.centered){ isl.centered = true; centerOn(gps.fix.lat, gps.fix.lon, Math.max(isl.s, 1.2)); }
   applyView(); drawOverlay();
   if (isl.back) renderBack();
@@ -2110,6 +2194,130 @@ function drawOverlay(){
   };
 })();
 
+// ---------- areas: the five areas on NCL's island sign (areas.json, since 1.11.1) ----------
+const areaOf = id => (isl?.d?.areas || []).find(a => a.id === id) || null;
+// A section heading for an area (with its color), or for the other groups in lists.
+function groupHead(g){
+  const a = areaOf(g);
+  if (a) return `<div class="sectionlabel" style="--ac:${esc(a.color)}"><span class="adot"></span>${esc(a.name)}</div>`;
+  return `<div class="sectionlabel">${g === "spots" ? "Your saved spots" : g === "added" ? "New places from Survey" : "Other places"}</div>`;
+}
+// Is [lat, lon] inside an outline of [lat, lon] corners? (ray casting; fine at this size)
+function inOutline(lat, lon, o){
+  let inside = false;
+  for (let i = 0, j = o.length - 1; i < o.length; j = i++){
+    const [yi, xi] = o[i], [yj, xj] = o[j];
+    if ((yi > lat) !== (yj > lat) && lon < (xj - xi) * (lat - yi) / (yj - yi) + xi) inside = !inside;
+  }
+  return inside;
+}
+// Meters from a point to an outline's edge.
+function metersToOutline(lat, lon, o){
+  const kx = 111320 * Math.cos(rad(lat)), ky = 110574;
+  let best = Infinity;
+  for (let i = 0, j = o.length - 1; i < o.length; j = i++){
+    const ax = (o[j][1] - lon) * kx, ay = (o[j][0] - lat) * ky, bx = (o[i][1] - lon) * kx, by = (o[i][0] - lat) * ky;
+    const dx = bx - ax, dy = by - ay, L = dx * dx + dy * dy;
+    const t = L ? Math.max(0, Math.min(1, -(ax * dx + ay * dy) / L)) : 0;
+    best = Math.min(best, Math.hypot(ax + t * dx, ay + t * dy));
+  }
+  return best;
+}
+// Where an area's name goes: the point inside it farthest from its edges (tried on a grid).
+function areaLabelPoint(o){
+  const lats = o.map(c => c[0]), lons = o.map(c => c[1]);
+  const [a, b, c, d] = [Math.min(...lats), Math.max(...lats), Math.min(...lons), Math.max(...lons)];
+  let best = { lat: (a + b) / 2, lon: (c + d) / 2 }, bestD = -1;
+  for (let i = 1; i < 24; i++) for (let j = 1; j < 24; j++){
+    const lat = a + (b - a) * i / 24, lon = c + (d - c) * j / 24;
+    if (!inOutline(lat, lon, o)) continue;
+    const m = metersToOutline(lat, lon, o);
+    if (m > bestD){ bestD = m; best = { lat, lon }; }
+  }
+  return best;
+}
+const NEAR_AREA_M = 400;   // "Near: <area>" only within this distance
+// The area you're standing in, or the nearest one: { area, inside }.
+function areaAt(f){
+  const areas = isl?.d?.areas || [];
+  const hit = areas.find(a => inOutline(f.lat, f.lon, a.outline));
+  if (hit) return { area: hit, inside: true };
+  let best = null, bestM = Infinity;
+  areas.forEach(a => { const m = metersToOutline(f.lat, f.lon, a.outline); if (m < bestM){ bestM = m; best = a; } });
+  return best && bestM <= NEAR_AREA_M ? { area: best, inside: false } : null;
+}
+function renderInArea(){
+  const el = $("iInArea"); if (!el) return;
+  const f = isl?.d && gps.fix && onIsland() ? gps.fix : null;
+  const at = f ? areaAt(f) : null;
+  el.hidden = !at;
+  if (at) el.innerHTML = `<span class="adot" style="--ac:${esc(at.area.color)}"></span>${at.inside ? "You're in:" : "Near:"} <b>${esc(at.area.name)}</b>`;
+}
+function renderAreaRow(){
+  const row = $("iAreas"), areas = isl?.d?.areas || [];
+  row.innerHTML = areas.map(a => `<button class="abtn${isl.areaFilter === a.id ? " on" : ""}" data-af="${esc(a.id)}" style="--ac:${esc(a.color)}" aria-pressed="${isl.areaFilter === a.id}"><i></i>${esc(a.name)}</button>`).join("");
+  row.querySelectorAll("[data-af]").forEach(b => b.onclick = e => { e.stopPropagation(); setAreaFilter(isl.areaFilter === b.dataset.af ? null : b.dataset.af); });
+}
+function outlineBox(outlines){
+  const lats = outlines.flat().map(c => c[0]), lons = outlines.flat().map(c => c[1]);
+  return [Math.min(...lats), Math.min(...lons), Math.max(...lats), Math.max(...lons)];
+}
+// Tapping an area button zooms to that area and dims places outside it. Tapping it again shows everything.
+function setAreaFilter(id){
+  if (!isl || !isl.d) return;
+  isl.areaFilter = id; isl.moved = true;
+  const a = areaOf(id);
+  const box = outlineBox(a ? [a.outline] : isl.d.areas.map(x => x.outline));
+  if (box.every(Number.isFinite)) fitBox(box[0], box[1], box[2], box[3], 56);
+  renderAreaRow(); renderIslMarks();
+}
+function openAreaCard(id){
+  const a = areaOf(id); if (!a) return;
+  const d = isl.d;
+  const ps = d.places.filter(p => p.area_id === id)
+    .sort((x, y) => (x.official_number ?? 999) - (y.official_number ?? 999) || x.name.localeCompare(y.name));
+  islandSheet(`<h3 style="--ac:${esc(a.color)}"><span class="adot"></span> ${esc(a.name)}</h3>
+    ${a.note ? `<div class="hint" style="padding-top:0">${esc(a.note)}.</div>` : ""}
+    <button class="btn" id="arShow">${isl.areaFilter === id ? "Show all areas" : "Show only " + esc(a.name)}</button>
+    <div class="sectionlabel">Places in ${esc(a.name)} (${ps.length})</div>
+    ${ps.length ? ps.map(p => `<button class="res" data-k="place:${esc(p.id)}"><span>${cat(p.category).icon} ${esc(placeLabel(p))}</span><span>${esc(legend(p) || cat(p.category).label)}</span></button>`).join("") : `<div class="hint">No places in this area on the map yet.</div>`}
+    <button class="btn ghost" id="arClose">Close</button>`);
+  $("arShow").onclick = () => { closeSheets(); setAreaFilter(isl.areaFilter === id ? null : id); };
+  $("islandBody").querySelectorAll("[data-k]").forEach(b => b.onclick = () => { closeSheets(); isl.moved = true; selectMark(b.dataset.k, true); });
+  $("arClose").onclick = closeSheets;
+}
+// Survey entries saved under a venue id that was later merged into another venue move to that venue,
+// unless it has its own entry already. Entries under removed ids are left alone and never shown.
+function adoptMerged(placeId, d){
+  const S = survey.places[placeId]; if (!S || !S.venues) return;
+  let changed = false;
+  Object.entries(d.merged || {}).forEach(([from, to]) => {
+    if (!to || !S.venues[from] || S.venues[to]) return;
+    S.venues[to] = S.venues[from]; delete S.venues[from]; changed = true;
+  });
+  if (changed) saveSurvey();
+}
+
+// ---------- Add from a link: paste an invite or a shared trip (the way iPhone home screen apps get them) ----------
+function openAddLink(){
+  $("linkBody").innerHTML = `<h3>Add from a link</h3>
+    <div class="hint" style="padding-top:0">Paste a Deck Finder link from your family: an invite link or a shared trip. To copy a link in Messages, press and hold it, then tap Copy.</div>
+    <textarea class="search" id="alText" rows="3" placeholder="Paste the link here" autocapitalize="off" autocorrect="off" spellcheck="false"></textarea>
+    <div class="status err" id="alErr"></div>
+    <button class="btn" id="alGo">Add</button>
+    <button class="btn ghost" id="alClose">Cancel</button>`;
+  openSheet("linkSheet");
+  $("alClose").onclick = closeSheets;
+  $("alGo").onclick = () => {
+    const m = $("alText").value.match(/#(join|trip)=([^\s#<>"]+)/);
+    if (!m) return $("alErr").textContent = "That isn't a Deck Finder invite or trip link. Copy the whole link and try again.";
+    if (m[1] === "trip" && !catalogReady) return $("alErr").textContent = "The app is still loading. Try again in a moment.";
+    closeSheets();
+    if (m[1] === "join") handleJoin(m[2]); else openSharedTrip(m[2]);
+  };
+  setTimeout(() => $("alText")?.focus(), 150);
+}
+
 // ---------- find on the island ----------
 function islandSheet(html){ $("islandBody").innerHTML = html; openSheet("islandSheet"); $("islandBody").scrollTop = 0; }
 $("iFind").onclick = () => {
@@ -2118,18 +2326,28 @@ $("iFind").onclick = () => {
     <input class="search" id="iq" type="search" placeholder="Try beach, bar, tram, or your spot" autocomplete="off">
     <div class="results" id="iresults"></div>`);
   $("iq").addEventListener("input", runIslandSearch); runIslandSearch();
-  setTimeout(() => $("iq").focus(), 150);
+  setTimeout(() => $("iq")?.focus(), 150);
 };
 function runIslandSearch(){
   const q = normName($("iq").value), S = sv(isl.id), d = isl.d;
+  const areaName = id => areaOf(id)?.name || "";
   const items = [
-    ...islSpots().map(s => ({ k: "spot:" + s.id, label: "⭐ " + s.name, sub: "Your spot" })),
-    ...d.places.slice().sort((a, b) => a.category.localeCompare(b.category) || a.name.localeCompare(b.name)).map(p => ({ k: "place:" + p.id, label: placeLabel(p), sub: cat(p.category).label, cat: p.category })),
-    ...S.added.map(a => ({ k: "new:" + a.id, label: a.name, sub: "Survey, new place" })),
-    ...d.survey.filter(v => typeof S.venues[v.id]?.lat === "number").map(v => ({ k: "tag:" + v.id, label: S.venues[v.id].rename || v.name, sub: "Survey", cat: v.category })),
-  ].filter(x => !q || normName(x.label + " " + x.sub + " " + (x.cat ? cat(x.cat).group : "")).includes(q));
+    ...islSpots().map(s => ({ k: "spot:" + s.id, label: "⭐ " + s.name, sub: "Your spot", group: "spots" })),
+    ...d.places.map(p => ({ k: "place:" + p.id, label: placeLabel(p), sub: [cat(p.category).label, legend(p)].filter(Boolean).join(", "), cat: p.category, group: p.area_id, area: areaName(p.area_id) })),
+    ...d.survey.filter(v => typeof S.venues[v.id]?.lat === "number").map(v => ({ k: "tag:" + v.id, label: S.venues[v.id].rename || v.name, sub: "Survey", cat: v.category, group: v.area_id, area: areaName(v.area_id) })),
+    ...S.added.map(a => ({ k: "new:" + a.id, label: a.name, sub: "Survey, new place", group: "added" })),
+  ].filter(x => !q || normName(x.label + " " + x.sub + " " + (x.cat ? cat(x.cat).group : "") + " " + (x.area || "")).includes(q));
+  // Grouped by area in the order of the island sign, after your saved spots.
+  const order = ["spots", ...d.areas.map(a => a.id), "", "added"];
+  const rank = g => { const i = order.indexOf(order.includes(g) ? g : ""); return i; };
+  items.sort((a, b) => rank(a.group) - rank(b.group) || (a.cat ? cat(a.cat).group : "").localeCompare(b.cat ? cat(b.cat).group : "") || a.label.localeCompare(b.label));
+  let last = null;
   $("iresults").innerHTML = items.length
-    ? items.map((x, i) => `<button class="res" data-i="${i}"><span>${esc(x.label)}</span><span>${esc(x.sub)}</span></button>`).join("")
+    ? items.map((x, i) => {
+        const g = order.includes(x.group) ? x.group : "";
+        const head = g !== last ? groupHead(g) : ""; last = g;
+        return head + `<button class="res" data-i="${i}"><span>${esc(x.label)}</span><span>${esc(x.sub)}</span></button>`;
+      }).join("")
     : `<div class="hint">${q ? `Nothing on the map matches "${esc($("iq").value.trim())}".` : "No places on this map yet."}</div>`;
   $("iresults").querySelectorAll(".res").forEach(b => b.onclick = () => { closeSheets(); isl.moved = true; selectMark(items[+b.dataset.i].k, true); });
 }
@@ -2320,12 +2538,18 @@ function openSurvey(msg, keepScroll){
   const d = isl.d, S = sv(isl.id), placed = new Set(d.places.map(p => p.id));
   const scroll = keepScroll ? $("islandBody").scrollTop : 0;
   const cats = [...new Set([...d.categories, ...d.survey.map(v => v.category)])];
-  const recorded = Object.values(S.venues).filter(r => typeof r.lat === "number").length;
-  const gone = Object.values(S.venues).filter(r => r.missing).length;
+  // Counted over the venues on the list, so entries under removed ids never count.
+  const recs = d.survey.map(v => S.venues[v.id]).filter(Boolean);
+  const recorded = recs.filter(r => typeof r.lat === "number").length;
+  const gone = recs.filter(r => r.missing).length;
+  // Grouped by area in the order of the island sign (1.11.1), then by category and name.
+  const groups = [...d.areas.map(a => a.id), ""];
+  const inGroup = g => d.survey.filter(v => (areaOf(v.area_id) ? v.area_id : "") === g)
+    .sort((a, b) => cats.indexOf(a.category) - cats.indexOf(b.category) || a.name.localeCompare(b.name));
   const row = v => {
     const r = S.venues[v.id] || {};
     const state = [placed.has(v.id) ? "On the map" : "", typeof r.lat === "number" ? "Recorded, within " + r.acc + " m" : "", r.missing ? "Doesn't exist" : "", r.rename ? "Listed as " + v.name : ""].filter(Boolean);
-    const bits = [legend(v), v.not_on_official_map ? "Not on the official map" : "", ...(state.length ? state : ["Not recorded yet"])].filter(Boolean);
+    const bits = [cat(v.category).label, legend(v), v.not_on_official_map ? "Not on the official map" : "", ...(state.length ? state : ["Not recorded yet"])].filter(Boolean);
     return `<div class="svrow${typeof r.lat === "number" ? " done" : ""}${r.missing ? " gone" : ""}"><button class="grow" data-tag="${esc(v.id)}"><b>${esc(surveyVenueName(v, r))}</b>${v.confidence === "unconfirmed" ? ` <span class="badge">check</span>` : ""}<small>${esc(bits.join(", "))}</small></button><button class="edit" data-sved="${esc(v.id)}">Edit</button></div>`;
   };
   islandSheet(`<h3>Survey: ${esc(placeEntry(isl.id).name)}</h3>
@@ -2337,7 +2561,7 @@ function openSurvey(msg, keepScroll){
     <button class="btn ghost" id="svExport">Export survey</button>
     <div class="status" id="svStatus"></div>
     ${S.added.length ? `<div class="sectionlabel">New places</div>` + S.added.map(a => `<div class="svrow done"><button class="grow" data-added="${esc(a.id)}"><b>${esc(a.name)}</b><small>${esc(cat(a.category).label)}, recorded within ${a.acc} m</small></button><button class="edit" data-added="${esc(a.id)}">Edit</button></div>`).join("") : ""}
-    ${cats.map(c => { const vs = d.survey.filter(v => v.category === c); return vs.length ? `<div class="sectionlabel">${esc(cat(c).group)}</div>` + vs.map(row).join("") : ""; }).join("")}
+    ${groups.map(g => { const vs = inGroup(g); return vs.length ? groupHead(g) + vs.map(row).join("") : ""; }).join("")}
     ${S.walks.length ? `<div class="sectionlabel">Walks</div>` + S.walks.map((w, i) => `<div class="svrow"><div class="grow"><b>Walk ${i + 1}</b><small>${esc(niceDate(w.started.slice(0, 10)))}, ${w.points.length} points${w.ended ? "" : ", recording now"}</small></div>${w.ended ? `<button class="edit" data-delwalk="${esc(w.id)}">Delete</button>` : ""}</div>`).join("") : ""}
     <button class="btn ghost" id="svClose">Close</button>`);
   $("islandBody").scrollTop = scroll;
@@ -2572,6 +2796,7 @@ $("toast").onclick = () => { $("toast").hidden = true; };
 let welcomeSeen = false;   // "Browse ships" or "Set up a trip" hides it until the app is opened again
 function renderWelcome(){ $("welcome").hidden = !!(data.trips.length || welcomeSeen); }
 $("wTrip").onclick = () => { welcomeSeen = true; render(); openTripForm(null); };
+$("wLink").onclick = openAddLink;
 $("wBrowse").onclick = () => {
   welcomeSeen = true; render();
   renderMenu(); openSheet("menuSheet");
@@ -2749,7 +2974,7 @@ async function installApp(){
       <li>Scroll down and tap Add to Home Screen.</li>
       <li>Tap Add.</li>
       <li>Open Deck Finder from its new icon on your home screen.</li>
-      <li>Your trips don't move over by themselves on an iPhone. In the new icon's app, tap Set up a trip, or tap a Share trip link someone sent you, and make sure Invite family is set up again.</li>
+      <li>Your trips don't move over by themselves on an iPhone. In the new icon's app, set up your trip again, or copy a Share trip link and tap Add from a link. Do the same with your family invite link.</li>
     </ol>
     <button class="btn ghost" id="rBack">Back to Ready for sea</button>`;
   $("rBack").onclick = () => openReady();

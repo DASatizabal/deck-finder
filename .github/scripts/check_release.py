@@ -15,7 +15,10 @@ Checks:
 9. Every deck in every ship.json has a ship_extent with top less than bottom, both 0 to 100.
 10. Every island map (places/<id>/place.json) is valid JSON and names a basemap, a places file and
     a survey list that exist and are valid JSON. The basemap carries the OpenStreetMap attribution,
-    and every place has a lat and lon inside the island's bounds.
+    and every place has a lat and lon inside the island's bounds. Since 1.11.1, an island that names
+    an "areas" file must have exactly five areas (each with an id, name, #RRGGBB color and an outline
+    of at least three [lat, lon] corners), and every place and survey venue's area_id must be one of
+    them. No name the family sees may contain a builder note like "(marker 3-b)".
 """
 import json
 import os
@@ -181,13 +184,38 @@ for place_file in sorted(Path("places").glob("*/place.json")):
         else:
             for pl in plist["places"]:
                 lat, lon = pl.get("lat"), pl.get("lon")
-                if not pl.get("name") or not num(lat) or not num(lon):
-                    fail(f"{fname}/{place['places']}: place {pl.get('name') or pl.get('id')!r} needs a name, lat and lon")
+                nm = pl.get("display_name") or pl.get("name")
+                if not nm or not num(lat) or not num(lon):
+                    fail(f"{fname}/{place['places']}: place {nm or pl.get('id')!r} needs a display_name, lat and lon")
                 elif not (b["min_lat"] <= lat <= b["max_lat"] and b["min_lon"] <= lon <= b["max_lon"]):
-                    fail(f"{fname}/{place['places']}: {pl['name']!r} at {lat}, {lon} is outside the island's bounds")
+                    fail(f"{fname}/{place['places']}: {nm!r} at {lat}, {lon} is outside the island's bounds")
     survey = load_json(folder / place["survey_list"], f"{fname}/{place['survey_list']}")
     if isinstance(survey, dict) and not isinstance(survey.get("venues"), list):
         fail(f"{fname}/{place['survey_list']} needs a \"venues\" list")
+    shown = [("places", x) for x in (plist.get("places") if isinstance(plist, dict) and isinstance(plist.get("places"), list) else [])]         + [("survey list", x) for x in (survey.get("venues") if isinstance(survey, dict) and isinstance(survey.get("venues"), list) else [])]
+    for where, x in shown:
+        if "(marker" in str(x.get("display_name") or x.get("name") or ""):
+            fail(f"{fname} {where}: {x.get('id')!r} shows a builder note in its name: {x.get('display_name') or x.get('name')!r}")
+    # Areas (1.11.1): the five areas on the island sign.
+    if place.get("areas"):
+        areas = load_json(folder / place["areas"], f"{fname}/{place['areas']}")
+        alist = areas.get("areas") if isinstance(areas, dict) else None
+        if not isinstance(alist, list):
+            fail(f"{fname}/{place['areas']} needs an \"areas\" list")
+        else:
+            if len(alist) != 5:
+                fail(f"{fname}/{place['areas']} has {len(alist)} areas; the island sign has five")
+            ids = set()
+            for a in alist:
+                oc = a.get("outline") if isinstance(a, dict) else None
+                if not (isinstance(a, dict) and a.get("id") and a.get("name") and re.fullmatch(r"#[0-9A-Fa-f]{6}", str(a.get("color", "")))
+                        and isinstance(oc, list) and len(oc) >= 3 and all(isinstance(c, list) and len(c) == 2 and num(c[0]) and num(c[1]) for c in oc)):
+                    fail(f"{fname}/{place['areas']}: area {a.get('id') if isinstance(a, dict) else a!r} needs an id, name, #RRGGBB color and an outline of at least three [lat, lon] corners")
+                    continue
+                ids.add(a["id"])
+            for where, x in shown:
+                if x.get("area_id") not in ids:
+                    fail(f"{fname} {where}: {x.get('id')!r} has area_id {x.get('area_id')!r}, which is not in {place['areas']}")
 
 # 6. ships/index.json is up to date
 sys.path.insert(0, "tools")

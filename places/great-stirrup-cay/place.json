@@ -8,6 +8,7 @@
   "basemap": "basemap.json",
   "places": "places.json",
   "survey_list": "survey-list.json",
+  "areas": "areas.json",
   "bounds": {
     "min_lat": 25.817,
     "min_lon": -77.9277,
