@@ -13,6 +13,9 @@ Checks:
    and decks that each have an image and a venues list), and is not a Deck Vision review file.
 8. Every geometry file named in a ship.json exists and is valid JSON.
 9. Every deck in every ship.json has a ship_extent with top less than bottom, both 0 to 100.
+10. Every island map (places/<id>/place.json) is valid JSON and names a basemap, a places file and
+    a survey list that exist and are valid JSON. The basemap carries the OpenStreetMap attribution,
+    and every place has a lat and lon inside the island's bounds.
 """
 import json
 import os
@@ -137,13 +140,62 @@ for ship_file in ship_files:
             except json.JSONDecodeError as e:
                 fail(f"{folder}/{geo} is not valid JSON: {e}")
 
+# 10. Island maps: the files exist, are valid JSON, and every place sits inside the island's bounds
+def load_json(path, label):
+    if not path.is_file():
+        fail(f"{label} is missing")
+        return None
+    try:
+        return json.loads(path.read_text(encoding="utf-8"))
+    except json.JSONDecodeError as e:
+        fail(f"{label} is not valid JSON: {e}")
+        return None
+
+
+num = lambda v: isinstance(v, (int, float)) and not isinstance(v, bool)
+for place_file in sorted(Path("places").glob("*/place.json")):
+    folder = place_file.parent
+    fname = folder.as_posix()
+    place = load_json(place_file, f"{fname}/place.json")
+    if not isinstance(place, dict):
+        continue
+    missing = [k for k in ("id", "name", "port_name", "basemap", "places", "survey_list", "bounds") if not place.get(k)]
+    if missing:
+        fail(f"{fname}/place.json is missing {', '.join(missing)}")
+        continue
+    b = place["bounds"]
+    if not (isinstance(b, dict) and all(num(b.get(k)) for k in ("min_lat", "min_lon", "max_lat", "max_lon"))
+            and b["min_lat"] < b["max_lat"] and b["min_lon"] < b["max_lon"]):
+        fail(f"{fname}/place.json needs \"bounds\" with min_lat, min_lon, max_lat and max_lon (min less than max)")
+        continue
+    base = load_json(folder / place["basemap"], f"{fname}/{place['basemap']}")
+    if isinstance(base, dict):
+        if "OpenStreetMap" not in str(base.get("attribution", "")):
+            fail(f"{fname}/{place['basemap']} must keep its \"attribution\": \"© OpenStreetMap contributors\"")
+        if not isinstance(base.get("features"), list) or not any(f.get("properties", {}).get("kind") == "land" for f in base["features"]):
+            fail(f"{fname}/{place['basemap']} has no land shapes. Run python tools/build_island.py.")
+    plist = load_json(folder / place["places"], f"{fname}/{place['places']}")
+    if isinstance(plist, dict):
+        if not isinstance(plist.get("places"), list):
+            fail(f"{fname}/{place['places']} needs a \"places\" list")
+        else:
+            for pl in plist["places"]:
+                lat, lon = pl.get("lat"), pl.get("lon")
+                if not pl.get("name") or not num(lat) or not num(lon):
+                    fail(f"{fname}/{place['places']}: place {pl.get('name') or pl.get('id')!r} needs a name, lat and lon")
+                elif not (b["min_lat"] <= lat <= b["max_lat"] and b["min_lon"] <= lon <= b["max_lon"]):
+                    fail(f"{fname}/{place['places']}: {pl['name']!r} at {lat}, {lon} is outside the island's bounds")
+    survey = load_json(folder / place["survey_list"], f"{fname}/{place['survey_list']}")
+    if isinstance(survey, dict) and not isinstance(survey.get("venues"), list):
+        fail(f"{fname}/{place['survey_list']} needs a \"venues\" list")
+
 # 6. ships/index.json is up to date
 sys.path.insert(0, "tools")
 try:
     import build_index
     current = Path("ships/index.json").read_text(encoding="utf-8") if Path("ships/index.json").exists() else ""
     if current != build_index.render():
-        fail("ships/index.json is out of date. Run python tools/build_index.py and commit the result.")
+        fail("ships/index.json is out of date (ships or island maps changed). Run python tools/build_index.py and commit the result.")
 except Exception as e:
     fail(f"could not run tools/build_index.py: {e}")
 

@@ -1,21 +1,24 @@
 """
-Builds ships/index.json, the catalog the app reads to find every cruise line and ship.
+Builds ships/index.json, the catalog the app reads to find every cruise line, ship and island map.
 
 For each ship it records the folder path, deck count, total bytes, and a content hash of
 all the ship's files. The app re-downloads a saved ship only when that hash changes.
+Island maps (places/<id>/place.json) are listed under "places" the same way, with their port
+code and port name so the app can find them from an itinerary day.
 
-Run from the repo root after changing anything under ships/:  python tools/build_index.py
+Run from the repo root after changing anything under ships/ or places/:  python tools/build_index.py
 """
 import hashlib
 import json
 from pathlib import Path
 
 SHIPS_DIR = Path("ships")
+PLACES_DIR = Path("places")
 INDEX = SHIPS_DIR / "index.json"
 
 
 def ship_hash(folder):
-    """sha256 over every file in the ship folder (name, size, bytes), in a fixed order."""
+    """sha256 over every file in the ship (or place) folder (name, size, bytes), in a fixed order."""
     h = hashlib.sha256()
     for f in sorted(p for p in folder.iterdir() if p.is_file()):
         data = f.read_bytes()
@@ -42,7 +45,22 @@ def build():
             })
         ships.sort(key=lambda s: s["name"])
         lines.append({"id": line["id"], "name": line["name"], "path": line_file.parent.as_posix() + "/", "ships": ships})
-    return {"lines": lines}
+    places = []
+    for place_file in sorted(PLACES_DIR.glob("*/place.json")):
+        place = json.loads(place_file.read_text(encoding="utf-8"))
+        folder = place_file.parent
+        places.append({
+            "id": place["id"],
+            "name": place["name"],
+            "path": folder.as_posix() + "/",
+            "port_code": place.get("port_code", ""),
+            "port_name": place.get("port_name", place["name"]),
+            "port_match": place.get("port_match", place.get("port_name", place["name"])),
+            "bounds": place["bounds"],
+            "bytes": sum(p.stat().st_size for p in folder.iterdir() if p.is_file()),
+            "hash": ship_hash(folder),
+        })
+    return {"lines": lines, "places": places}
 
 
 def render():
@@ -54,3 +72,5 @@ if __name__ == "__main__":
     for line in build()["lines"]:
         for s in line["ships"]:
             print(f'{s["id"]}: {s["decks"]} decks, {s["bytes"]:,} bytes, hash {s["hash"][:12]}')
+    for p in build()["places"]:
+        print(f'place {p["id"]}: {p["bytes"]:,} bytes, hash {p["hash"][:12]}')

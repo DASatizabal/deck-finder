@@ -1,5 +1,14 @@
 # Changelog
 
+## [1.10.0] - 2026-09-28
+### Added
+- Great Stirrup Cay island map that works offline, with your location as a blue dot.
+- Save your spot, like your cabana or umbrella, and get walking directions back to it.
+- Survey mode for mapping the island on site, even with no signal.
+- All-aboard countdown on island day.
+### Fixed
+- Itineraries now show where they really came from.
+
 ## [1.9.0] - 2026-09-27
 ### Added
 - Trips can now find their itinerary even after the cruise is sold out or has sailed.

@@ -1,0 +1,63 @@
+{
+ "island": "Great Stirrup Cay",
+ "exported": "2026-09-28T04:01:31.371Z",
+ "imported": "2026-09-28",
+ "places": [
+  {
+   "id": "great-stirrup-cay-cruise-pier",
+   "name": "Great Stirrup Cay Cruise Pier",
+   "category": "pier",
+   "lat": 25.826545,
+   "lon": -77.907325,
+   "status": "placed"
+  },
+  {
+   "id": "tender-landing",
+   "name": "Tender Landing",
+   "category": "pier",
+   "lat": 25.825424,
+   "lon": -77.911933,
+   "status": "placed"
+  },
+  {
+   "id": "tram-stop-welcome-plaza",
+   "name": "Tram Stop: Welcome Plaza (name unconfirmed)",
+   "category": "tram",
+   "lat": 25.826197,
+   "lon": -77.907481,
+   "status": "placed"
+  },
+  {
+   "id": "tram-stop-great-life-lagoon",
+   "name": "Tram Stop: Great Life Lagoon (name unconfirmed)",
+   "category": "tram",
+   "lat": 25.826651,
+   "lon": -77.911488,
+   "status": "placed"
+  },
+  {
+   "id": "jumbey-beach",
+   "name": "Jumbey Beach",
+   "category": "beach",
+   "lat": 25.824583,
+   "lon": -77.91329,
+   "status": "placed"
+  },
+  {
+   "id": "silver-cove",
+   "name": "Silver Cove",
+   "category": "beach",
+   "lat": 25.823937,
+   "lon": -77.919905,
+   "status": "placed"
+  },
+  {
+   "id": "silver-cove-pool",
+   "name": "Silver Cove Pool",
+   "category": "pool",
+   "lat": 25.824859,
+   "lon": -77.920902,
+   "status": "placed"
+  }
+ ]
+}

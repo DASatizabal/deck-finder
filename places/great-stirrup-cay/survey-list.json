@@ -1,0 +1,720 @@
+{
+ "island": "Great Stirrup Cay",
+ "compiled": "2026-09-26",
+ "categories": [
+  "tram",
+  "food",
+  "bar",
+  "pool",
+  "beach",
+  "cabana",
+  "restroom",
+  "first_aid",
+  "shop",
+  "activity",
+  "landmark",
+  "pier"
+ ],
+ "venues": [
+  {
+   "id": "great-stirrup-cay-cruise-pier",
+   "name": "Great Stirrup Cay Cruise Pier",
+   "category": "pier",
+   "confidence": "confirmed",
+   "notes": "Two-ship permanent pier, opened 28 December 2025. Ships dock directly, no tendering."
+  },
+  {
+   "id": "tender-landing",
+   "name": "Tender Landing",
+   "category": "pier",
+   "confidence": "unconfirmed",
+   "notes": "Original tender landing used before the pier opened. May still be used as a backup or for excursion boats. Confirm whether it is still in service."
+  },
+  {
+   "id": "welcome-plaza",
+   "name": "Welcome Plaza",
+   "category": "landmark",
+   "confidence": "confirmed",
+   "notes": "Open-air arrivals hub at the base of the pier, with seating, island maps and directional signage."
+  },
+  {
+   "id": "welcome-center",
+   "name": "Welcome Center",
+   "category": "landmark",
+   "confidence": "confirmed",
+   "notes": "Air-conditioned arrivals and reception building that opened December 2025."
+  },
+  {
+   "id": "shore-excursion-desk",
+   "name": "Shore Excursion Desk",
+   "category": "activity",
+   "confidence": "confirmed",
+   "notes": "Books WaveRunner tours, stingray encounters and snorkeling on the island."
+  },
+  {
+   "id": "complimentary-lockers",
+   "name": "Complimentary Lockers",
+   "category": "landmark",
+   "confidence": "confirmed",
+   "notes": "Free lockers for day guests."
+  },
+  {
+   "id": "beach-wheelchair-pickup",
+   "name": "Beach Wheelchair Pickup",
+   "category": "landmark",
+   "confidence": "unconfirmed",
+   "notes": "Beach wheelchairs are described as available near the island entrance. Exact pickup point not published."
+  },
+  {
+   "id": "welcome-plaza-restrooms",
+   "name": "Welcome Plaza Restrooms",
+   "category": "restroom",
+   "confidence": "confirmed",
+   "notes": "Restrooms at the Welcome Plaza, the first set of restrooms after the pier."
+  },
+  {
+   "id": "first-aid-station",
+   "name": "First Aid Station",
+   "category": "first_aid",
+   "confidence": "unconfirmed",
+   "notes": "Medical help is available on the island for emergencies but no source publishes the location of a first aid hut. Look for a staffed hut near the Welcome Plaza or the main beach and place it where you actually see it."
+  },
+  {
+   "id": "overlook-bridge",
+   "name": "Overlook Bridge",
+   "category": "landmark",
+   "confidence": "unconfirmed",
+   "notes": "Described as an overlook bridge at the Welcome Plaza. Single source only."
+  },
+  {
+   "id": "tram-stop-welcome-plaza",
+   "name": "Tram Stop: Welcome Plaza",
+   "category": "tram",
+   "confidence": "unconfirmed",
+   "notes": "NCL does not publish official tram stop names. This stop is named here after the area it serves."
+  },
+  {
+   "id": "tram-stop-great-life-lagoon",
+   "name": "Tram Stop: Great Life Lagoon",
+   "category": "tram",
+   "confidence": "unconfirmed",
+   "notes": "NCL does not publish official tram stop names. This stop is named here after the area it serves."
+  },
+  {
+   "id": "tram-stop-main-beach-and-jumbey-beach-grill",
+   "name": "Tram Stop: Main Beach and Jumbey Beach Grill",
+   "category": "tram",
+   "confidence": "unconfirmed",
+   "notes": "NCL does not publish official tram stop names. This stop is named here after the area it serves."
+  },
+  {
+   "id": "tram-stop-cabana-beach",
+   "name": "Tram Stop: Cabana Beach",
+   "category": "tram",
+   "confidence": "unconfirmed",
+   "notes": "NCL does not publish official tram stop names. This stop is named here after the area it serves."
+  },
+  {
+   "id": "tram-stop-great-tides-waterpark",
+   "name": "Tram Stop: Great Tides Waterpark",
+   "category": "tram",
+   "confidence": "unconfirmed",
+   "notes": "A waterpark tram stop was planned while the park was under construction. Confirm it exists now that the park is open."
+  },
+  {
+   "id": "tram-stop-vibe-shore-club",
+   "name": "Tram Stop: Vibe Shore Club",
+   "category": "tram",
+   "confidence": "unconfirmed",
+   "notes": "NCL does not publish official tram stop names. This stop is named here after the area it serves."
+  },
+  {
+   "id": "tram-stop-silver-cove",
+   "name": "Tram Stop: Silver Cove",
+   "category": "tram",
+   "confidence": "unconfirmed",
+   "notes": "NCL does not publish official tram stop names. This stop is named here after the area it serves."
+  },
+  {
+   "id": "great-life-lagoon",
+   "name": "Great Life Lagoon",
+   "category": "pool",
+   "confidence": "confirmed",
+   "notes": "Resort-style heated pool of about 28,000 square feet with a zero-entry beach-style edge. Opened 2025."
+  },
+  {
+   "id": "reef-bar",
+   "name": "Reef Bar",
+   "category": "bar",
+   "confidence": "confirmed",
+   "notes": "Swim-up bar in Great Life Lagoon. NCL's island page also calls it the Reef Swim Bar."
+  },
+  {
+   "id": "the-waves-bar",
+   "name": "The Waves Bar",
+   "category": "bar",
+   "confidence": "confirmed",
+   "notes": "Second swim-up bar in Great Life Lagoon."
+  },
+  {
+   "id": "great-life-lagoon-cabanas",
+   "name": "Great Life Lagoon Cabanas",
+   "category": "cabana",
+   "confidence": "confirmed",
+   "notes": "Ring of private cabanas around the lagoon, sold in three types."
+  },
+  {
+   "id": "splash-harbor",
+   "name": "Splash Harbor",
+   "category": "pool",
+   "confidence": "confirmed",
+   "notes": "Complimentary kids splash pad with small slides, interactive features and a large tipping bucket."
+  },
+  {
+   "id": "harborside-shops",
+   "name": "Harborside Shops",
+   "category": "shop",
+   "confidence": "unconfirmed",
+   "notes": "Kiosks under yellow, orange and blue umbrellas, added December 2025. Also referred to as Harborside Market."
+  },
+  {
+   "id": "abaco-taco",
+   "name": "Abaco Taco",
+   "category": "food",
+   "confidence": "confirmed",
+   "notes": "Casual made-to-order taco stand, complimentary. Described as being on the northern part of the island."
+  },
+  {
+   "id": "great-life-lagoon-restrooms",
+   "name": "Great Life Lagoon Restrooms",
+   "category": "restroom",
+   "confidence": "unconfirmed",
+   "notes": "Restrooms and showers are described as available around the pool complex. Exact building not published."
+  },
+  {
+   "id": "great-tides-waterpark-entrance",
+   "name": "Great Tides Waterpark Entrance",
+   "category": "activity",
+   "confidence": "confirmed",
+   "notes": "Ticketed entrance to the nearly six-acre waterpark that opened 4 September 2026."
+  },
+  {
+   "id": "tidal-tower",
+   "name": "Tidal Tower",
+   "category": "activity",
+   "confidence": "confirmed",
+   "notes": "170-foot slide tower, the focal point of the waterpark."
+  },
+  {
+   "id": "breakwater-blasters",
+   "name": "Breakwater Blasters",
+   "category": "activity",
+   "confidence": "confirmed",
+   "notes": "Water coaster slides on Tidal Tower."
+  },
+  {
+   "id": "whitewater-dash",
+   "name": "Whitewater Dash",
+   "category": "activity",
+   "confidence": "confirmed",
+   "notes": "Slide on Tidal Tower."
+  },
+  {
+   "id": "rapid-mat-racers",
+   "name": "Rapid Mat Racers",
+   "category": "activity",
+   "confidence": "confirmed",
+   "notes": "Mat racing slides on Tidal Tower."
+  },
+  {
+   "id": "tropic-storm",
+   "name": "Tropic Storm",
+   "category": "activity",
+   "confidence": "confirmed",
+   "notes": "Slide on Tidal Tower."
+  },
+  {
+   "id": "tropic-spiral",
+   "name": "Tropic Spiral",
+   "category": "activity",
+   "confidence": "confirmed",
+   "notes": "Slide on Tidal Tower."
+  },
+  {
+   "id": "cliffside-cove",
+   "name": "Cliffside Cove",
+   "category": "activity",
+   "confidence": "confirmed",
+   "notes": "Cliff jump and racing slide zone with its own pool."
+  },
+  {
+   "id": "cliffside-leap",
+   "name": "Cliffside Leap",
+   "category": "activity",
+   "confidence": "confirmed",
+   "notes": "Cliff jump platforms at Cliffside Cove."
+  },
+  {
+   "id": "fearless-falls",
+   "name": "Fearless Falls",
+   "category": "activity",
+   "confidence": "confirmed",
+   "notes": "Drop slides at Cliffside Cove."
+  },
+  {
+   "id": "the-great-slide",
+   "name": "The Great Slide",
+   "category": "activity",
+   "confidence": "confirmed",
+   "notes": "Four-person body slide at Cliffside Cove."
+  },
+  {
+   "id": "wandering-river",
+   "name": "Wandering River",
+   "category": "activity",
+   "confidence": "confirmed",
+   "notes": "River ride over 800 feet long with an immersive tunnel."
+  },
+  {
+   "id": "splash-cay",
+   "name": "Splash Cay",
+   "category": "pool",
+   "confidence": "confirmed",
+   "notes": "Kids splash zone of over 9,000 square feet inside the waterpark."
+  },
+  {
+   "id": "grotto-bar",
+   "name": "Grotto Bar",
+   "category": "bar",
+   "confidence": "confirmed",
+   "notes": "Bar tucked beneath The Great Slide at Cliffside Cove."
+  },
+  {
+   "id": "floataway-bar",
+   "name": "Floataway Bar",
+   "category": "bar",
+   "confidence": "confirmed",
+   "notes": "Bar served from within the Wandering River."
+  },
+  {
+   "id": "hampton-water",
+   "name": "Hampton Water",
+   "category": "bar",
+   "confidence": "confirmed",
+   "notes": "Beverage station in the Tidal Tower area."
+  },
+  {
+   "id": "coca-cola-station",
+   "name": "Coca-Cola Station",
+   "category": "food",
+   "confidence": "confirmed",
+   "notes": "Drink station at Splash Cay."
+  },
+  {
+   "id": "low-tide-smoke",
+   "name": "Low Tide Smoke",
+   "category": "food",
+   "confidence": "confirmed",
+   "notes": "Barbecue food truck inside the waterpark."
+  },
+  {
+   "id": "catch-of-the-cay",
+   "name": "Catch of the Cay",
+   "category": "food",
+   "confidence": "confirmed",
+   "notes": "Seafood food truck inside the waterpark."
+  },
+  {
+   "id": "tidal-treats",
+   "name": "Tidal Treats",
+   "category": "food",
+   "confidence": "confirmed",
+   "notes": "Ice cream and soft serve food truck inside the waterpark."
+  },
+  {
+   "id": "great-tides-waterpark-cabanas",
+   "name": "Great Tides Waterpark Cabanas",
+   "category": "cabana",
+   "confidence": "confirmed",
+   "notes": "Private cabanas for up to six guests inside the waterpark."
+  },
+  {
+   "id": "great-tides-waterpark-restrooms",
+   "name": "Great Tides Waterpark Restrooms",
+   "category": "restroom",
+   "confidence": "unconfirmed",
+   "notes": "A park this size has restrooms and changing rooms, but no source publishes where they sit. Place them where you see them on the imagery."
+  },
+  {
+   "id": "bertrams-cove",
+   "name": "Bertram's Cove",
+   "category": "beach",
+   "confidence": "confirmed",
+   "notes": "The main swimming beach, named for Captain Allan Bertram. Best snorkeling is at the far end."
+  },
+  {
+   "id": "jumbey-beach",
+   "name": "Jumbey Beach",
+   "category": "beach",
+   "confidence": "unconfirmed",
+   "notes": "Name used for the main sandy beach in front of Jumbey Beach Grill. Also spelled Jumby Beach. May be the same stretch as Bertram's Cove."
+  },
+  {
+   "id": "cabana-beach",
+   "name": "Cabana Beach",
+   "category": "beach",
+   "confidence": "unconfirmed",
+   "notes": "Name used for the beach stretch lined with rental cabanas. Not an official NCL name in current material."
+  },
+  {
+   "id": "lagoon-beach",
+   "name": "Lagoon Beach",
+   "category": "beach",
+   "confidence": "unconfirmed",
+   "notes": "Name used for the beach nearest Great Life Lagoon. Not an official NCL name in current material."
+  },
+  {
+   "id": "jumbey-beach-grill",
+   "name": "Jumbey Beach Grill",
+   "category": "food",
+   "confidence": "confirmed",
+   "notes": "Main complimentary buffet on the island, barbecue and picnic style, with four food lines."
+  },
+  {
+   "id": "bacardi-bar",
+   "name": "Bacardi Bar",
+   "category": "bar",
+   "confidence": "confirmed",
+   "notes": "Beach bar with rum cocktails, mojitos and daiquiris, with outdoor seating."
+  },
+  {
+   "id": "bertrams-bar",
+   "name": "Bertram's Bar",
+   "category": "bar",
+   "confidence": "confirmed",
+   "notes": "Beach bar on the main beach."
+  },
+  {
+   "id": "patron-bar",
+   "name": "Patron Bar",
+   "category": "bar",
+   "confidence": "confirmed",
+   "notes": "Beach bar with tequila cocktails and frozen drink machines. Tagged in OpenStreetMap as Patron Tequila."
+  },
+  {
+   "id": "sandbar",
+   "name": "Sandbar",
+   "category": "bar",
+   "confidence": "unconfirmed",
+   "notes": "Bar building mapped in OpenStreetMap next to Patron Bar. Not named in any current NCL material, so it may have been renamed or removed."
+  },
+  {
+   "id": "lighthouse-beach-bar",
+   "name": "Lighthouse Beach Bar",
+   "category": "bar",
+   "confidence": "unconfirmed",
+   "notes": "Described as located near the cabanas. Confirm it is still open under this name."
+  },
+  {
+   "id": "tropic-like-its-hot",
+   "name": "Tropic Like It's Hot",
+   "category": "food",
+   "confidence": "confirmed",
+   "notes": "Food truck serving Bahamian inspired sandwiches and grilled fish, described as sitting closer to Silver Cove."
+  },
+  {
+   "id": "premier-cabanas",
+   "name": "Premier Cabanas",
+   "category": "cabana",
+   "confidence": "confirmed",
+   "notes": "Beachfront rental cabanas on the main beach."
+  },
+  {
+   "id": "cabanas-on-the-cay",
+   "name": "Cabanas on the Cay",
+   "category": "cabana",
+   "confidence": "unconfirmed",
+   "notes": "Older NCL name for the beach cabana cluster. Confirm whether the name is still in use."
+  },
+  {
+   "id": "over-the-water-swings",
+   "name": "Over-the-Water Swings",
+   "category": "landmark",
+   "confidence": "confirmed",
+   "notes": "Photo spot, swings set over the shallow water."
+  },
+  {
+   "id": "underwater-sculpture-garden",
+   "name": "Underwater Sculpture Garden",
+   "category": "activity",
+   "confidence": "confirmed",
+   "notes": "Snorkeling attraction off the far end of Bertram's Cove with stone mermaids, starfish, treasure chests and skulls."
+  },
+  {
+   "id": "snorkel-rentals",
+   "name": "Snorkel Rentals",
+   "category": "activity",
+   "confidence": "confirmed",
+   "notes": "Snorkel gear rental hut on the beach."
+  },
+  {
+   "id": "sand-volleyball-courts",
+   "name": "Sand Volleyball Courts",
+   "category": "activity",
+   "confidence": "confirmed",
+   "notes": "Volleyball courts on the public beach."
+  },
+  {
+   "id": "berried-treasures-bazaar",
+   "name": "Berried Treasures Bazaar",
+   "category": "shop",
+   "confidence": "confirmed",
+   "notes": "Straw market of colorful huts run by independent Bahamian vendors from Great Harbour Cay. Cash only."
+  },
+  {
+   "id": "main-beach-restrooms",
+   "name": "Main Beach Restrooms",
+   "category": "restroom",
+   "confidence": "unconfirmed",
+   "notes": "Restrooms are described as available along the main beach. Exact building not published."
+  },
+  {
+   "id": "water-tour-departure-point",
+   "name": "Water Tour Departure Point",
+   "category": "activity",
+   "confidence": "confirmed",
+   "notes": "Departure point on the beach for WaveRunner, kayak and boat tours."
+  },
+  {
+   "id": "waverunner-tours",
+   "name": "WaveRunner Tours",
+   "category": "activity",
+   "confidence": "confirmed",
+   "notes": "Guided WaveRunner tours around the cay."
+  },
+  {
+   "id": "kayak-tours",
+   "name": "Kayak Tours",
+   "category": "activity",
+   "confidence": "confirmed",
+   "notes": "Guided kayaking tours from the beach."
+  },
+  {
+   "id": "treasure-island-stingray-and-pig-encounter",
+   "name": "Treasure Island Stingray and Pig Encounter",
+   "category": "activity",
+   "confidence": "confirmed",
+   "notes": "Excursion to a nearby island for stingray and swimming pig encounters. Place the marker at its departure dock."
+  },
+  {
+   "id": "vibe-shore-club",
+   "name": "Vibe Shore Club",
+   "category": "beach",
+   "confidence": "confirmed",
+   "notes": "Adults-only beach club, 18 and over, sold as an all-day pass."
+  },
+  {
+   "id": "vibe-shore-club-bar",
+   "name": "Vibe Shore Club Bar",
+   "category": "bar",
+   "confidence": "confirmed",
+   "notes": "Private bar inside Vibe Shore Club, with roaming bar service on the sand."
+  },
+  {
+   "id": "vibe-shore-club-buffet",
+   "name": "Vibe Shore Club Buffet",
+   "category": "food",
+   "confidence": "confirmed",
+   "notes": "Private buffet for pass holders, with seafood, salads and desserts."
+  },
+  {
+   "id": "vibe-shore-club-cabanas",
+   "name": "Vibe Shore Club Cabanas",
+   "category": "cabana",
+   "confidence": "confirmed",
+   "notes": "Beach cabanas for two and premium cabanas near the tree line for six to eight."
+  },
+  {
+   "id": "vibe-shore-club-restrooms",
+   "name": "Vibe Shore Club Restrooms",
+   "category": "restroom",
+   "confidence": "unconfirmed",
+   "notes": "Restrooms and outdoor showers are described inside the club. Exact building not published."
+  },
+  {
+   "id": "silver-cove",
+   "name": "Silver Cove",
+   "category": "beach",
+   "confidence": "confirmed",
+   "notes": "Exclusive oceanfront retreat at the far end of the island, for villa guests, Haven guests and spa guests."
+  },
+  {
+   "id": "silver-cove-reception",
+   "name": "Silver Cove Reception",
+   "category": "landmark",
+   "confidence": "confirmed",
+   "notes": "Check-in building for Silver Cove."
+  },
+  {
+   "id": "silver-cove-restaurant",
+   "name": "Silver Cove Restaurant",
+   "category": "food",
+   "confidence": "confirmed",
+   "notes": "Private restaurant serving Silver Cove guests."
+  },
+  {
+   "id": "silver-cove-bar",
+   "name": "Silver Cove Bar",
+   "category": "bar",
+   "confidence": "confirmed",
+   "notes": "Bar attached to the Silver Cove restaurant."
+  },
+  {
+   "id": "moet-and-chandon-bar",
+   "name": "Moet and Chandon Bar",
+   "category": "bar",
+   "confidence": "confirmed",
+   "notes": "Champagne bar inside Silver Cove. Also written as the Moet Bar."
+  },
+  {
+   "id": "mandara-spa",
+   "name": "Mandara Spa",
+   "category": "activity",
+   "confidence": "confirmed",
+   "notes": "Beachfront spa. Booking a treatment is one of the ways to get into Silver Cove."
+  },
+  {
+   "id": "silver-cove-pool",
+   "name": "Silver Cove Pool",
+   "category": "pool",
+   "confidence": "confirmed",
+   "notes": "Private pool inside Silver Cove."
+  },
+  {
+   "id": "silver-cove-ocean-villas",
+   "name": "Silver Cove Ocean Villas",
+   "category": "cabana",
+   "confidence": "confirmed",
+   "notes": "Air-conditioned beachfront villas, studio through two bedroom."
+  },
+  {
+   "id": "silver-cove-lagoon-villas",
+   "name": "Silver Cove Lagoon Villas",
+   "category": "cabana",
+   "confidence": "confirmed",
+   "notes": "Air-conditioned villas on the lagoon side of Silver Cove."
+  },
+  {
+   "id": "silver-cove-gazebo",
+   "name": "Silver Cove Gazebo",
+   "category": "landmark",
+   "confidence": "unconfirmed",
+   "notes": "Gazebo shown in the Silver Cove area on the onboard map."
+  },
+  {
+   "id": "silver-cove-restrooms",
+   "name": "Silver Cove Restrooms",
+   "category": "restroom",
+   "confidence": "unconfirmed",
+   "notes": "Restrooms inside Silver Cove. Exact building not published."
+  },
+  {
+   "id": "great-stirrup-cay-lighthouse",
+   "name": "Great Stirrup Cay Lighthouse",
+   "category": "landmark",
+   "confidence": "confirmed",
+   "notes": "Stone lighthouse built in 1863, about 80 feet tall, now solar powered and automated."
+  },
+  {
+   "id": "flighthouse-zipline",
+   "name": "Flighthouse Zipline",
+   "category": "activity",
+   "confidence": "confirmed",
+   "notes": "Zipline course that starts at the lighthouse, with six ziplines, net bridges, chimney climbs and cargo nets, up to about 120 feet above the ground."
+  },
+  {
+   "id": "allan-bertram-gravesite",
+   "name": "Allan Bertram Gravesite",
+   "category": "landmark",
+   "confidence": "confirmed",
+   "notes": "Grave of Captain Allan Bertram, who died in 1834 and asked to be buried on the island."
+  },
+  {
+   "id": "great-stirrup-cay-international-airport-sign",
+   "name": "Great Stirrup Cay International Airport Sign",
+   "category": "landmark",
+   "confidence": "unconfirmed",
+   "notes": "Helicopter airfield in the southern part of the island with a joke sign reading Great Stirrup Cay International Airport. Confirm guests can still reach it."
+  },
+  {
+   "id": "target-rock",
+   "name": "Target Rock",
+   "category": "landmark",
+   "confidence": "confirmed",
+   "notes": "Named islet off the west end of Great Stirrup Cay, from OpenStreetMap."
+  },
+  {
+   "id": "snake-cay",
+   "name": "Snake Cay",
+   "category": "landmark",
+   "confidence": "confirmed",
+   "notes": "Named islet off the south side of Great Stirrup Cay, from OpenStreetMap."
+  },
+  {
+   "id": "hammock-bay",
+   "name": "Hammock Bay",
+   "category": "beach",
+   "confidence": "unconfirmed",
+   "notes": "Reported as an area with more than fifty hammocks and a nearby barbecue buffet. Not named in current NCL material. Skip it if you cannot see it."
+  },
+  {
+   "id": "horizon-park",
+   "name": "Horizon Park",
+   "category": "activity",
+   "confidence": "unconfirmed",
+   "notes": "Reported as lawn games, pickleball courts, a nine-hole mini golf course and a half sports court. Not named in current NCL material. Skip it if you cannot see it."
+  },
+  {
+   "id": "landshark-bar-and-grill",
+   "name": "LandShark Bar and Grill",
+   "category": "food",
+   "confidence": "unconfirmed",
+   "notes": "Reported as an a la carte eatery with indoor and outdoor seating. Not named in current NCL material. Skip it if you cannot see it."
+  },
+  {
+   "id": "lagoon-retreat",
+   "name": "Lagoon Retreat",
+   "category": "beach",
+   "confidence": "unconfirmed",
+   "notes": "Reported as an adults-only private beach area with villas. This may be an earlier plan name for what opened as Vibe Shore Club. Skip it if you cannot see it."
+  },
+  {
+   "id": "silver-palm-restaurant",
+   "name": "Silver Palm Restaurant",
+   "category": "food",
+   "confidence": "unconfirmed",
+   "notes": "Reported as a complimentary restaurant in the Lagoon Retreat area. Not named in current NCL material. Skip it if you cannot see it."
+  },
+  {
+   "id": "tidepool-town",
+   "name": "Tidepool Town",
+   "category": "pool",
+   "confidence": "unconfirmed",
+   "notes": "Reported as a kids splash zone of about 9,000 square feet. This is probably an earlier plan name for Splash Cay. Skip it if you cannot see it."
+  },
+  {
+   "id": "splash-town",
+   "name": "Splash Town",
+   "category": "pool",
+   "confidence": "unconfirmed",
+   "notes": "Reported as an interactive fountain area of about 3,400 square feet. This may be an earlier plan name for Splash Harbor. Skip it if you cannot see it."
+  },
+  {
+   "id": "mini-jet-kart-racecourse",
+   "name": "Mini Jet Kart Racecourse",
+   "category": "activity",
+   "confidence": "unconfirmed",
+   "notes": "Reported as a mini jet kart racecourse. Not named in current NCL material. Skip it if you cannot see it."
+  }
+ ]
+}

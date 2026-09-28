@@ -1,0 +1,18 @@
+{
+  "id": "great-stirrup-cay",
+  "name": "Great Stirrup Cay",
+  "line": "ncl",
+  "port_code": "NPI",
+  "port_name": "Great Stirrup Cay",
+  "port_match": "Great Stirrup",
+  "basemap": "basemap.json",
+  "places": "places.json",
+  "survey_list": "survey-list.json",
+  "bounds": {
+    "min_lat": 25.817,
+    "min_lon": -77.9277,
+    "max_lat": 25.8292,
+    "max_lon": -77.8933
+  },
+  "bounds_note": "The island's coastline from OpenStreetMap plus about 150 meters, to take in the pier. The west edge stays east of -77.9300, where CocoCay (Little Stirrup Cay) begins."
+}

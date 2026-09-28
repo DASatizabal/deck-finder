@@ -31,5 +31,23 @@
         }
       ]
     }
+  ],
+  "places": [
+    {
+      "id": "great-stirrup-cay",
+      "name": "Great Stirrup Cay",
+      "path": "places/great-stirrup-cay/",
+      "port_code": "NPI",
+      "port_name": "Great Stirrup Cay",
+      "port_match": "Great Stirrup",
+      "bounds": {
+        "min_lat": 25.817,
+        "min_lon": -77.9277,
+        "max_lat": 25.8292,
+        "max_lon": -77.8933
+      },
+      "bytes": 100428,
+      "hash": "237e5bfa9d5843a69117fc5df7330d15cd315b0bcf51dcbdc240cb8d953fa0dd"
+    }
   ]
 }

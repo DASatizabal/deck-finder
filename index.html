@@ -192,6 +192,93 @@ button:focus-visible,input:focus-visible,[tabindex]:focus-visible{outline:3px so
 .layoutopt.cur::after{content:"";width:10px;height:10px;border-radius:50%;background:var(--accent);flex:none}
 .placeline{position:absolute;left:0;right:0;height:0;border-top:2px solid rgba(242,107,29,.7);pointer-events:none;z-index:1;animation:placefade 2s ease-out forwards}
 @keyframes placefade{0%{opacity:1}60%{opacity:.6}100%{opacity:0}}
+/* island map: drawn from basemap.json (no map tiles), markers and the blue dot on top */
+:root{--sea:#BFE3F0;--land:#E4EED3;--shore:#9DB88A;--beach:#F6E7B9;--water:#8FD0EA;--bldg:#CFC6B6;--road:#FFFFFF;--path:#A9855A;--pier:#9AA5AB}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){--sea:#0E3446;--land:#243A2C;--shore:#3F5E47;--beach:#4D4632;--water:#1F5F7A;--bldg:#57544D;--road:#7C8B91;--path:#B39168;--pier:#6F7B80}}
+:root[data-theme="dark"]{--sea:#0E3446;--land:#243A2C;--shore:#3F5E47;--beach:#4D4632;--water:#1F5F7A;--bldg:#57544D;--road:#7C8B91;--path:#B39168;--pier:#6F7B80}
+.island{position:fixed;inset:0;z-index:8;background:var(--bg);display:flex;flex-direction:column;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+.island[hidden]{display:none}
+.itop{display:flex;align-items:center;gap:4px;padding:6px 8px}
+.itop h2{flex:1;min-width:0;margin:0;font-size:18px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.aboard{margin:0 10px 6px;padding:8px 12px;border-radius:10px;background:var(--chip);font-weight:700;font-size:14px}
+.aboard[hidden]{display:none}
+.aboard.warn{background:#E67E22;color:#fff}.aboard.late{background:#C0392B;color:#fff}.aboard.info{font-weight:400;color:var(--muted)}
+.imap{position:relative;flex:1;min-height:0;overflow:hidden;touch-action:none;background:var(--sea);user-select:none;-webkit-user-select:none}
+#isvg{position:absolute;inset:0;width:100%;height:100%;display:block}
+#isvg path,#isvg circle,#isvg line{vector-effect:non-scaling-stroke}
+.g-land{fill:var(--land);stroke:var(--shore);stroke-width:1.2}
+.g-beach{fill:var(--beach);stroke:none}
+.g-water{fill:var(--water);stroke:none}
+.g-bldg{fill:var(--bldg);stroke:rgba(0,0,0,.18);stroke-width:.6}
+.g-pier{fill:var(--pier);stroke:none}
+.g-pierl{fill:none;stroke:var(--pier);stroke-width:3;stroke-linecap:round}
+.g-road{fill:none;stroke:var(--road);stroke-width:3;stroke-linecap:round;stroke-linejoin:round}
+.g-path{fill:none;stroke:var(--path);stroke-width:1.5;stroke-dasharray:4 3;stroke-linecap:round}
+.o-acc{fill:rgba(26,115,232,.15);stroke:rgba(26,115,232,.5);stroke-width:1}
+.o-walk{fill:none;stroke:#D6336C;stroke-width:3;stroke-linejoin:round;stroke-linecap:round;opacity:.85}
+.o-back{stroke:var(--accent);stroke-width:4;stroke-dasharray:8 6;stroke-linecap:round}
+.imarks{position:absolute;inset:0;pointer-events:none}
+.imarks > *{pointer-events:auto}
+.mk{position:absolute;left:0;top:0;width:30px;height:30px;margin:-15px 0 0 -15px;padding:0;border-radius:50%;background:#fff;border:3px solid var(--c);display:grid;place-items:center;box-shadow:0 1px 4px rgba(0,0,0,.35);z-index:1}
+.mk i{font-style:normal;font-size:15px;line-height:1}
+.mk span,.svmk span{position:absolute;top:100%;left:50%;transform:translateX(-50%);margin-top:3px;font-size:11px;font-weight:700;line-height:1.3;white-space:nowrap;max-width:190px;overflow:hidden;text-overflow:ellipsis;background:rgba(255,255,255,.92);color:#0E2A3B;padding:0 5px;border-radius:6px;display:none}
+.imap.labels .mk span,.imap.labels .svmk span,.mk.sel span,.mk.spotmk span,.svmk.sel span{display:block}
+.mk.approx{border-style:dashed;background:rgba(255,255,255,.8)}
+.mk.sel{z-index:3}
+.mk.hot{animation:hlpulse 1.2s ease-in-out 5;box-shadow:0 0 0 3px var(--accent)}
+.mk.spotmk{--c:#8E44AD;width:34px;height:34px;margin:-17px 0 0 -17px;z-index:2}
+.svmk{position:absolute;left:0;top:0;width:14px;height:14px;margin:-7px 0 0 -7px;padding:0;border-radius:3px;background:var(--c);border:2px solid #fff;transform-origin:center;box-shadow:0 1px 3px rgba(0,0,0,.4)}
+.svmk.new{border-radius:50%;background:#fff;border:3px solid #D6336C}
+.me{position:absolute;left:0;top:0;width:20px;height:20px;margin:-10px 0 0 -10px;border-radius:50%;background:#1A73E8;border:3px solid #fff;box-shadow:0 0 0 1px rgba(0,0,0,.2),0 1px 5px rgba(0,0,0,.4);z-index:4;pointer-events:none}
+.me[hidden]{display:none}
+.itopstack{position:absolute;top:8px;left:8px;right:8px;z-index:5;display:flex;flex-direction:column;gap:6px;pointer-events:none}
+.itopstack > *{pointer-events:auto}
+.ibanner{background:var(--surface);color:var(--ink);border-radius:12px;padding:10px 12px;box-shadow:0 2px 10px rgba(0,0,0,.25);font-size:14px}
+.ibanner[hidden]{display:none}
+.ibanner b{display:block;font-size:15px}
+.ibanner button{margin-top:6px;font-weight:700;text-decoration:underline}
+.recbar{display:flex;align-items:center;gap:8px;background:#D6336C;color:#fff;border-radius:12px;padding:8px 12px;font-weight:700;font-size:14px}
+.recbar[hidden]{display:none}
+.recbar .grow{flex:1}
+.recbar button{background:#fff;color:#D6336C;border-radius:8px;padding:6px 10px}
+.itools{position:absolute;right:8px;top:50%;transform:translateY(-50%);z-index:5;display:flex;flex-direction:column;gap:8px}
+.itools .zoom{position:static;float:none;margin:0}
+.ibottom{position:absolute;left:8px;right:8px;bottom:8px;z-index:6;display:flex;flex-direction:column;gap:6px;pointer-events:none}
+.ibottom > *{pointer-events:auto}
+.iattr{align-self:flex-end;font-size:11px;background:rgba(255,255,255,.85);color:#33505F;padding:1px 6px;border-radius:6px}
+.iattr a{color:inherit}
+.ibar{display:flex;gap:6px}
+.ibar button{flex:1;padding:12px 6px;border-radius:12px;background:var(--ink);color:var(--bg);font-weight:700;font-size:14px;box-shadow:0 2px 8px rgba(0,0,0,.3)}
+.ibar button.on{background:var(--accent);color:var(--accent-ink)}
+.icard,.backpanel{background:var(--surface);border-radius:14px;padding:12px 14px;box-shadow:0 2px 12px rgba(0,0,0,.3)}
+.icard[hidden],.backpanel[hidden]{display:none}
+.icard .row,.backpanel .row{display:flex;align-items:flex-start;gap:10px}
+.icard .grow,.backpanel .grow{flex:1;min-width:0}
+.icard small,.backpanel small{display:block;color:var(--muted);font-size:13px}
+.icard .x,.backpanel .x{font-size:15px;padding:4px 8px;border-radius:8px;background:var(--chip);flex:none}
+.icard .acts{display:flex;gap:6px;margin-top:8px;flex-wrap:wrap}
+.icard .acts button{padding:8px 10px;border-radius:8px;background:var(--chip);font-weight:600;font-size:14px}
+.backpanel .arrow{width:64px;height:64px;flex:none;transition:transform .15s linear}
+.backpanel .dist{font-size:22px;font-weight:700}
+.imsg{position:absolute;inset:0;z-index:7;background:var(--bg)}
+.imsg[hidden]{display:none}
+.stripwrap{display:flex;gap:6px;margin:0 12px 8px}
+.stripwrap .strip{margin:0;width:auto;flex:1;min-width:0}
+.stripisl{flex:none;padding:0 12px;border-radius:12px;background:var(--ink);color:var(--bg);font-weight:700;font-size:14px}
+.stripisl[hidden]{display:none}
+.strip .aa{font-size:13px;font-weight:700}
+.aa.warn{color:#D35400}.aa.late{color:#C0392B}.aa.info{font-weight:400;color:var(--muted)}
+.day .islbtn{margin-left:auto;align-self:center;flex:none}
+.svrow{display:flex;align-items:center;gap:10px;padding:10px 4px;border-bottom:1px solid var(--line)}
+.svrow .grow{flex:1;min-width:0;text-align:left}
+.svrow small{display:block;color:var(--muted);font-size:13px}
+.svrow.done small{color:#2E8B57}
+.svrow.gone b{text-decoration:line-through;color:var(--muted)}
+.svrow .edit{padding:8px 10px;border-radius:8px;background:var(--chip);font-size:14px;flex:none}
+.badge{display:inline-block;font-size:11px;font-weight:700;padding:0 6px;border-radius:6px;background:#F39C12;color:#fff;vertical-align:2px}
+.bigcount{font-size:44px;font-weight:700;text-align:center;padding:10px 0;font-variant-numeric:tabular-nums}
+.steps{margin:6px 0 10px;padding-left:22px}
+.steps li{margin:4px 0}
 @media (prefers-reduced-motion: reduce){*{transition:none!important}.hl{animation:none}}
 </style>
 </head>
@@ -207,7 +294,7 @@ button:focus-visible,input:focus-visible,[tabindex]:focus-visible{outline:3px so
       <svg viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="5" r="2.2"/><circle cx="12" cy="12" r="2.2"/><circle cx="12" cy="19" r="2.2"/></svg>
     </button>
   </header>
-  <button class="strip" id="strip"></button>
+  <div class="stripwrap"><button class="strip" id="strip"></button><button class="stripisl" id="stripIsland" hidden>Island map</button></div>
   </div>
 
   <main class="body">
@@ -235,10 +322,36 @@ button:focus-visible,input:focus-visible,[tabindex]:focus-visible{outline:3px so
   <input class="search" id="q" type="search" placeholder="Try Starbucks, pool, a cabin number, or a pin" autocomplete="off">
   <div class="results" id="results"></div>
 </div>
+<div class="island" id="island" hidden role="dialog" aria-label="Island map">
+  <div class="itop">
+    <button class="iconbtn" id="iBack" aria-label="Back to the deck plans"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M15 5l-7 7 7 7"/></svg></button>
+    <h2 id="iTitle">Island map</h2>
+    <button class="iconbtn" id="iFind" aria-label="Find a place on the island"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><circle cx="10.5" cy="10.5" r="6.5"/><path d="M15.5 15.5 21 21"/></svg></button>
+  </div>
+  <div class="aboard" id="iAboard" hidden></div>
+  <div class="imap" id="imap">
+    <svg id="isvg" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><g id="igeo"></g><g id="iover"></g></svg>
+    <div class="imarks" id="imarks"></div>
+    <div class="itopstack"><div class="ibanner" id="iBanner" hidden></div><div class="recbar" id="iRec" hidden></div></div>
+    <div class="itools">
+      <button class="zoom" id="iZoomIn" aria-label="Zoom in">+</button>
+      <button class="zoom" id="iZoomOut" aria-label="Zoom out">−</button>
+      <button class="zoom" id="iLocate" aria-label="Show where I am">◎</button>
+    </div>
+    <div class="ibottom">
+      <div class="icard" id="iCard" hidden></div>
+      <div class="backpanel" id="iBackPanel" hidden></div>
+      <div class="iattr" id="iAttr"></div>
+      <div class="ibar"><button id="iSpot">Save my spot</button><button id="iTake">Take me back</button><button id="iSurvey">Survey</button></div>
+    </div>
+    <div class="imsg" id="iMsg" hidden></div>
+  </div>
+</div>
+<div class="sheet" id="islandSheet" role="dialog" aria-label="Island"><div class="scroll" id="islandBody"></div></div>
 
 <script>
-const APP_VERSION = "1.9.0";
-const APP_DATE = "2026-09-27";
+const APP_VERSION = "1.10.0";
+const APP_DATE = "2026-09-28";
 
 // ---------- ships: loaded at runtime from ships/index.json and each ship's ship.json ----------
 let CATALOG = [];       // every ship in ships/index.json: {id, name, path, decks, bytes, hash, line, lineName}
@@ -415,6 +528,7 @@ async function loadCatalog(){
   if (!r.ok) throw new Error("ships/index.json answered " + r.status);
   const idx = await r.json();
   CATALOG = idx.lines.flatMap(l => l.ships.map(x => Object.assign({ line: l.id, lineName: l.name }, x)));
+  PLACES = Array.isArray(idx.places) ? idx.places : [];   // island maps, added in 1.10.0
   catalogReady = true;
 }
 function ensureShip(id){
@@ -438,6 +552,7 @@ async function refreshSaved(){
       if (hit) SAVED[x.id] = (await hit.json()).hash; else delete SAVED[x.id];
     } catch (e) {}
   }
+  await refreshSavedPlaces();
 }
 // Download ship.json and every deck image, then store them together as one unit.
 // saved.json is written last, so a download cut off halfway never counts as saved.
@@ -466,6 +581,7 @@ async function saveShip(id){
 }
 // Save the ship of every trip, and refresh any saved ship whose files changed on the website.
 async function syncOfflineShips(){
+  syncOfflinePlaces();   // island maps for island days on the trips
   if (!catalogReady || !("caches" in window) || !navigator.onLine) return;
   const tripShips = new Set(data.trips.map(t => t.ship));
   for (const x of CATALOG){
@@ -612,18 +728,24 @@ function render(){
 // ---------- trip strip ----------
 function renderStrip(){
   const s = $("strip"); const trip = activeTrip();
-  if (!trip){ s.innerHTML = `<div class="grow"><div class="what">Set up a trip</div><div class="when">Add your ship, sail date, and cabin</div></div><span class="chev">›</span>`; return; }
+  if (!trip){ $("stripIsland").hidden = true; s.innerHTML = `<div class="grow"><div class="what">Set up a trip</div><div class="when">Add your ship, sail date, and cabin</div></div><span class="chev">›</span>`; return; }
   const days = trip.itinerary?.days || [];
   const today = ymd(new Date());
   let when, what;
   const td = days.find(x => x.date === today);
+  // The Island map button shows from now until the trip's island day; the countdown only on that day.
+  const next = islandDays(trip).find(x => x.day.date >= today);
+  $("stripIsland").hidden = !next;
+  if (next) $("stripIsland").onclick = () => openIsland(next.place.id);
+  const aa = aboardFor(trip);
+  const aaLine = aa ? aboardLine(aa) : null;
   if (td){ when = "Today, "+niceDate(td.date); what = dayLine(td); }
   else if (today < trip.date){
     const n = Math.round((Date.parse(trip.date) - Date.parse(today)) / 86400000);
     when = shipName(trip.ship)+", "+niceDate(trip.date);
     what = n === 1 ? "Sailing tomorrow" : "Sailing in "+n+" days";
   } else { when = shipName(trip.ship)+", "+niceDate(trip.date); what = days.length ? "Trip complete" : "No itinerary yet"; }
-  s.innerHTML = `<div class="grow"><div class="when">${esc(when)}</div><div class="what">${esc(what)}</div></div><span class="chev">›</span>`;
+  s.innerHTML = `<div class="grow"><div class="when">${esc(when)}</div><div class="what">${esc(what)}</div>${aaLine ? `<div class="aa ${aaLine.cls}">${esc(aaLine.text)}</div>` : ""}</div><span class="chev">›</span>`;
 }
 $("strip").onclick = () => activeTrip() ? openItinerary() : openTrips();
 
@@ -824,6 +946,9 @@ function renderMenu(){
     <button class="layoutopt ${isWide() ? "" : "cur"}" data-layout="columns"><span>Side by side<small>The list, the plan and the deck slider next to each other.</small></span></button>
     <div class="sectionlabel">Browse a ship</div>
     ${CATALOG.map(x => `<div class="shiprow"><button class="shipopt ${x.id===state.ship?"cur":""}" data-k="${esc(x.id)}"><span>${esc(x.name)}<br><small>${x.decks ? x.decks + " decks, " + mb(x.bytes) : "Deck plans not added yet"}</small></span></button>${offlineBadge(x.id)}</div>`).join("")}
+    ${PLACES.length ? `<div class="sectionlabel">Island maps</div>
+    ${PLACES.map(x => `<div class="shiprow"><button class="shipopt" data-isl="${esc(x.id)}"><span>${esc(x.name)}<br><small>Island map, ${mb(x.bytes)}</small></span></button>${placeBadge(x.id)}</div>`).join("")}
+    <button class="menuopt" id="mExport">Export survey</button><div class="status" id="mExportMsg"></div>` : ""}
     <div class="verline">Version ${APP_VERSION} (${APP_DATE})</div>`;
   $("mTrips").onclick = openTrips;
   $("mNews").onclick = openNews;
@@ -834,6 +959,15 @@ function renderMenu(){
     state.ship = b.dataset.k; state.zoom = 1; state.deck = 0; highlight = null; delete shipErrors[state.ship];
     closeSheets(); render();
   });
+  $("menuBody").querySelectorAll("[data-isl]").forEach(b => b.onclick = () => openIsland(b.dataset.isl));
+  $("menuBody").querySelectorAll("[data-pdl]").forEach(b => b.onclick = () => savePlace(b.dataset.pdl).catch(() => {}));
+  if ($("mExport")) $("mExport").onclick = async () => {
+    const ids = PLACES.map(x => x.id).filter(surveyCount);
+    if (!ids.length){ $("mExportMsg").textContent = "Nothing recorded in Survey mode yet. Open an island map and tap Survey."; return; }
+    $("mExportMsg").textContent = "Exporting...";
+    const msgs = []; for (const id of ids) msgs.push(await exportSurvey(id));
+    if ($("mExportMsg")) $("mExportMsg").textContent = msgs.join(" ");
+  };
   $("menuBody").querySelectorAll("[data-dl]").forEach(b => b.onclick = () => {
     const id = b.dataset.dl;
     saveShip(id).then(() => { if (id === state.ship) render(); }, () => {});
@@ -884,6 +1018,7 @@ function openTripForm(id, msg, isErr){
     <label class="field"><span>Ship</span><select id="fShip">${CATALOG.map(x => `<option value="${esc(x.id)}" ${x.id===t.ship?"selected":""}>${esc(x.name)}</option>`).join("")}</select></label>
     <label class="field"><span>Sail date</span><input id="fDate" type="date" value="${esc(t.date)}"></label>
     <label class="field"><span>Cabin number</span><input id="fCabin" inputmode="numeric" placeholder="e.g. 5768" value="${esc(t.cabin)}"></label>
+    ${id && islandDays(t).length ? `<label class="field"><span>All aboard on island day: minutes before the ship departs</span><input id="fAboard" type="number" inputmode="numeric" min="0" max="240" step="5" value="${Number.isFinite(t.allAboard) ? t.allAboard : 30}"></label>` : ""}
     <button class="btn" id="fSave">${it ? "Save" : "Save and look up itinerary"}</button>
     <div class="status ${isErr ? "err" : ""}" id="fStatus">${esc(msg || "")}</div>
     ${id && t.ship && shipHasDecks(t.ship) && cabinDeckNum(t.cabin) ? `<button class="btn ghost" id="fPin">${t.pin || geoCabin(t.ship, t.cabin) ? "Move cabin pin" : "Place cabin pin"}</button>` : ""}
@@ -927,6 +1062,7 @@ function openTripForm(id, msg, isErr){
     const changed = trip.ship !== ship || trip.date !== date;
     if (trip.cabin !== cabin) trip.pin = null;
     Object.assign(trip, { ship, date, cabin });
+    if ($("fAboard")){ const n = Math.round(Number($("fAboard").value)); if ($("fAboard").value !== "" && n >= 0 && n <= 240) trip.allAboard = n; }
     if (changed) trip.itinerary = null;
     data.activeTripId = trip.id; setActive(trip.id);
     syncOfflineShips(); // save this trip's ship for offline use
@@ -949,7 +1085,7 @@ async function runLookup(trip, afterSave){
   $("tripBody").querySelectorAll("button").forEach(b => b.disabled = true);
   try {
     trip.itinerary = await findItinerary(trip.ship, trip.date, m => st.textContent = m);
-    save(); render();
+    save(); render(); syncOfflinePlaces();
     const found = "Found " + trip.itinerary.title + ".";
     if (!afterSave) return openTripForm(trip.id, found);
     st.textContent = found;
@@ -999,9 +1135,10 @@ function openDayForm(tripId, idx){
     if (days.some((x, i) => i !== idx && x.date === date)) return st.textContent = "There is already a day for " + niceDate(date) + ". Go back and edit that day instead.";
     const it = t.itinerary || (t.itinerary = { title: "Your itinerary", source: "manual", fetched: new Date().toISOString(), days: [] });
     const nd = sea ? { date, sea: true } : { date, port, arrive: $("dArr").value, depart: $("dDep").value };
+    if (!sea && day && day.code && day.port === port) nd.code = day.code;   // same port: keep its NCL code
     if (idx == null) it.days.push(nd); else it.days[idx] = nd;
     it.days = normalizeDays(it.days);
-    edited(it); save(); render();
+    edited(it); save(); render(); syncOfflinePlaces();
     openTripForm(tripId, "Saved " + niceDate(date) + ".");
   };
   if ($("dDel")) $("dDel").onclick = () => {
@@ -1018,7 +1155,7 @@ function openDayForm(tripId, idx){
 // Sort the days and mark the first as boarding day and the last as the day you get off.
 function normalizeDays(days){
   const out = days.slice().sort((a, b) => a.date.localeCompare(b.date))
-    .map(d => d.sea ? { date: d.date, sea: true } : { date: d.date, kind: "port", port: d.port, arrive: d.arrive || "", depart: d.depart || "" });
+    .map(d => d.sea ? { date: d.date, sea: true } : Object.assign({ date: d.date, kind: "port", port: d.port, arrive: d.arrive || "", depart: d.depart || "" }, d.code ? { code: d.code } : {}));
   if (out.length && !out[0].sea) out[0].kind = "embark";
   if (out.length > 1 && !out[out.length - 1].sea) out[out.length - 1].kind = "debark";
   return out;
@@ -1079,10 +1216,12 @@ function buildDays(sail, events, target){
     const hhmm = ts => new Date(ts).toISOString().slice(11,16);
     const a = evs.find(e => e.ev === "A" && e.code), d = evs.find(e => e.ev === "D" && e.code);
     const port = (a || d)?.name;
-    if (i === 0) days.push({ date: iso, kind: "embark", port: d?.name || port || "Embark", depart: d ? hhmm(d.ts) : "" });
-    else if (i === nights) days.push({ date: iso, kind: "debark", port: a?.name || port || "Debark", arrive: a ? hhmm(a.ts) : "" });
+    const code = (a || d)?.code;   // NCL's port code, like NPI for Great Stirrup Cay (added in 1.10.0)
+    const withCode = day => code ? Object.assign(day, { code }) : day;
+    if (i === 0) days.push(withCode({ date: iso, kind: "embark", port: d?.name || port || "Embark", depart: d ? hhmm(d.ts) : "" }));
+    else if (i === nights) days.push(withCode({ date: iso, kind: "debark", port: a?.name || port || "Debark", arrive: a ? hhmm(a.ts) : "" }));
     else if (!port) days.push({ date: iso, sea: true });
-    else days.push({ date: iso, kind: "port", port, arrive: a ? hhmm(a.ts) : "", depart: d ? hhmm(d.ts) : "" });
+    else days.push(withCode({ date: iso, kind: "port", port, arrive: a ? hhmm(a.ts) : "", depart: d ? hhmm(d.ts) : "" }));
   }
   return days;
 }
@@ -1146,7 +1285,10 @@ async function lookupViaHelper(shipKey, dateIso, progress){
   if (!r.ok) throw new Error("the backup helper had a problem: " + (body.error || "error " + r.status) + " Try again later.");
   const days = cruiseFeedDays(body);
   if (!days.length) throw new Error("CruiseFeed has this sailing, but not its day-by-day stops.");
-  return { title: body.title || ship.name + " sailing", fetched: new Date().toISOString(), source: "cruisefeed", days };
+  const it = { title: body.title || ship.name + " sailing", fetched: new Date().toISOString(), source: "cruisefeed", days };
+  // Where the backup helper found it, like "NCL website, captured 2026-09-23" or "CruiseFeed".
+  if (typeof body.source === "string" && body.source.trim()) it.sourceLabel = body.source.trim().slice(0, 80);
+  return it;
 }
 const addDaysIso = (iso, n) => new Date(Date.parse(iso + "T00:00:00Z") + n * 86400000).toISOString().slice(0, 10);
 // CruiseFeed times can come as "16:00", "16:00:00", "4:00 PM" or a full date and time. The app stores "HH:MM".
@@ -1185,7 +1327,9 @@ const SOURCE_TEXT = { ncl: "Found on NCL's website", cruisefeed: "Found through 
 function itinSource(it){
   const src = SOURCE_TEXT[it.source] ? it.source : "ncl"; // itineraries saved before 1.9.0 all came from NCL
   let s = SOURCE_TEXT[src];
-  if (src !== "manual" && it.fetched) s += " on " + niceDate(it.fetched.slice(0, 10));
+  const label = src === "cruisefeed" && it.sourceLabel && !/^cruisefeed$/i.test(it.sourceLabel) ? it.sourceLabel : "";
+  if (label) s = label + (it.fetched ? ", looked up on " + niceDate(it.fetched.slice(0, 10)) : "");
+  else if (src !== "manual" && it.fetched) s += " on " + niceDate(it.fetched.slice(0, 10));
   if (it.edited) s += ", then edited by hand";
   if (src === "cruisefeed") s += ". NCL no longer lists this sailing";
   return s + ".";
@@ -1211,12 +1355,14 @@ function openItinerary(){
         <div class="d">${niceDate(day.date)}</div>
         <div><div class="p">${day.sea ? "At sea" : esc(day.port)}</div>
         <div class="tm">${esc(dayTimes(day))}</div></div>
+        ${islandForDay(day) ? `<button class="dl islbtn" data-island="${esc(islandForDay(day).id)}">Island map</button>` : ""}
       </div>`).join("") + `<div class="hint">${gaps ? "Some times aren't listed. Tap Edit itinerary to add them from your cruise documents. " : ""}Times are local port time. Check your ship's daily planner for all-aboard times.</div>`
     : `<div class="hint">Open Trip set up and tap Save and look up itinerary while you have internet, or tap Type in the itinerary.</div>`}
     <button class="btn ghost" id="iFix">${it ? "Edit itinerary" : "Type in the itinerary"}</button>
     <button class="btn ghost" id="iEdit">Trip set up</button>`;
   $("iFix").onclick = () => openTripForm(t.id);
   $("iEdit").onclick = openTrips;
+  $("itinBody").querySelectorAll("[data-island]").forEach(b => b.onclick = () => openIsland(b.dataset.island));
   openSheet("itinSheet");
 }
 
@@ -1321,6 +1467,935 @@ function openPinList(){
   openSheet("pinSheet");
 }
 
+// ---------- island maps: places/<id>/ with place.json, basemap.json, places.json, survey-list.json ----------
+// Listed under "places" in ships/index.json. Each island saved for offline lives in its own cache,
+// "deckfinder-place-<id>", and is re-downloaded only when its hash changes, like ships.
+let PLACES = [];            // {id, name, path, port_code, port_name, port_match, bounds, bytes, hash}
+const PLACE_DATA = {};      // place id -> { info, base, places, survey, categories } once loaded
+const placeLoads = {};
+const PLACE_SAVED = {}, placeDownloading = {}, placeDlFailed = {};
+const placeEntry = id => PLACES.find(p => p.id === id) || null;
+const placeCacheName = id => "deckfinder-place-" + id;
+const NOT_SAVED_ISLAND = "This island map isn't saved on your phone yet. Connect to the internet, open the menu, and tap Download for offline next to the island.";
+
+// An itinerary day is an island day when its NCL port code matches, or when its port name contains
+// the island's name. Itineraries from CruiseFeed, the shared cache, or typed by hand have no code.
+function islandForDay(day){
+  if (!day || day.sea) return null;
+  const port = normName(day.port || "");
+  return PLACES.find(p => (day.code && p.port_code && String(day.code).toUpperCase() === p.port_code.toUpperCase())
+    || [p.port_match, p.port_name].some(n => n && port.includes(normName(n)))) || null;
+}
+function islandDays(trip){ return (trip?.itinerary?.days || []).map(day => ({ day, place: islandForDay(day) })).filter(x => x.place); }
+
+function ensurePlace(id){
+  if (PLACE_DATA[id]) return Promise.resolve(PLACE_DATA[id]);
+  if (placeLoads[id]) return placeLoads[id];
+  const e = placeEntry(id);
+  if (!e) return Promise.reject(new Error("that island isn't in the app"));
+  const get = f => fetch(e.path + f).then(r => { if (!r.ok) throw new Error(f + " answered " + r.status); return r.json(); });
+  placeLoads[id] = (async () => {
+    const info = await get("place.json");
+    const [base, pl, sv] = await Promise.all([get(info.basemap), get(info.places), get(info.survey_list)]);
+    return (PLACE_DATA[id] = { info, base, places: pl.places || [], survey: sv.venues || [], categories: sv.categories || [] });
+  })().finally(() => { delete placeLoads[id]; });
+  return placeLoads[id];
+}
+async function refreshSavedPlaces(){
+  if (!("caches" in window)) return;
+  for (const p of PLACES){
+    try {
+      const hit = await caches.match(absUrl(p.path + "saved.json"), { cacheName: placeCacheName(p.id) });
+      if (hit) PLACE_SAVED[p.id] = (await hit.json()).hash; else delete PLACE_SAVED[p.id];
+    } catch (e) {}
+  }
+}
+// Download every file of the island, then store them together. saved.json is written last.
+async function savePlace(id){
+  if (!("caches" in window) || placeDownloading[id]) return;
+  const e = placeEntry(id); if (!e) return;
+  placeDownloading[id] = true; delete placeDlFailed[id]; refreshMenu();
+  try {
+    const bust = "?v=" + e.hash.slice(0, 12); // the ?v= tells sw.js to go to the network
+    const get = async f => { const r = await fetch(e.path + f + bust, { cache: "no-store" }); if (!r.ok) throw new Error(f + " answered " + r.status); return r; };
+    const infoRes = await get("place.json");
+    const info = await infoRes.clone().json();
+    const files = await Promise.all([...new Set([info.basemap, info.places, info.survey_list])].map(async f => [f, await get(f)]));
+    await caches.delete(placeCacheName(id));
+    const c = await caches.open(placeCacheName(id));
+    await c.put(absUrl(e.path + "place.json"), infoRes);
+    for (const [f, r] of files) await c.put(absUrl(e.path + f), r);
+    await c.put(absUrl(e.path + "saved.json"), new Response(JSON.stringify({ hash: e.hash, saved: new Date().toISOString() }), { headers: { "Content-Type": "application/json" } }));
+    PLACE_SAVED[id] = e.hash;
+    delete PLACE_DATA[id];   // the next open reads the fresh copy (an open map keeps the one it has)
+    if (navigator.storage && navigator.storage.persist) navigator.storage.persist().catch(() => {});
+  } catch (err) {
+    placeDlFailed[id] = true; throw err;
+  } finally { delete placeDownloading[id]; refreshMenu(); }
+}
+// Save the island of every trip that stops there, and refresh a saved island whose files changed.
+async function syncOfflinePlaces(){
+  if (!catalogReady || !("caches" in window) || !navigator.onLine) return;
+  const wanted = new Set(data.trips.flatMap(t => islandDays(t).map(x => x.place.id)));
+  for (const p of PLACES){
+    const saved = PLACE_SAVED[p.id];
+    if ((wanted.has(p.id) && !saved) || (saved && saved !== p.hash)){ try { await savePlace(p.id); } catch (e) {} }
+  }
+}
+function placeBadge(id){
+  if (placeDownloading[id]) return `<span class="offl">Downloading...</span>`;
+  if (PLACE_SAVED[id]) return `<span class="offl ok">Saved for offline</span>`;
+  return `<button class="dl" data-pdl="${esc(id)}">${placeDlFailed[id] ? "Download failed. Tap to retry." : "Download for offline"}</button>`;
+}
+
+// ---------- distances and directions ----------
+const R_EARTH = 6371008.8, rad = d => d * Math.PI / 180;
+function distM(a, b){
+  const dLat = rad(b.lat - a.lat), dLon = rad(b.lon - a.lon);
+  const h = Math.sin(dLat / 2) ** 2 + Math.cos(rad(a.lat)) * Math.cos(rad(b.lat)) * Math.sin(dLon / 2) ** 2;
+  return 2 * R_EARTH * Math.asin(Math.min(1, Math.sqrt(h)));
+}
+function bearingTo(a, b){
+  const y = Math.sin(rad(b.lon - a.lon)) * Math.cos(rad(b.lat));
+  const x = Math.cos(rad(a.lat)) * Math.sin(rad(b.lat)) - Math.sin(rad(a.lat)) * Math.cos(rad(b.lat)) * Math.cos(rad(b.lon - a.lon));
+  return (Math.atan2(y, x) * 180 / Math.PI + 360) % 360;
+}
+function distToBounds(p, b){
+  return distM(p, { lat: Math.min(b.max_lat, Math.max(b.min_lat, p.lat)), lon: Math.min(b.max_lon, Math.max(b.min_lon, p.lon)) });
+}
+const NEAR_M = 3218.7;           // 2 miles: farther than this from the island, there is no blue dot
+const WALK_M_PER_MIN = 80.47;    // about 3 miles per hour
+const WEAK_GPS_M = 20;           // Survey mode warns when a reading is less accurate than this
+const commas = n => Math.round(n).toLocaleString("en-US");
+function distText(m){
+  const ft = m * 3.28084;
+  if (ft <= 1000) return commas(ft < 50 ? ft : Math.round(ft / 10) * 10) + " feet";
+  const mi = ft / 5280;
+  return commas(Math.round(ft / 10) * 10) + " feet (" + mi.toFixed(mi < 1 ? 2 : 1) + " miles)";
+}
+function walkText(m){ const n = Math.max(1, Math.round(m / WALK_M_PER_MIN)); return "About " + n + (n === 1 ? " minute" : " minutes") + " walking"; }
+const COMPASS_WORDS = ["north", "northeast", "east", "southeast", "south", "southwest", "west", "northwest"];
+const compassWord = deg => COMPASS_WORDS[Math.round(deg / 45) % 8];
+
+// ---------- categories ----------
+const CATS = {
+  tram: { label: "Tram stop", group: "Tram stops", icon: "🚋", color: "#8E44AD" },
+  food: { label: "Food", group: "Food", icon: "🍴", color: "#E67E22" },
+  bar: { label: "Bar", group: "Bars", icon: "🍹", color: "#C0392B" },
+  pool: { label: "Pool", group: "Pools", icon: "🏊", color: "#2980B9" },
+  beach: { label: "Beach", group: "Beaches", icon: "🏖️", color: "#C9A227" },
+  cabana: { label: "Cabana", group: "Cabanas", icon: "⛱️", color: "#16A085" },
+  restroom: { label: "Restroom", group: "Restrooms", icon: "🚻", color: "#34495E" },
+  first_aid: { label: "First aid", group: "First aid", icon: "➕", color: "#E74C3C" },
+  shop: { label: "Shop", group: "Shops", icon: "🛍️", color: "#9B59B6" },
+  activity: { label: "Activity", group: "Activities", icon: "🎯", color: "#27AE60" },
+  landmark: { label: "Landmark", group: "Landmarks", icon: "📍", color: "#7F8C8D" },
+  pier: { label: "Pier", group: "Piers", icon: "⚓", color: "#2C3E50" },
+};
+const cat = c => CATS[c] || { label: "Place", group: "Other places", icon: "•", color: "#7F8C8D" };
+const placeLabel = p => p.name + (p.approximate ? " (approximate)" : "");
+
+// ---------- GPS: one watch while the island map is open ----------
+const gps = { watch: null, fix: null, err: null, listeners: new Set() };
+function gpsStart(){
+  if (gps.watch !== null) return;
+  if (!("geolocation" in navigator)) { gps.err = { code: 0 }; islGpsChanged(); return; }
+  if (gps.err && gps.err.code === 1) gps.err = null;
+  gps.watch = navigator.geolocation.watchPosition(p => {
+    gps.fix = { lat: p.coords.latitude, lon: p.coords.longitude, acc: p.coords.accuracy, t: Date.now() };
+    gps.err = null;
+    gps.listeners.forEach(f => { try { f(gps.fix); } catch (e) {} });
+    islGpsChanged();
+  }, e => {
+    gps.err = { code: e.code };
+    if (e.code === 1) gpsStop();       // permission denied: the watch is over
+    islGpsChanged();
+  }, { enableHighAccuracy: true, maximumAge: 0, timeout: 30000 });
+}
+function gpsStop(){
+  if (gps.watch !== null && navigator.geolocation) navigator.geolocation.clearWatch(gps.watch);
+  gps.watch = null;
+}
+const gpsDenied = () => !!(gps.err && (gps.err.code === 1 || gps.err.code === 0));
+
+// ---------- keep the screen awake (Take me back, recording a walk) ----------
+const wake = { reasons: new Set(), lock: null, busy: false };
+async function wakeSync(){
+  if (!("wakeLock" in navigator) || wake.busy) return;
+  wake.busy = true;
+  try {
+    if (wake.reasons.size && !wake.lock && document.visibilityState === "visible"){
+      wake.lock = await navigator.wakeLock.request("screen");
+      wake.lock.addEventListener("release", () => { wake.lock = null; });
+    } else if (!wake.reasons.size && wake.lock){ const l = wake.lock; wake.lock = null; await l.release(); }
+  } catch (e) {} finally { wake.busy = false; }
+}
+function wakeOn(reason){ wake.reasons.add(reason); wakeSync(); }
+function wakeOff(reason){ wake.reasons.delete(reason); wakeSync(); }
+// The phone drops the lock when the app goes to the background; take it again on return.
+document.addEventListener("visibilitychange", () => { if (document.visibilityState === "visible") wakeSync(); });
+
+// ---------- compass for Take me back ----------
+// iPhone: ask for motion permission (inside the tap), then use webkitCompassHeading.
+// Android: deviceorientationabsolute. No reading within 3 seconds means no compass: draw a line instead.
+const compass = { on: false, heading: null, state: "off", timer: null };
+function onOrient(e){
+  let h = null;
+  if (typeof e.webkitCompassHeading === "number" && !isNaN(e.webkitCompassHeading)) h = e.webkitCompassHeading;
+  else if (e.absolute && typeof e.alpha === "number") h = 360 - e.alpha;
+  if (h === null) return;
+  const scr = screen.orientation && typeof screen.orientation.angle === "number" ? screen.orientation.angle : (window.orientation || 0);
+  compass.heading = (h + scr + 360) % 360;
+  if (compass.state !== "ok"){ compass.state = "ok"; clearTimeout(compass.timer); renderBack(); drawOverlay(); }
+  else updateArrow();
+}
+async function startCompass(){
+  if (compass.on) return;
+  compass.on = true; compass.heading = null; compass.state = "waiting";
+  const DOE = window.DeviceOrientationEvent;
+  if (DOE && typeof DOE.requestPermission === "function"){
+    try { if (await DOE.requestPermission() !== "granted"){ compass.state = "denied"; renderBack(); drawOverlay(); return; } }
+    catch (e) { compass.state = "denied"; renderBack(); drawOverlay(); return; }
+  }
+  if (!compass.on) return;
+  if (!DOE){ compass.state = "none"; renderBack(); drawOverlay(); return; }
+  window.addEventListener("deviceorientationabsolute", onOrient);
+  window.addEventListener("deviceorientation", onOrient);
+  compass.timer = setTimeout(() => { if (compass.on && compass.heading === null){ compass.state = "none"; renderBack(); drawOverlay(); } }, 3000);
+}
+function stopCompass(){
+  compass.on = false; compass.state = "off"; clearTimeout(compass.timer);
+  window.removeEventListener("deviceorientationabsolute", onOrient);
+  window.removeEventListener("deviceorientation", onOrient);
+}
+
+// ---------- survey data: its own localStorage key, never mixed with trips ----------
+const SURVEY_KEY = "deckfinder-survey";
+let survey = { places: {} };
+try {
+  const s = JSON.parse(localStorage.getItem(SURVEY_KEY) || "null");
+  if (s && typeof s.places === "object" && s.places) survey = s;
+} catch (e) {}
+function saveSurvey(){
+  try { localStorage.setItem(SURVEY_KEY, JSON.stringify(survey)); return true; }
+  catch (e) { alert("The survey couldn't be saved: the phone's storage for this app is full. Export the survey now so nothing is lost."); return false; }
+}
+function sv(id){
+  const p = survey.places[id] || (survey.places[id] = {});
+  p.venues = p.venues || {}; p.added = p.added || []; p.walks = p.walks || [];
+  return p;
+}
+// A walk still recording when the app closed ends at its last point.
+Object.values(survey.places).forEach(p => (p.walks || []).forEach(w => {
+  if (!w.ended) w.ended = w.points.length ? new Date(w.points[w.points.length - 1][3]).toISOString() : w.started;
+}));
+function surveyCount(id){
+  const p = survey.places[id]; if (!p) return 0;
+  return Object.keys(p.venues || {}).length + (p.added || []).length + (p.walks || []).length;
+}
+
+// ---------- the island map screen ----------
+let isl = null;   // the open island map: { id, d, lat0, lon0, kx, ky, s, tx, ty, sel, hot, back, ... }
+const LABEL_S = 0.9;   // show every label once 1 meter is at least 0.9 pixels
+function openIsland(id){
+  const e = placeEntry(id); if (!e) return;
+  closeSheets();
+  if (isl && isl.id !== id) closeIsland(true);
+  if (!isl) isl = { id, s: 1, tx: 0, ty: 0, sel: null, hot: null, back: null, moved: false };
+  state.island = id; save();
+  $("island").hidden = false; $("iTitle").textContent = e.name;
+  if (!history.state || !history.state.island) history.pushState({ island: id }, "");
+  gps.fix = null; gpsStart();
+  renderAboard(); islGpsChanged();
+  if (isl.d) return;
+  $("iMsg").hidden = false; $("iMsg").innerHTML = `<div class="empty">Loading the island map...</div>`;
+  ensurePlace(id).then(d => { if (isl && isl.id === id) islSetup(d); }, () => {
+    if (isl && isl.id === id){ $("iMsg").hidden = false; $("iMsg").innerHTML = `<div class="empty"><strong>Not saved yet</strong>${NOT_SAVED_ISLAND}</div>`; }
+  });
+}
+function closeIsland(fromHistory){
+  if (!isl) return;
+  if (rec) stopWalk();
+  if (isl.back) closeBack();
+  recording = null;
+  gpsStop(); gps.fix = null;
+  isl = null; delete state.island; save();
+  $("island").hidden = true; closeSheets();
+  if (!fromHistory && history.state && history.state.island) history.back();
+  render();
+}
+// The phone's Back button or gesture closes the island map instead of leaving the app.
+window.addEventListener("popstate", () => { if (isl) closeIsland(true); });
+$("iBack").onclick = () => closeIsland(false);
+
+function proj(lat, lon){ return [(lon - isl.lon0) * isl.kx, (isl.lat0 - lat) * isl.ky]; }
+function toScreen(lat, lon){ const [x, y] = proj(lat, lon); return [x * isl.s + isl.tx, y * isl.s + isl.ty]; }
+const ptsD = cs => cs.map((c, i) => { const [x, y] = proj(c[1], c[0]); return (i ? "L" : "M") + x.toFixed(1) + " " + y.toFixed(1); }).join("");
+function islSetup(d){
+  const b = d.info.bounds;
+  Object.assign(isl, { d, lat0: (b.min_lat + b.max_lat) / 2, lon0: (b.min_lon + b.max_lon) / 2 });
+  isl.kx = 111320 * Math.cos(rad(isl.lat0)); isl.ky = 110574;
+  const cls = { land: "g-land", beach: "g-beach", water: "g-water", pool: "g-water", building: "g-bldg", pier: "g-pier", road: "g-road", path: "g-path" };
+  $("igeo").innerHTML = (d.base.features || []).map(f => {
+    const k = f.properties?.kind, g = f.geometry; if (!cls[k] || !g) return "";
+    if (g.type === "Polygon") return `<path class="${cls[k]}" d="${g.coordinates.map(r => ptsD(r) + "Z").join("")}"/>`;
+    if (g.type === "LineString") return `<path class="${k === "pier" ? "g-pierl" : cls[k]}" d="${ptsD(g.coordinates)}"/>`;
+    return "";
+  }).join("");
+  const at = d.base.attribution || "© OpenStreetMap contributors";
+  $("iAttr").innerHTML = `<a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">${esc(at)}</a>`;
+  $("iMsg").hidden = true;
+  fitIsland();
+  renderIslMarks();
+  islGpsChanged();
+}
+function mapSize(){ const r = $("imap").getBoundingClientRect(); return { w: r.width || 360, h: r.height || 500 }; }
+function fitBox(lat1, lon1, lat2, lon2, pad){
+  const { w, h } = mapSize();
+  const [x1, y1] = proj(Math.max(lat1, lat2), Math.min(lon1, lon2)), [x2, y2] = proj(Math.min(lat1, lat2), Math.max(lon1, lon2));
+  const s = Math.min((w - 2 * pad) / Math.max(1, x2 - x1), (h - 2 * pad) / Math.max(1, y2 - y1));
+  isl.s = Math.min(8, s); isl.tx = w / 2 - (x1 + x2) / 2 * isl.s; isl.ty = h / 2 - (y1 + y2) / 2 * isl.s;
+  applyView();
+}
+function fitIsland(){
+  const b = isl.d.base.island_bounds || isl.d.info.bounds;
+  fitBox(b.min_lat, b.min_lon, b.max_lat, b.max_lon, 16);
+  isl.fitS = isl.s;
+}
+function centerOn(lat, lon, minS){
+  const { w, h } = mapSize();
+  if (minS && isl.s < minS) isl.s = minS;
+  const [x, y] = proj(lat, lon);
+  isl.tx = w / 2 - x * isl.s; isl.ty = h / 2 - y * isl.s;
+  applyView();
+}
+const clampS = s => Math.min(25, Math.max((isl.fitS || 0.1) * 0.6, s));
+function zoomAt(f, px, py){
+  const s = clampS(isl.s * f);
+  isl.tx = px - (px - isl.tx) * s / isl.s; isl.ty = py - (py - isl.ty) * s / isl.s; isl.s = s;
+  applyView();
+}
+function applyView(){
+  if (!isl || !isl.d) return;
+  const m = `matrix(${isl.s} 0 0 ${isl.s} ${isl.tx} ${isl.ty})`;
+  $("igeo").setAttribute("transform", m); $("iover").setAttribute("transform", m);
+  $("imap").classList.toggle("labels", isl.s >= LABEL_S);
+  $("imarks").querySelectorAll("[data-lat]").forEach(el => {
+    const [x, y] = toScreen(+el.dataset.lat, +el.dataset.lon);
+    el.style.transform = `translate(${x.toFixed(1)}px,${y.toFixed(1)}px)`;
+  });
+}
+window.addEventListener("resize", () => {
+  if (!isl || !isl.d || !isl.lastSize) return;
+  const { w, h } = mapSize(), o = isl.lastSize;
+  isl.tx += (w - o.w) / 2; isl.ty += (h - o.h) / 2; isl.lastSize = { w, h }; applyView();
+});
+function islSpots(){ const t = activeTrip(); return t && isl ? (t.spots || []).filter(s => s.place === isl.id) : []; }
+function renderIslMarks(){
+  if (!isl || !isl.d) return;
+  isl.lastSize = mapSize();
+  const d = isl.d, S = sv(isl.id), sel = isl.sel, hot = isl.hot;
+  const cls = k => (sel === k ? " sel" : "") + (hot === k ? " hot" : "");
+  let h = d.places.map(p => `<button class="mk${p.approximate ? " approx" : ""}${cls("place:" + p.id)}" data-k="place:${esc(p.id)}" data-lat="${p.lat}" data-lon="${p.lon}" style="--c:${cat(p.category).color}" aria-label="${esc(placeLabel(p))}"><i>${cat(p.category).icon}</i><span>${esc(placeLabel(p))}</span></button>`).join("");
+  d.survey.forEach(v => { const r = S.venues[v.id]; if (r && typeof r.lat === "number")
+    h += `<button class="svmk${cls("tag:" + v.id)}" data-k="tag:${esc(v.id)}" data-lat="${r.lat}" data-lon="${r.lon}" style="--c:${cat(v.category).color}" aria-label="Survey: ${esc(r.rename || v.name)}"><span>${esc(r.rename || v.name)}</span></button>`; });
+  S.added.forEach(a => { h += `<button class="svmk new${cls("new:" + a.id)}" data-k="new:${esc(a.id)}" data-lat="${a.lat}" data-lon="${a.lon}" aria-label="New place: ${esc(a.name)}"><span>${esc(a.name)}</span></button>`; });
+  islSpots().forEach(s => { h += `<button class="mk spotmk${cls("spot:" + s.id)}" data-k="spot:${esc(s.id)}" data-lat="${s.lat}" data-lon="${s.lon}" aria-label="Saved spot: ${esc(s.name)}"><i>⭐</i><span>${esc(s.name)}</span></button>`; });
+  h += `<div class="me" id="iMe" hidden></div>`;
+  $("imarks").innerHTML = h;
+  $("imarks").querySelectorAll("[data-k]").forEach(b => b.onclick = e => { e.stopPropagation(); selectMark(b.dataset.k); });
+  updateMe(); applyView(); drawOverlay(); renderCard();
+}
+function markInfo(k){
+  if (!isl?.d || !k) return null;
+  const i = k.indexOf(":"), kind = k.slice(0, i), id = k.slice(i + 1), S = sv(isl.id);
+  if (kind === "place"){ const p = isl.d.places.find(x => x.id === id); return p && { kind, id, lat: p.lat, lon: p.lon, name: placeLabel(p), sub: cat(p.category).label, p }; }
+  if (kind === "spot"){ const s = islSpots().find(x => x.id === id); return s && { kind, id, lat: s.lat, lon: s.lon, name: s.name, sub: "Your saved spot", s }; }
+  if (kind === "tag"){ const v = isl.d.survey.find(x => x.id === id), r = S.venues[id]; return v && r && typeof r.lat === "number" && { kind, id, lat: r.lat, lon: r.lon, name: r.rename || v.name, sub: "Survey: recorded within " + r.acc + " m" }; }
+  if (kind === "new"){ const a = S.added.find(x => x.id === id); return a && { kind, id, lat: a.lat, lon: a.lon, name: a.name, sub: "Survey: new place, within " + a.acc + " m" }; }
+  return null;
+}
+let hotTimer = null;
+function selectMark(k, center){
+  isl.sel = k; isl.hot = k;
+  clearTimeout(hotTimer); hotTimer = setTimeout(() => { if (isl && isl.hot === k){ isl.hot = null; const el = $("imarks").querySelector(`[data-k="${CSS.escape(k)}"]`); if (el) el.classList.remove("hot"); } }, 6500);
+  const m = markInfo(k);
+  if (m && center) centerOn(m.lat, m.lon, 2.5);
+  renderIslMarks();
+}
+function renderCard(){
+  const c = $("iCard"), m = markInfo(isl?.sel);
+  if (!m || (isl.back && m.kind === "spot")){ c.hidden = true; return; }
+  const f = gps.fix && onIsland() ? gps.fix : null;
+  const far = f ? `${distText(distM(f, m))} away. ${walkText(distM(f, m))}.` : "";
+  c.hidden = false;
+  c.innerHTML = `<div class="row"><div class="grow"><b>${esc(m.name)}</b><small>${esc(m.sub)}</small>
+      ${m.p && m.p.approximate ? `<small>Approximate location. The real spot may be a short walk away.</small>` : ""}
+      ${far ? `<small>${esc(far)}</small>` : ""}</div><button class="x" id="cClose" aria-label="Close">✕</button></div>
+    ${m.kind === "spot" ? `<div class="acts"><button id="cBack">Take me back</button><button id="cRename">Rename</button><button id="cDel">Delete</button></div>` : ""}
+    ${m.kind === "tag" || m.kind === "new" ? `<div class="acts"><button id="cSurvey">Open in Survey</button></div>` : ""}`;
+  $("cClose").onclick = () => { isl.sel = null; isl.hot = null; renderIslMarks(); };
+  if ($("cBack")) $("cBack").onclick = () => openTakeBack(m.id);
+  if ($("cRename")) $("cRename").onclick = () => openSpotEditor(m.id);
+  if ($("cDel")) $("cDel").onclick = () => {
+    if (!confirm(`Delete the saved spot "${m.name}"?`)) return;
+    const t = activeTrip(); t.spots = (t.spots || []).filter(x => x.id !== m.id); save(); isl.sel = null; renderIslMarks();
+  };
+  if ($("cSurvey")) $("cSurvey").onclick = () => m.kind === "tag" ? openSurveyVenue(m.id) : openAddedPlace(m.id);
+}
+function onIsland(){
+  const b = isl?.d?.info.bounds || placeEntry(isl?.id)?.bounds;
+  return !!(gps.fix && b && distToBounds(gps.fix, b) <= NEAR_M);
+}
+function updateMe(){
+  const me = $("iMe"); if (!me) return;
+  const show = !!(gps.fix && onIsland());
+  me.hidden = !show;
+  if (show){ me.dataset.lat = gps.fix.lat; me.dataset.lon = gps.fix.lon; }
+  else { delete me.dataset.lat; delete me.dataset.lon; }
+}
+// Called on every GPS reading or error while the island map is open.
+function islGpsChanged(){
+  if (!isl) return;
+  const b = $("iBanner"), e = placeEntry(isl.id);
+  let html = "";
+  if (gps.err && gps.err.code === 0) html = `<b>This browser can't share your location.</b>The map and places still work.`;
+  else if (gps.err && gps.err.code === 1) html = `<b>Location is turned off for Deck Finder.</b>The map still works, but it can't show where you are.<br><button id="bHelp">How to turn on location</button>`;
+  else if (!gps.fix) html = gps.err ? `<b>Still looking for GPS.</b>Step into the open, away from roofs.` : `<b>Finding your location...</b>`;
+  else if (!onIsland()){
+    const mi = distToBounds(gps.fix, (isl.d?.info.bounds || e.bounds)) / 1609.34;
+    html = `<b>You're not on the island yet</b>You're about ${mi < 10 ? mi.toFixed(1) : commas(mi)} miles from ${esc(e.name)}. Your blue dot appears when you're within 2 miles.`;
+  }
+  b.hidden = !html; b.innerHTML = html;
+  if ($("bHelp")) $("bHelp").onclick = openLocationHelp;
+  if (!isl.d) return;
+  updateMe();
+  if (gps.fix && onIsland() && !isl.moved && !isl.centered){ isl.centered = true; centerOn(gps.fix.lat, gps.fix.lon, Math.max(isl.s, 1.2)); }
+  applyView(); drawOverlay();
+  if (isl.back) renderBack();
+  if (isl.sel) renderCard();
+}
+// Lines and circles in map meters: walks, the accuracy circle, and the Take me back line.
+function drawOverlay(){
+  if (!isl || !isl.d) return;
+  const S = sv(isl.id);
+  let h = S.walks.filter(w => w.points.length > 1).map(w => `<path class="o-walk" d="${ptsD(w.points.map(p => [p[1], p[0]]))}"/>`).join("");
+  const f = gps.fix && onIsland() ? gps.fix : null;
+  if (f){ const [x, y] = proj(f.lat, f.lon); h += `<circle class="o-acc" cx="${x.toFixed(1)}" cy="${y.toFixed(1)}" r="${Math.max(1, f.acc).toFixed(1)}"/>`; }
+  const sp = isl.back && islSpots().find(s => s.id === isl.back.id);
+  if (f && sp && compass.state !== "ok" && compass.state !== "waiting"){
+    const [x1, y1] = proj(f.lat, f.lon), [x2, y2] = proj(sp.lat, sp.lon);
+    h += `<line class="o-back" x1="${x1.toFixed(1)}" y1="${y1.toFixed(1)}" x2="${x2.toFixed(1)}" y2="${y2.toFixed(1)}"/>`;
+  }
+  $("iover").innerHTML = h;
+}
+
+// ---------- panning and pinch zoom (one finger pans, two fingers zoom, mouse wheel zooms) ----------
+(function(){
+  const el = $("imap"); const pts = new Map(); let g = null, lastTap = null;
+  const skip = t => t.closest(".ibottom,.itools,.itopstack,.imsg");
+  const snap = () => { const a = [...pts.values()]; if (a.length >= 2) return { d: Math.hypot(a[0].x - a[1].x, a[0].y - a[1].y), x: (a[0].x + a[1].x) / 2, y: (a[0].y + a[1].y) / 2 }; return { d: 0, x: a[0].x, y: a[0].y }; };
+  const restart = () => { g = Object.assign(snap(), { s: isl.s, tx: isl.tx, ty: isl.ty }); };
+  el.addEventListener("pointerdown", e => {
+    if (!isl || !isl.d || skip(e.target)) return;
+    pts.set(e.pointerId, { x: e.clientX, y: e.clientY });
+    restart(); g.dragged = pts.size > 1;
+    if (pts.size > 1) try { el.setPointerCapture(e.pointerId); } catch (_) {}
+  });
+  el.addEventListener("pointermove", e => {
+    if (!g || !pts.has(e.pointerId)) return;
+    pts.set(e.pointerId, { x: e.clientX, y: e.clientY });
+    const now = snap();
+    if (!g.dragged){
+      if (Math.hypot(now.x - g.x, now.y - g.y) < 6) return;
+      g.dragged = true; try { el.setPointerCapture(e.pointerId); } catch (_) {}
+    }
+    const r = el.getBoundingClientRect();
+    const s = pts.size >= 2 && g.d > 0 ? clampS(g.s * now.d / g.d) : g.s;
+    const mx = (g.x - r.left - g.tx) / g.s, my = (g.y - r.top - g.ty) / g.s;   // map point under the start
+    isl.s = s; isl.tx = now.x - r.left - mx * s; isl.ty = now.y - r.top - my * s;
+    isl.moved = true; applyView();
+  });
+  const up = e => {
+    if (!pts.has(e.pointerId)) return;
+    pts.delete(e.pointerId);
+    const dragged = g && g.dragged;
+    if (pts.size){ restart(); g.dragged = true; return; }   // one finger lifted: keep panning with the other
+    g = null;
+    if (dragged){ el.dataset.dragged = "1"; setTimeout(() => { delete el.dataset.dragged; }, 50); }
+  };
+  el.addEventListener("pointerup", up); el.addEventListener("pointercancel", up);
+  el.addEventListener("click", e => {
+    if (!isl || !isl.d || skip(e.target) || el.dataset.dragged) return;
+    const now = Date.now(), r = el.getBoundingClientRect();
+    if (lastTap && now - lastTap.t < 350 && Math.hypot(e.clientX - lastTap.x, e.clientY - lastTap.y) < 30){
+      lastTap = null; isl.moved = true; zoomAt(2, e.clientX - r.left, e.clientY - r.top); return;   // double tap: zoom in
+    }
+    lastTap = { t: now, x: e.clientX, y: e.clientY };
+    if (isl.sel){ isl.sel = null; isl.hot = null; renderIslMarks(); }
+  });
+  el.addEventListener("wheel", e => {
+    if (!isl || !isl.d) return;
+    e.preventDefault();
+    const r = el.getBoundingClientRect();
+    isl.moved = true; zoomAt(Math.exp(-e.deltaY / 300), e.clientX - r.left, e.clientY - r.top);
+  }, { passive: false });
+  const zoomBtn = f => () => { if (!isl || !isl.d) return; const { w, h } = mapSize(); isl.moved = true; zoomAt(f, w / 2, h / 2); };
+  $("iZoomIn").onclick = zoomBtn(2); $("iZoomOut").onclick = zoomBtn(0.5);
+  $("iLocate").onclick = () => {
+    if (!isl || !isl.d) return;
+    if (gps.fix && onIsland()) centerOn(gps.fix.lat, gps.fix.lon, 2);
+    else { fitIsland(); if (gpsDenied()) openLocationHelp(); }
+  };
+})();
+
+// ---------- find on the island ----------
+function islandSheet(html){ $("islandBody").innerHTML = html; openSheet("islandSheet"); $("islandBody").scrollTop = 0; }
+$("iFind").onclick = () => {
+  if (!isl || !isl.d) return;
+  islandSheet(`<h3>Find on ${esc(placeEntry(isl.id).name)}</h3>
+    <input class="search" id="iq" type="search" placeholder="Try beach, bar, tram, or your spot" autocomplete="off">
+    <div class="results" id="iresults"></div>`);
+  $("iq").addEventListener("input", runIslandSearch); runIslandSearch();
+  setTimeout(() => $("iq").focus(), 150);
+};
+function runIslandSearch(){
+  const q = normName($("iq").value), S = sv(isl.id), d = isl.d;
+  const items = [
+    ...islSpots().map(s => ({ k: "spot:" + s.id, label: "⭐ " + s.name, sub: "Your spot" })),
+    ...d.places.slice().sort((a, b) => a.category.localeCompare(b.category) || a.name.localeCompare(b.name)).map(p => ({ k: "place:" + p.id, label: placeLabel(p), sub: cat(p.category).label, cat: p.category })),
+    ...S.added.map(a => ({ k: "new:" + a.id, label: a.name, sub: "Survey, new place" })),
+    ...d.survey.filter(v => typeof S.venues[v.id]?.lat === "number").map(v => ({ k: "tag:" + v.id, label: S.venues[v.id].rename || v.name, sub: "Survey", cat: v.category })),
+  ].filter(x => !q || normName(x.label + " " + x.sub + " " + (x.cat ? cat(x.cat).group : "")).includes(q));
+  $("iresults").innerHTML = items.length
+    ? items.map((x, i) => `<button class="res" data-i="${i}"><span>${esc(x.label)}</span><span>${esc(x.sub)}</span></button>`).join("")
+    : `<div class="hint">${q ? `Nothing on the map matches "${esc($("iq").value.trim())}".` : "No places on this map yet."}</div>`;
+  $("iresults").querySelectorAll(".res").forEach(b => b.onclick = () => { closeSheets(); isl.moved = true; selectMark(items[+b.dataset.i].k, true); });
+}
+
+// ---------- location help ----------
+function openLocationHelp(){
+  islandSheet(`<h3>Turn on location</h3>
+    <div class="hint" style="padding-top:0">Deck Finder uses your location only on this phone, to show the blue dot and to save your spot. It never sends it anywhere.</div>
+    <div class="sectionlabel">Android phone (Chrome)</div>
+    <ol class="steps">
+      <li>Open your phone's Settings app.</li>
+      <li>Tap Location, and turn on Use location.</li>
+      <li>Go back to the main Settings screen and tap Apps.</li>
+      <li>Tap Chrome, then tap Permissions, then tap Location.</li>
+      <li>Choose Allow only while using the app.</li>
+      <li>Open the Chrome browser (not Deck Finder).</li>
+      <li>Tap the three dots in the top right corner, then tap Settings.</li>
+      <li>Tap Site settings, then tap Location.</li>
+      <li>Make sure the switch at the top is on.</li>
+      <li>If dasatizabal.github.io is listed under Blocked, tap it and choose Allow.</li>
+      <li>Close Deck Finder completely, open it again, and open the island map.</li>
+    </ol>
+    <div class="sectionlabel">iPhone (Safari, or Deck Finder on the Home Screen)</div>
+    <ol class="steps">
+      <li>Open the Settings app.</li>
+      <li>Tap Privacy &amp; Security, then tap Location Services.</li>
+      <li>Make sure Location Services is turned on at the top.</li>
+      <li>Scroll down and tap Safari Websites.</li>
+      <li>Choose While Using the App, and turn on Precise Location.</li>
+      <li>Go back to the main Settings screen. Tap Apps, then tap Safari. On older iPhones, Safari is listed on the main Settings screen, so tap it there.</li>
+      <li>Under Settings for Websites, tap Location, and choose Ask or Allow.</li>
+      <li>Close Deck Finder completely: swipe up from the bottom of the screen, pause, then swipe the Deck Finder card up and away.</li>
+      <li>Open Deck Finder again and open the island map.</li>
+      <li>When the iPhone asks to use your location, tap Allow While Using App.</li>
+    </ol>
+    <button class="btn" id="lhTry">Try again</button>
+    <button class="btn ghost" id="lhClose">Close</button>`);
+  $("lhTry").onclick = () => { closeSheets(); gps.err = null; gpsStart(); islGpsChanged(); };
+  $("lhClose").onclick = closeSheets;
+}
+// A short message in the island sheet, with an optional Trip set up button.
+function islandNote(title, text, withTrips){
+  islandSheet(`<h3>${esc(title)}</h3><div class="hint" style="padding-top:0">${esc(text)}</div>
+    ${withTrips ? `<button class="btn" id="nTrips">Trip set up</button>` : ""}
+    ${gpsDenied() ? `<button class="btn" id="nHelp">How to turn on location</button>` : ""}
+    <button class="btn ghost" id="nClose">Close</button>`);
+  if ($("nTrips")) $("nTrips").onclick = () => { closeIsland(false); openTrips(); };
+  if ($("nHelp")) $("nHelp").onclick = openLocationHelp;
+  $("nClose").onclick = closeSheets;
+}
+// Why there is no usable position right now, or "" when there is one on the island.
+function whyNoFix(){
+  if (gpsDenied()) return gps.err.code === 0 ? "This browser can't share your location." : "Location is turned off for Deck Finder.";
+  if (!gps.fix) return "Your location isn't known yet. Wait a moment, in the open if you can, and try again.";
+  if (!onIsland()) return "You're not on the island yet. This works once you're on " + placeEntry(isl.id).name + ".";
+  return "";
+}
+
+// ---------- Save my spot (kept with the active trip, never in the survey) ----------
+$("iSpot").onclick = () => {
+  if (!isl || !isl.d) return;
+  const t = activeTrip();
+  if (!t) return islandNote("Save my spot", "Your spot is kept with your trip, so set up a trip first.", true);
+  const why = whyNoFix(); if (why) return islandNote("Save my spot", why);
+  islandSheet(`<h3>Save my spot</h3>
+    <label class="field"><span>Name</span><input id="spName" maxlength="40" value="Our spot"></label>
+    <div class="hint">Saves where you're standing now, within about ${esc(distText(gps.fix.acc))}. It stays with your trip on this phone.</div>
+    <button class="btn" id="spSave">Save my spot</button>
+    <button class="btn ghost" id="spCancel">Cancel</button>`);
+  setTimeout(() => { $("spName").focus(); $("spName").select(); }, 150);
+  $("spCancel").onclick = closeSheets;
+  $("spSave").onclick = () => {
+    const f = gps.fix, tt = activeTrip();
+    if (!f || !tt) return closeSheets();
+    const sp = { id: "s" + Date.now(), place: isl.id, name: $("spName").value.trim() || "Our spot", lat: +f.lat.toFixed(6), lon: +f.lon.toFixed(6), acc: Math.round(f.acc), saved: new Date().toISOString() };
+    (tt.spots || (tt.spots = [])).push(sp); save();
+    closeSheets(); isl.sel = "spot:" + sp.id; renderIslMarks();
+  };
+};
+function openSpotEditor(id){
+  const sp = islSpots().find(s => s.id === id); if (!sp) return;
+  islandSheet(`<h3>Rename spot</h3>
+    <label class="field"><span>Name</span><input id="spName" maxlength="40" value="${esc(sp.name)}"></label>
+    <button class="btn" id="spSave">Save</button><button class="btn ghost" id="spCancel">Cancel</button>`);
+  $("spCancel").onclick = closeSheets;
+  $("spSave").onclick = () => { sp.name = $("spName").value.trim() || "Our spot"; save(); closeSheets(); renderIslMarks(); };
+}
+
+// ---------- Take me back ----------
+$("iTake").onclick = () => {
+  if (!isl || !isl.d) return;
+  if (isl.back) return closeBack();
+  const spots = islSpots();
+  if (!spots.length) return islandNote("Take me back", activeTrip() ? "No saved spot yet. Tap Save my spot where you want to come back to, like your cabana or umbrella." : "Your spot is kept with your trip, so set up a trip first.", !activeTrip());
+  if (spots.length === 1) return openTakeBack(spots[0].id);
+  islandSheet(`<h3>Take me back to...</h3>${spots.slice().reverse().map(s => `<button class="res" data-sp="${esc(s.id)}"><span>⭐ ${esc(s.name)}</span><span>${esc(niceTime(new Date(s.saved).toTimeString().slice(0, 5)))}</span></button>`).join("")}
+    <button class="btn ghost" id="tbCancel">Cancel</button>`);
+  $("islandBody").querySelectorAll("[data-sp]").forEach(b => b.onclick = () => { closeSheets(); openTakeBack(b.dataset.sp); });
+  $("tbCancel").onclick = closeSheets;
+};
+function openTakeBack(id){
+  const sp = islSpots().find(s => s.id === id); if (!sp) return;
+  closeSheets();
+  isl.back = { id }; isl.sel = null;
+  startCompass();            // on iPhone this asks for motion permission, so it must run inside the tap
+  wakeOn("back");
+  $("iTake").classList.add("on"); $("iTake").textContent = "Stop";
+  if (gps.fix && onIsland()){
+    isl.moved = true; fitBox(gps.fix.lat, gps.fix.lon, sp.lat, sp.lon, 90);
+    if (isl.s < 1) centerOn((gps.fix.lat + sp.lat) / 2, (gps.fix.lon + sp.lon) / 2, 1);
+    isl.ty -= 70; applyView();   // keep both above the Take me back panel
+  }
+  renderIslMarks(); renderBack();
+}
+function closeBack(){
+  if (!isl) return;
+  isl.back = null; stopCompass(); wakeOff("back");
+  $("iTake").classList.remove("on"); $("iTake").textContent = "Take me back";
+  $("iBackPanel").hidden = true; drawOverlay(); renderCard();
+}
+function renderBack(){
+  const p = $("iBackPanel");
+  if (!isl || !isl.back){ p.hidden = true; return; }
+  const sp = islSpots().find(s => s.id === isl.back.id);
+  if (!sp){ closeBack(); return; }
+  const f = gps.fix && onIsland() ? gps.fix : null;
+  let body;
+  if (!f) body = `<small>${esc(whyNoFix() || "Waiting for your location...")}</small>`;
+  else {
+    const m = distM(f, sp), br = bearingTo(f, sp);
+    if (m <= Math.max(8, Math.min(f.acc, 20))) body = `<div class="dist">You're here</div><small>${esc(sp.name)} is right around you.</small>`;
+    else {
+      const arrow = compass.state === "ok"
+        ? `<svg class="arrow" id="bkArrow" viewBox="0 0 64 64" style="transform:rotate(${((br - compass.heading) + 360) % 360}deg)"><circle cx="32" cy="32" r="30" fill="var(--chip)"/><path d="M32 6 L48 46 L32 37 L16 46 Z" fill="var(--accent)"/></svg>` : "";
+      const note = compass.state === "ok" ? "Point the top of your phone where you're walking. The arrow points to your spot."
+        : compass.state === "waiting" ? "Finding north..."
+        : compass.state === "denied" ? "Motion access is off, so there's no arrow. Follow the orange line on the map. To get the arrow on an iPhone: open Settings, tap Apps, tap Safari, turn on Motion & Orientation Access, then close and reopen Deck Finder."
+        : "This phone has no compass here, so follow the orange line on the map.";
+      body = `<div class="row">${arrow}<div class="grow"><div class="dist">${esc(distText(m))}</div><small>${esc(walkText(m))}. Head ${compassWord(br)}.</small><small>${esc(note)}</small></div></div>`;
+    }
+  }
+  p.hidden = false;
+  p.innerHTML = `<div class="row"><div class="grow"><b>Back to ${esc(sp.name)}</b></div><button class="x" id="bkClose" aria-label="Close Take me back">✕</button></div>${body}`;
+  $("bkClose").onclick = closeBack;
+}
+function updateArrow(){
+  const a = $("bkArrow"), sp = isl?.back && islSpots().find(s => s.id === isl.back.id);
+  if (!a || !sp || !gps.fix || compass.heading === null) return;
+  a.style.transform = `rotate(${((bearingTo(gps.fix, sp) - compass.heading) + 360) % 360}deg)`;
+}
+
+// ---------- all-aboard countdown on island day ----------
+// All aboard is the day's departure time minus trip.allAboard minutes (30 unless changed in the trip editor).
+function aboardFor(trip, placeId){
+  if (!trip) return null;
+  const today = ymd(new Date());
+  const x = islandDays(trip).find(x => x.day.date === today && (!placeId || x.place.id === placeId));
+  if (!x) return null;
+  if (!/^\d{1,2}:\d{2}$/.test(x.day.depart || "")) return { missing: true };
+  const mins = Number.isFinite(trip.allAboard) ? trip.allAboard : 30;
+  const [y, mo, dd] = x.day.date.split("-").map(Number), [hh, mi] = x.day.depart.split(":").map(Number);
+  const at = new Date(y, mo - 1, dd, hh, mi - mins);
+  return { at, left: at - Date.now(), depart: x.day.depart };
+}
+function aboardLine(a){
+  if (a.missing) return { text: "Add the departure time in the itinerary to see the all-aboard countdown", cls: "info" };
+  const clock = niceTime(String(a.at.getHours()).padStart(2, "0") + ":" + String(a.at.getMinutes()).padStart(2, "0"));
+  if (a.left <= 0) return { text: "All aboard time has passed (" + clock + ")", cls: "late", clock };
+  const m = Math.ceil(a.left / 60000), h = Math.floor(m / 60), r = m % 60;
+  return { text: "All aboard in " + (h ? h + " h" + (r ? " " + r + " min" : "") : m + " min"), cls: m <= 30 ? "late" : m <= 60 ? "warn" : "", clock };
+}
+function renderAboard(){
+  const el = $("iAboard");
+  const a = isl && aboardFor(activeTrip(), isl.id);
+  if (!a){ el.hidden = true; return; }
+  const l = aboardLine(a);
+  el.hidden = false; el.className = "aboard " + l.cls;
+  el.textContent = l.text + (l.clock && a.left > 0 ? " (" + l.clock + ")" : "");
+}
+setInterval(() => { renderStrip(); renderAboard(); }, 20000);
+
+// ---------- Survey mode ----------
+let recording = null;     // the position being recorded, while its 5 seconds run
+let rec = null;           // the walk being recorded: { placeId, walk }
+$("iSurvey").onclick = () => { if (isl && isl.d) openSurvey(); };
+function surveyVenueName(v, r){ return (r && r.rename) || v.name; }
+function openSurvey(msg, keepScroll){
+  const d = isl.d, S = sv(isl.id), placed = new Set(d.places.map(p => p.id));
+  const scroll = keepScroll ? $("islandBody").scrollTop : 0;
+  const cats = [...new Set([...d.categories, ...d.survey.map(v => v.category)])];
+  const recorded = Object.values(S.venues).filter(r => typeof r.lat === "number").length;
+  const gone = Object.values(S.venues).filter(r => r.missing).length;
+  const row = v => {
+    const r = S.venues[v.id] || {};
+    const bits = [placed.has(v.id) ? "On the map" : "", typeof r.lat === "number" ? "Recorded, within " + r.acc + " m" : "", r.missing ? "Doesn't exist" : "", r.rename ? "Listed as " + v.name : ""].filter(Boolean);
+    return `<div class="svrow${typeof r.lat === "number" ? " done" : ""}${r.missing ? " gone" : ""}"><button class="grow" data-tag="${esc(v.id)}"><b>${esc(surveyVenueName(v, r))}</b>${v.confidence === "unconfirmed" ? ` <span class="badge">check</span>` : ""}<small>${esc(bits.join(", ") || "Not recorded yet")}</small></button><button class="edit" data-sved="${esc(v.id)}">Edit</button></div>`;
+  };
+  islandSheet(`<h3>Survey: ${esc(placeEntry(isl.id).name)}</h3>
+    <div class="hint" style="padding-top:0">Stand at a place and tap its name to record where it is. It takes about 5 seconds. Everything stays on this phone and works with no signal. Places marked "check" have a name nobody has confirmed yet.</div>
+    ${msg ? `<div class="status" style="color:#2E8B57;font-weight:700">${esc(msg)}</div>` : ""}
+    <div class="hint">${recorded} of ${d.survey.length} recorded, ${gone} marked doesn't exist, ${S.added.length} new ${S.added.length === 1 ? "place" : "places"}, ${S.walks.length} ${S.walks.length === 1 ? "walk" : "walks"}.</div>
+    <button class="btn" id="svNew">New place here</button>
+    <button class="btn ghost" id="svWalk">${rec ? "Stop recording the walk" : "Record a walk"}</button>
+    <button class="btn ghost" id="svExport">Export survey</button>
+    <div class="status" id="svStatus"></div>
+    ${S.added.length ? `<div class="sectionlabel">New places</div>` + S.added.map(a => `<div class="svrow done"><button class="grow" data-added="${esc(a.id)}"><b>${esc(a.name)}</b><small>${esc(cat(a.category).label)}, recorded within ${a.acc} m</small></button><button class="edit" data-added="${esc(a.id)}">Edit</button></div>`).join("") : ""}
+    ${cats.map(c => { const vs = d.survey.filter(v => v.category === c); return vs.length ? `<div class="sectionlabel">${esc(cat(c).group)}</div>` + vs.map(row).join("") : ""; }).join("")}
+    ${S.walks.length ? `<div class="sectionlabel">Walks</div>` + S.walks.map((w, i) => `<div class="svrow"><div class="grow"><b>Walk ${i + 1}</b><small>${esc(niceDate(w.started.slice(0, 10)))}, ${w.points.length} points${w.ended ? "" : ", recording now"}</small></div>${w.ended ? `<button class="edit" data-delwalk="${esc(w.id)}">Delete</button>` : ""}</div>`).join("") : ""}
+    <button class="btn ghost" id="svClose">Close</button>`);
+  $("islandBody").scrollTop = scroll;
+  $("islandBody").querySelectorAll("[data-tag]").forEach(b => b.onclick = () => tagVenue(b.dataset.tag));
+  $("islandBody").querySelectorAll("[data-sved]").forEach(b => b.onclick = () => openSurveyVenue(b.dataset.sved));
+  $("islandBody").querySelectorAll("[data-added]").forEach(b => b.onclick = () => openAddedPlace(b.dataset.added));
+  $("islandBody").querySelectorAll("[data-delwalk]").forEach(b => b.onclick = () => {
+    if (!confirm("Delete this walk from the survey?")) return;
+    S.walks = S.walks.filter(w => w.id !== b.dataset.delwalk); saveSurvey(); drawOverlay(); openSurvey("Walk deleted.", true);
+  });
+  $("svNew").onclick = openNewPlace;
+  $("svWalk").onclick = () => rec ? (stopWalk(), openSurvey("Walk saved.", true)) : confirmWalk();
+  $("svExport").onclick = () => { $("svStatus").textContent = "Exporting..."; exportSurvey(isl.id).then(m => { if ($("svStatus")) $("svStatus").textContent = m; }); };
+  $("svClose").onclick = closeSheets;
+}
+// Take GPS readings for about 5 seconds, average them, and hand back { lat, lon, acc, samples }.
+function recordPosition(title, onSave, onBack){
+  if (gpsDenied()) return openLocationHelp();
+  const token = {}; recording = token;
+  const samples = [], started = Date.now();
+  const listener = f => samples.push(f);
+  gps.listeners.add(listener); gpsStart();
+  islandSheet(`<h3>${esc(title)}</h3><div class="hint" style="padding-top:0">Hold still. Recording your position for about 5 seconds...</div>
+    <div class="bigcount" id="rcCount">5</div><div class="hint" id="rcN">No readings yet</div><button class="btn ghost" id="rcCancel">Cancel</button>`);
+  const done = () => { clearInterval(tick); gps.listeners.delete(listener); if (recording === token) recording = null; };
+  $("rcCancel").onclick = () => { done(); onBack(); };
+  const tick = setInterval(() => {
+    if (recording !== token || !$("rcCount")){ done(); return; }
+    const el = Date.now() - started;
+    $("rcCount").textContent = Math.max(0, Math.ceil((5000 - el) / 1000));
+    $("rcN").textContent = samples.length ? samples.length + (samples.length === 1 ? " reading" : " readings") : (el > 5000 ? "Waiting for a GPS reading..." : "No readings yet");
+    if ((el >= 5000 && samples.length) || el >= 15000){
+      done();
+      if (!samples.length) return weakOrNone(null);
+      // Average, trusting precise readings more (weight 1 / accuracy squared).
+      let w = 0, lat = 0, lon = 0;
+      samples.forEach(s => { const k = 1 / Math.max(1, s.acc) ** 2; w += k; lat += s.lat * k; lon += s.lon * k; });
+      const avg = { lat: +(lat / w).toFixed(7), lon: +(lon / w).toFixed(7), acc: Math.round(samples.reduce((a, s) => a + s.acc, 0) / samples.length * 10) / 10, samples: samples.length };
+      if (avg.acc > WEAK_GPS_M) return weakOrNone(avg);
+      onSave(avg);
+    }
+  }, 250);
+  function weakOrNone(avg){
+    islandSheet(`<h3>${esc(title)}</h3>
+      <div class="hint" style="padding-top:0">${avg ? `GPS is weak here. Step into the open and try again?<br>This reading is only accurate to about ${esc(String(avg.acc))} meters.` : "No GPS reading came in. Step into the open, away from roofs, and try again."}</div>
+      <button class="btn" id="wkTry">Try again</button>
+      ${avg ? `<button class="btn ghost" id="wkSave">Save anyway</button>` : ""}
+      <button class="btn ghost" id="wkBack">Cancel</button>`);
+    $("wkTry").onclick = () => recordPosition(title, onSave, onBack);
+    if ($("wkSave")) $("wkSave").onclick = () => onSave(avg);
+    $("wkBack").onclick = onBack;
+  }
+}
+function tagVenue(id){
+  const v = isl.d.survey.find(x => x.id === id); if (!v) return;
+  const S = sv(isl.id), scroll = $("islandBody").scrollTop;
+  recordPosition("Recording: " + surveyVenueName(v, S.venues[id]), avg => {
+    const r = S.venues[id] || (S.venues[id] = {});
+    Object.assign(r, { lat: avg.lat, lon: avg.lon, acc: avg.acc, samples: avg.samples, at: new Date().toISOString() });
+    saveSurvey(); renderIslMarks();
+    openSurvey("Saved " + surveyVenueName(v, r) + ", within " + avg.acc + " m.");
+    $("islandBody").scrollTop = scroll;
+  }, () => { openSurvey(); $("islandBody").scrollTop = scroll; });
+}
+function openSurveyVenue(id){
+  const v = isl.d.survey.find(x => x.id === id); if (!v) return;
+  const S = sv(isl.id), r = S.venues[id] || {};
+  const tidy = () => { const x = S.venues[id]; if (x && typeof x.lat !== "number" && !x.rename && !x.missing) delete S.venues[id]; };
+  islandSheet(`<h3>${esc(surveyVenueName(v, r))}</h3>
+    <div class="hint" style="padding-top:0">${esc(cat(v.category).label)}${v.confidence === "unconfirmed" ? ". The name or place isn't confirmed yet" : ""}${r.rename ? ". Listed as " + esc(v.name) : ""}.</div>
+    ${v.notes ? `<div class="hint">${esc(v.notes)}</div>` : ""}
+    <div class="hint">${typeof r.lat === "number" ? "Recorded within " + r.acc + " m, " + esc(niceTime(new Date(r.at).toTimeString().slice(0, 5))) + "." : "Not recorded yet."}${r.missing ? " Marked as doesn't exist." : ""}</div>
+    <button class="btn" id="veRec">${typeof r.lat === "number" ? "Record the position again" : "Record the position here"}</button>
+    <label class="field"><span>Rename (the name on the sign)</span><input id="veName" maxlength="60" value="${esc(surveyVenueName(v, r))}"></label>
+    <button class="btn ghost" id="veRename">Save the new name</button>
+    <button class="btn ghost" id="veMissing">${r.missing ? "It exists after all" : "Doesn't exist"}</button>
+    ${typeof r.lat === "number" ? `<button class="btn ghost" id="veShow">Show on the map</button>` : ""}
+    <button class="btn danger" id="veClear">Clear everything for this place</button>
+    <button class="btn ghost" id="veBack">Back to the list</button>`);
+  $("veRec").onclick = () => recordPosition("Recording: " + surveyVenueName(v, S.venues[id]), avg => {
+    Object.assign(S.venues[id] || (S.venues[id] = {}), { lat: avg.lat, lon: avg.lon, acc: avg.acc, samples: avg.samples, at: new Date().toISOString() });
+    saveSurvey(); renderIslMarks(); openSurveyVenue(id);
+  }, () => openSurveyVenue(id));
+  $("veRename").onclick = () => {
+    const n = $("veName").value.trim(), x = S.venues[id] || (S.venues[id] = {});
+    if (!n || n === v.name) delete x.rename; else x.rename = n;
+    tidy(); saveSurvey(); renderIslMarks(); openSurvey(n && n !== v.name ? "Renamed to " + n + "." : "Name set back to " + v.name + ".", true);
+  };
+  $("veMissing").onclick = () => {
+    const x = S.venues[id] || (S.venues[id] = {});
+    if (x.missing) delete x.missing; else x.missing = true;
+    tidy(); saveSurvey(); openSurveyVenue(id);
+  };
+  if ($("veShow")) $("veShow").onclick = () => { closeSheets(); isl.moved = true; selectMark("tag:" + id, true); };
+  $("veClear").onclick = () => {
+    if (!confirm("Clear the position, name change and doesn't-exist mark for " + v.name + "?")) return;
+    delete S.venues[id]; saveSurvey(); renderIslMarks(); openSurvey("Cleared " + v.name + ".", true);
+  };
+  $("veBack").onclick = () => openSurvey(null, true);
+}
+function categoryOptions(sel){ return [...new Set([...isl.d.categories, ...Object.keys(CATS)])].map(c => `<option value="${esc(c)}" ${c === sel ? "selected" : ""}>${esc(cat(c).label)}</option>`).join(""); }
+function openNewPlace(){
+  islandSheet(`<h3>New place here</h3>
+    <div class="hint" style="padding-top:0">For a place that isn't on the list. Stand at it, type its name, pick a category, then tap Record the position.</div>
+    <label class="field"><span>Name</span><input id="npName" maxlength="60" placeholder="e.g. Snack shack"></label>
+    <label class="field"><span>Category</span><select id="npCat">${categoryOptions("food")}</select></label>
+    <div class="status err" id="npErr"></div>
+    <button class="btn" id="npRec">Record the position</button>
+    <button class="btn ghost" id="npBack">Back to the list</button>`);
+  $("npBack").onclick = () => openSurvey();
+  $("npRec").onclick = () => {
+    const name = $("npName").value.trim(), category = $("npCat").value;
+    if (!name){ $("npErr").textContent = "Type the place's name first."; return; }
+    recordPosition("Recording: " + name, avg => {
+      sv(isl.id).added.push({ id: "new-" + Date.now(), name, category, lat: avg.lat, lon: avg.lon, acc: avg.acc, samples: avg.samples, at: new Date().toISOString() });
+      saveSurvey(); renderIslMarks(); openSurvey("Added " + name + ", within " + avg.acc + " m.");
+    }, openNewPlace);
+  };
+}
+function openAddedPlace(id){
+  const S = sv(isl.id), a = S.added.find(x => x.id === id); if (!a) return openSurvey();
+  islandSheet(`<h3>${esc(a.name)}</h3>
+    <div class="hint" style="padding-top:0">New place, recorded within ${a.acc} m.</div>
+    <label class="field"><span>Name</span><input id="apName" maxlength="60" value="${esc(a.name)}"></label>
+    <label class="field"><span>Category</span><select id="apCat">${categoryOptions(a.category)}</select></label>
+    <button class="btn" id="apSave">Save</button>
+    <button class="btn ghost" id="apRec">Record the position again</button>
+    <button class="btn ghost" id="apShow">Show on the map</button>
+    <button class="btn danger" id="apDel">Delete this new place</button>
+    <button class="btn ghost" id="apBack">Back to the list</button>`);
+  $("apSave").onclick = () => { a.name = $("apName").value.trim() || a.name; a.category = $("apCat").value; saveSurvey(); renderIslMarks(); openSurvey("Saved " + a.name + ".", true); };
+  $("apRec").onclick = () => recordPosition("Recording: " + a.name, avg => {
+    Object.assign(a, { lat: avg.lat, lon: avg.lon, acc: avg.acc, samples: avg.samples, at: new Date().toISOString() });
+    saveSurvey(); renderIslMarks(); openAddedPlace(id);
+  }, () => openAddedPlace(id));
+  $("apShow").onclick = () => { closeSheets(); isl.moved = true; selectMark("new:" + id, true); };
+  $("apDel").onclick = () => { if (!confirm("Delete " + a.name + " from the survey?")) return; S.added = S.added.filter(x => x.id !== id); saveSurvey(); renderIslMarks(); openSurvey("Deleted " + a.name + ".", true); };
+  $("apBack").onclick = () => openSurvey(null, true);
+}
+
+// ---------- Record a walk: a GPS breadcrumb trail for mapping paths ----------
+function confirmWalk(){
+  if (gpsDenied()) return openLocationHelp();
+  islandSheet(`<h3>Record a walk</h3>
+    <div class="hint" style="padding-top:0">Walk along the path you want to map. Deck Finder adds a point every 5 seconds, or every 5 meters when you walk faster. The walk shows on the map as a pink line.</div>
+    <div class="hint"><b>This keeps the screen on while recording, which uses more battery.</b> Tap Stop when you're done.</div>
+    <button class="btn" id="wkStart">Start recording</button>
+    <button class="btn ghost" id="wkBack">Back to the list</button>`);
+  $("wkBack").onclick = () => openSurvey(null, true);
+  $("wkStart").onclick = () => { startWalk(); closeSheets(); };
+}
+function walkAdd(f){
+  if (!rec) return;
+  const pts = rec.walk.points, last = pts[pts.length - 1];
+  if (last && (f.t <= last[3] || (f.t - last[3] < 5000 && distM({ lat: last[0], lon: last[1] }, f) < 5))) return;
+  pts.push([+f.lat.toFixed(6), +f.lon.toFixed(6), Math.round(f.acc * 10) / 10, f.t]);
+  saveSurvey(); renderRec(); drawOverlay();
+}
+function startWalk(){
+  if (rec || !isl) return;
+  const w = { id: "w" + Date.now(), started: new Date().toISOString(), ended: null, points: [] };
+  sv(isl.id).walks.push(w); saveSurvey();
+  rec = { placeId: isl.id, walk: w };
+  gps.listeners.add(walkAdd); gpsStart(); wakeOn("walk");
+  if (gps.fix && Date.now() - gps.fix.t < 5000) walkAdd(gps.fix);
+  renderRec();
+}
+function stopWalk(){
+  if (!rec) return;
+  gps.listeners.delete(walkAdd); wakeOff("walk");
+  const S = sv(rec.placeId);
+  rec.walk.ended = new Date().toISOString();
+  if (!rec.walk.points.length) S.walks = S.walks.filter(w => w !== rec.walk);   // nothing recorded: drop it
+  rec = null; saveSurvey(); renderRec(); drawOverlay();
+}
+function renderRec(){
+  const b = $("iRec");
+  if (!rec){ b.hidden = true; return; }
+  b.hidden = false;
+  b.innerHTML = `<span class="grow">● Recording a walk: ${rec.walk.points.length} ${rec.walk.points.length === 1 ? "point" : "points"}</span><button id="recStop">Stop</button>`;
+  $("recStop").onclick = () => { stopWalk(); if ($("islandSheet").classList.contains("open") && $("svWalk")) openSurvey("Walk saved.", true); };
+}
+
+// ---------- Export survey: every recorded venue, rename, doesn't-exist mark, new place and walk ----------
+// Saved spots from Save my spot live with the trips and are never part of this.
+async function exportSurvey(placeId){
+  const S = survey.places[placeId];
+  if (!S || !surveyCount(placeId)) return "Nothing recorded in Survey mode yet.";
+  let d = null; try { d = await ensurePlace(placeId); } catch (e) {}
+  const list = d ? d.survey : [];
+  const iso = t => t ? new Date(t).toISOString() : null;
+  const out = {
+    format: "deckfinder-survey", format_version: 1,
+    island: placeEntry(placeId)?.name || placeId, place_id: placeId,
+    exported: new Date().toISOString(), app_version: APP_VERSION,
+    venues: Object.entries(S.venues || {}).map(([id, r]) => {
+      const v = list.find(x => x.id === id) || {};
+      const o = { id, list_name: v.name || id, category: v.category || null, confidence: v.confidence || null };
+      if (typeof r.lat === "number") Object.assign(o, { lat: r.lat, lon: r.lon, accuracy_m: r.acc, samples: r.samples, recorded: r.at });
+      if (r.rename) o.renamed_to = r.rename;
+      if (r.missing) o.doesnt_exist = true;
+      return o;
+    }),
+    new_places: (S.added || []).map(a => ({ id: a.id, name: a.name, category: a.category, lat: a.lat, lon: a.lon, accuracy_m: a.acc, samples: a.samples, recorded: a.at })),
+    walks: (S.walks || []).filter(w => w.points.length).map(w => ({ id: w.id, started: w.started, ended: w.ended, points: w.points.map(p => ({ lat: p[0], lon: p[1], accuracy_m: p[2], time: iso(p[3]) })) })),
+  };
+  const name = placeId + ".survey-" + ymd(new Date()) + ".json";
+  const text = JSON.stringify(out, null, 1) + "\n";
+  const file = typeof File === "function" ? new File([text], name, { type: "application/json" }) : null;
+  if (file && navigator.canShare && navigator.share){
+    try { if (navigator.canShare({ files: [file] })){ await navigator.share({ files: [file], title: name }); return "Shared " + name + "."; } }
+    catch (e) { if (e.name === "AbortError") return "Not shared. Tap Export survey to try again."; }
+  }
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(new Blob([text], { type: "application/json" })); a.download = name;
+  document.body.appendChild(a); a.click();
+  setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 2000);
+  return "Saved " + name + " to your downloads.";
+}
+
 // ---------- start up ----------
 (async function boot(){
   render(); // shows "Loading deck plans..." until the ship list arrives
@@ -1332,6 +2407,8 @@ function openPinList(){
   if (!catEntry(state.ship) && CATALOG.length) state.ship = CATALOG[0].id;
   await refreshSaved();
   render();
+  if (state.island && placeEntry(state.island)) openIsland(state.island);   // it was open when the app closed
+  else delete state.island;
   syncOfflineShips();
 })();
 window.addEventListener("online", () => {

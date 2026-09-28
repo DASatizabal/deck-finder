@@ -1,5 +1,5 @@
 {
-  "version": "1.9.0",
-  "date": "2026-09-27",
-  "notes": "Trips can find their itinerary even after the cruise is sold out or has sailed, and you can type in or fix an itinerary by hand."
+  "version": "1.10.0",
+  "date": "2026-09-28",
+  "notes": "Great Stirrup Cay island map that works offline, with your location, Save my spot, Take me back, Survey mode, and an all-aboard countdown."
 }

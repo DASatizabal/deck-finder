@@ -1,8 +1,10 @@
 // Bump VERSION on every release (it must match APP_VERSION and version.json), so phones grab the update.
-const VERSION = "deckfinder-v1.9.0";
+const VERSION = "deckfinder-v1.10.0";
 // Each ship saved for offline lives in its own cache, "deckfinder-ship-<line>-<ship>".
 // These are NOT tied to the app version: they stay until that ship's hash in ships/index.json changes.
 const SHIP_CACHE_PREFIX = "deckfinder-ship-";
+// Island maps work the same way: each lives in its own cache, "deckfinder-place-<id>".
+const PLACE_CACHE_PREFIX = "deckfinder-place-";
 const FILES = ["./", "./index.html", "./version.json", "./ships/index.json", "./manifest.webmanifest", "./icon-192.png", "./icon-512.png"];
 const TIMEOUT_MS = 3000;
 
@@ -11,8 +13,8 @@ self.addEventListener("install", e => {
   e.waitUntil(caches.open(VERSION).then(c => c.addAll(FILES.map(f => new Request(f, { cache: "reload" })))));
 });
 self.addEventListener("activate", e => {
-  // Remove old app versions, but never the saved ships.
-  e.waitUntil(caches.keys().then(keys => Promise.all(keys.filter(k => k !== VERSION && !k.startsWith(SHIP_CACHE_PREFIX)).map(k => caches.delete(k)))).then(() => self.clients.claim()));
+  // Remove old app versions, but never the saved ships or island maps.
+  e.waitUntil(caches.keys().then(keys => Promise.all(keys.filter(k => k !== VERSION && !k.startsWith(SHIP_CACHE_PREFIX) && !k.startsWith(PLACE_CACHE_PREFIX)).map(k => caches.delete(k)))).then(() => self.clients.claim()));
 });
 // The app's "Tap to update" banner sends this to switch to the new version right away.
 self.addEventListener("message", e => { if (e.data === "SKIP_WAITING") self.skipWaiting(); });
@@ -46,6 +48,14 @@ self.addEventListener("fetch", e => {
   if (ship) {
     if (url.search) return; // "?v=" means the app is downloading this ship for offline: go to the network
     const cacheName = SHIP_CACHE_PREFIX + ship[1] + "-" + ship[2];
+    e.respondWith(caches.match(url.href, { cacheName }).then(hit => hit || fetch(e.request)));
+    return;
+  }
+  // Island map files (places/<id>/<file>): the same, from that island's own cache.
+  const place = rel.match(/^places\/([^/]+)\/[^/]+$/);
+  if (place) {
+    if (url.search) return; // downloading this island for offline: go to the network
+    const cacheName = PLACE_CACHE_PREFIX + place[1];
     e.respondWith(caches.match(url.href, { cacheName }).then(hit => hit || fetch(e.request)));
     return;
   }
