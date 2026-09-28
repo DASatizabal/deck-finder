@@ -1,10 +1,10 @@
 # Deck Finder: handoff notes
 
-Read this with `CLAUDE.md` at the start of every session. CLAUDE.md holds the rules; this file holds the current state, known issues, lessons learned, and parked work. Last updated 2026-09-27 (version 1.9.0, plus the Worker's shared KV cache).
+Read this with `CLAUDE.md` at the start of every session. CLAUDE.md holds the rules; this file holds the current state, known issues, lessons learned, and parked work. Last updated 2026-09-28 (version 1.10.0).
 
 ## Current state
 
-- **Live version:** 1.9.0, at https://dasatizabal.github.io/deck-finder/ (check `version.json` there).
+- **Live version:** 1.10.0, at https://dasatizabal.github.io/deck-finder/ (check `version.json` there). Confirmed live on 2026-09-28.
 - **Priority ship:** Norwegian Getaway, which the family sails first (Oct 2, 2026). Joy and Aqua trips follow later. Trip details and cabin numbers live only in the saved trips on the phones, not in this public repo.
 - **Worker status (2026-09-27):** deployed at https://deck-finder.dasatizabal.workers.dev with the KV version of `worker/worker.js`, the secrets `CRUISEFEED_KEY` and `APP_PASS`, and the KV namespace `deck-finder-itineraries` bound as `ITINERARIES`. The Getaway Oct 2 sailing is seeded in KV with full times, and the live route returned it. The phones still need to re-run the Oct 2 lookup (Trip set up, Edit, Save and look up itinerary).
 - **Install status:** David was installing the app on his Android phone for the first time. The first attempt failed with "This app cannot be installed", which 1.6.1 fixed. A successful install on a real phone has not been confirmed yet.
@@ -22,12 +22,13 @@ Inside `deck-finder`:
 - `index.html`: the whole app, about 70 KB.
 - `sw.js`: offline support, cache per app version plus one cache per saved ship.
 - `version.json`, `CHANGELOG.md`, `manifest.webmanifest`, `icon-192.png`, `icon-512.png`.
-- `ships/index.json`: the catalog, with a hash per ship.
+- `ships/index.json`: the catalog, with a hash per ship, and since 1.10.0 a `places` list of island maps (port code, port name, `port_match`, bounds, hash).
 - `ships/ncl/line.json`.
 - `ships/ncl/<ship>/`: `ship.json`, one `deck<N>.webp` per deck, and for Getaway only, `geometry.json`.
+- `places/great-stirrup-cay/`: the island map (1.10.0). `place.json` (name, port code `NPI`, port name, `port_match` "Great Stirrup", `bounds`, and the file names), `basemap.json` (OpenStreetMap shapes as GeoJSON, with the attribution in the file), `places.json` (venues shown on the map), `survey-list.json` (the full 100-venue checklist for Survey mode).
 - `worker/worker.js`: the Cloudflare Worker (backup helper). Not published; pasted into the Cloudflare dashboard by hand.
 - `tools/kv_put.py` and `tools/itineraries/`: write one itinerary into the Worker's KV namespace by hand.
-- `tools/`: `build_index.py`, `calibrate_decks.py`, and `split_images.py` (one-time, already used). Not published.
+- `tools/`: `build_index.py`, `calibrate_decks.py`, `split_images.py` (one-time, already used), and since 1.10.0 `build_island.py` (downloads the island from the Overpass API and writes `basemap.json`) and `import_island_data.py` (copies `places.json` and `survey-list.json` from the builder). Not published.
 - `.github/scripts/check_release.py`: the release gate.
 
 Inside `deck-finder-builder/deck-vision`:
@@ -51,6 +52,7 @@ Inside `deck-finder-builder/deck-vision`:
 | 1.6.1 | `index.html` now links `manifest.webmanifest`. It was missing since the first upload, so Android refused to install the app. iPhone home screen icon and title added. |
 | 1.7.0 | Wide plan layout by default, with "On this deck" in a sheet. Full screen button. Menu switch back to the old Side by side layout (`state.layout`). Fixed the zoom button hiding behind the pin button. |
 | 1.8.0 | Keeping your place when changing decks, using each deck's `ship_extent` (from `tools/calibrate_decks.py`) and, on Getaway, elevator banks as anchors. A faint line marks the spot. |
+| 1.10.0 | Great Stirrup Cay island map, drawn by the app from `basemap.json` (no map tiles), with pinch zoom, search, and place markers by category. Blue dot from GPS with an accuracy circle. Save my spot and Take me back (compass arrow, or a line on the map without a compass; screen kept awake). Survey mode (tag venues with a 5-second averaged position, rename, doesn't exist, new places, record a walk, export). All-aboard countdown on island day. Islands saved for offline like ships. The itinerary sheet shows the Worker's source label. |
 | 1.9.0 | Itinerary lookup order: the trip's saved itinerary, NCL live, then CruiseFeed through the Worker's `/itinerary` route, then typing it in. Itinerary sheet shows where it came from. Manual day editor in the trip editor. Family passphrase in Trip set up. Worker code moved into `worker/`. |
 
 ### Saved data on the phone
@@ -58,7 +60,10 @@ Inside `deck-finder-builder/deck-vision`:
 Two localStorage keys:
 - **`deckfinder`** (the view): `ship`, `deck`, `zoom`, and since 1.7.0, `layout`.
 - **`deckfinder-trips`**: `trips`, `activeTripId`, `workerUrl`, and since 1.9.0, `passphrase`. Each trip has `id`, `ship`, `date`, `cabin`, `pin`, `itinerary`, and since 1.6.0, `pins`.
-- **`trip.itinerary`**: `title`, `fetched`, `days`, optional `code` (NCL only), and since 1.9.0, `source` (`ncl`, `cruisefeed` or `manual`; missing means `ncl`) and `edited` (true after a hand edit of a looked-up itinerary). Each day is `{date, kind: "embark"|"port"|"debark", port, arrive, depart}` or `{date, sea: true}`, times as `HH:MM` local port time. `normalizeDays` sorts the days and makes the first `embark` and the last `debark`.
+- **`trip.itinerary`**: `title`, `fetched`, `days`, optional `code` (NCL only), and since 1.9.0, `source` (`ncl`, `cruisefeed` or `manual`; missing means `ncl`) and `edited` (true after a hand edit of a looked-up itinerary). Since 1.10.0, `sourceLabel` (the Worker's `source`, like `NCL website, captured 2026-09-23`) on itineraries from the backup helper. Each day is `{date, kind: "embark"|"port"|"debark", port, arrive, depart}` or `{date, sea: true}`, times as `HH:MM` local port time, and since 1.10.0 an optional `code` (NCL's port code, like `NPI`) on days from the NCL live lookup. `normalizeDays` sorts the days and makes the first `embark` and the last `debark`, and keeps `code`.
+- **Since 1.10.0 on each trip:** `spots` (Save my spot: `{id, place, name, lat, lon, acc, saved}`) and `allAboard` (minutes before departure, 30 when missing).
+- **Since 1.10.0 in `deckfinder`:** `island` (the island map that was open, reopened on start).
+- **`deckfinder-survey`** (new key in 1.10.0, separate from trips so saved spots never reach an export): `{places: {<place id>: {venues: {<venue id>: {lat, lon, acc, samples, at, rename, missing}}, added: [{id, name, category, lat, lon, acc, samples, at}], walks: [{id, started, ended, points: [[lat, lon, acc, time ms]]}]}}}`. Clearing the site's data in the browser deletes it, so export often.
 
 Fields have only been added, never renamed or reshaped.
 
@@ -85,7 +90,7 @@ Fields have only been added, never renamed or reshaped.
   - Key: `itin:<cruise line>:<ship>:<YYYY-MM-DD>`, built from the request's `line`, `ship` and `date` exactly as sent. The app sends the `line.json` and `ship.json` names, for example `itin:Norwegian Cruise Line:Norwegian Getaway:2026-10-02`.
   - Value: public sailing data only, as JSON: `cruise_line`, `ship`, `departure_date`, `return_date`, `nights`, `title`, `source` (a label such as `CruiseFeed` or `NCL website, captured 2026-09-23`), `saved_at` (YYYY-MM-DD), and `stops` (each with `seq`, `day_number`, `date`, `port`, `arrive`, `depart` as `HH:MM` local time or null, `is_embark`, `is_disembark`, `is_sea_day`, `overnight`). Nothing from the request is ever stored. No expiry.
   - On a miss the Worker calls CruiseFeed and saves the cleaned result. Without the `ITINERARIES` binding the route answers `not_configured` and spends nothing.
-  - The app (unchanged) labels any itinerary from this route "Found through CruiseFeed", even the seeded NCL one. Showing the Worker's `source` label instead would need an app release.
+  - Since 1.10.0 the app shows the Worker's `source` label (for example "NCL website, captured 2026-09-23, looked up on ..."). Itineraries saved on the phones before 1.10.0 have no label and still say "Found through CruiseFeed" until the lookup is run again (Trip set up, Edit, Look up the itinerary again).
 - **Seeding an itinerary with `tools/kv_put.py`.** Write a JSON file in the value format above into `tools/itineraries/` (copy `ncl-getaway-2026-10-02.json`), then:
   1. `python tools/kv_put.py tools/itineraries/<file>.json --dry-run` checks the file and shows the key. It contacts nothing.
   2. `python tools/kv_put.py tools/itineraries/<file>.json` writes it (replacing any entry for that sailing), sets `saved_at` to today, and reads it back.
@@ -94,8 +99,13 @@ Fields have only been added, never renamed or reshaped.
   It reads `D:\AI-VAULT\secrets\cloudflare_kv_token.txt` (an API token with only Account, Workers KV Storage, Edit) and `D:\AI-VAULT\secrets\cloudflare_account_id.txt`, and never prints them. It refuses fields outside the value format.
 - **Testing the live Worker for free:** seed a dummy entry for a 1990 date with `kv_put.py`, call `/itinerary` for that date with the passphrase (from `D:\AI-VAULT\secrets\deckfinder_app_pass.txt`), and expect the dummy back. If an old Worker were deployed, it would ask CruiseFeed for 1990, get zero rows, and still spend nothing. Delete the dummy afterwards with `--delete`.
 - **CruiseFeed facts:** send `Authorization: Bearer <key>`. Exact names are cruise line `Norwegian Cruise Line` and ships `Norwegian Getaway`, `Norwegian Joy`, `Norwegian Aqua`; the app sends each ship's `ship.json` name and its `line.json` name. `include_past` is ignored when a departure date filter is set, so the exact-date query finds past sailings anyway. `/v1/stats`, `/v1/ship-names` and `/v1/cruise-lines` cost nothing. `/v1/cruises` answers carry `x-results-remaining`.
+- **NCL lists the Getaway Oct 2 sailing again (2026-09-28).** In the 1.10.0 tests the NCL live lookup found it (3-Day Bahamas Round-Trip Miami) before the backup helper was needed. The helper label was tested by calling the helper route directly (a KV hit, no CruiseFeed result spent).
 - **The NCL search API works directly from the browser** (it failed through Cloudflare because NCL blocks data center addresses). In the 1.9.0 tests, both NCL steps succeeded directly from Chrome, and the Worker's NCL proxy was not needed.
 - **The Worker's `/itinerary` route asks for `ship`, `date` and an optional `line`.** The request in the 1.9.0 brief read `ship=<cruise_line ship_name>`; it was built as two parameters.
+- **Island map data is thin.** OpenStreetMap has almost none of the 2025 and 2026 construction (the new pier, Great Tides Waterpark, Vibe Shore Club), so the basemap shows the older island. Only 7 of the 100 venues are placed (the builder export of 2026-09-28): the cruise pier, the tender landing, two tram stops, Jumbey Beach, Silver Cove and Silver Cove Pool. None were west of -77.9300, so none were rejected as CocoCay. Survey mode is how the rest gets placed.
+- **Island map features not yet tried on a real phone:** the compass arrow (iPhone motion permission, Android absolute orientation), the Screen Wake Lock, sharing the export file, and GPS accuracy under trees. The tests used headless Chrome with a simulated GPS and a simulated compass event.
+- **The island is saved for offline only when a trip has an island day** (port code `NPI`, or a port name containing "Great Stirrup"), or when someone taps Download for offline in the menu.
+- **All-aboard uses the phone's clock** and the itinerary's departure time, both assumed to be local time. Great Stirrup Cay and Miami share Eastern time, so this holds for the Bahamas sailings.
 - **Not started:** the Android Capacitor build mentioned in CLAUDE.md.
 
 ## Lessons learned
@@ -119,6 +129,10 @@ Fields have only been added, never renamed or reshaped.
 - **Python's `Path.write_text` writes CRLF on Windows.** It turned `index.html` into CRLF line endings. Use `write_bytes` or `open(f, "w", newline="\n")`.
 - **Headless Chrome through Playwright works for app tests** (`python -m playwright`, `channel="chrome"`, `service_workers="block"`), and avoids picking between the two Chrome browsers connected to the Claude in Chrome extension. Seed trips by setting the page's `data` and calling `save()`, because the app overwrites localStorage written from outside. The day editor must be reached with its sheet open.
 - **Check what is listening on a port before stopping it.** The 1.9.0 session stopped a `pythonw` process on port 8000 that it had not started, probably an older local preview server.
+- **Playwright's `page.clock.install(time=...)` takes seconds, not milliseconds,** when given a number from Python. Milliseconds put the page in the year 58728. Passing `datetime(...).timestamp()` works.
+- **Simulating GPS:** an init script that defines `Navigator.prototype.geolocation` with a fake `watchPosition` (emitting every second, plus on demand) lets tests move the blue dot, set a poor accuracy, and deny permission. A compass reading can be simulated with `window.dispatchEvent(new DeviceOrientationEvent("deviceorientationabsolute", {alpha, absolute: true}))`.
+- **Page-wide CSS selectors catch new elements.** `.imap svg` (meant for the map) also caught the Take me back arrow and made it overlap the text. Scope such rules by id (`#isvg`).
+- **`grep -c $'\r'` in Git Bash is not a reliable line-ending check.** It reported CR on files that had none. Count `\r` bytes with Python instead.
 - **Local preview:** a session needs its own `.claude/launch.json` running `python -m http.server <port> -d D:/AI-VAULT/projects/deck-finder`. The one from the 2026-09-23 session lived in a scratch folder.
 
 ## Parked work
@@ -130,11 +144,13 @@ Fields have only been added, never renamed or reshaped.
 
   Open questions: how many months ahead, how to stay polite to ncl.com (wait between requests, like the builder's scraper), and whether it should also replace an entry that came from CruiseFeed without times.
 
-- **Great Stirrup Cay island map.** A plan exists, but it is not in either repo or in `C:\DeckPlans`, and it wasn't made in the session that wrote these notes. It is probably in a Claude chat. It is waiting on two decisions from David:
-  - how new venues on the island should be placed on the map,
-  - the scope of the feature.
-
-  Ask David for the plan before starting.
+- **Survey export merge script (to write in deck-finder-builder).** Survey mode exports `great-stirrup-cay.survey-<date>.json` (`format: "deckfinder-survey"`, `format_version: 1`) with `venues` (id, list_name, category, confidence, and when present lat, lon, accuracy_m, samples, recorded, renamed_to, doesnt_exist), `new_places`, and `walks` (points with lat, lon, accuracy_m, time). Nothing merges it yet. The script should:
+  1. Read the export and `islands/great-stirrup-cay/great-stirrup-cay.places.json`.
+  2. For each venue with a position, set its lat and lon and mark it placed (or approximate when `accuracy_m` is over 20).
+  3. Apply `renamed_to` as the new name, and mark `doesnt_exist` venues as skipped.
+  4. Add `new_places` as new venues.
+  5. Keep `walks` as path hints for review (OpenStreetMap has almost no paths for the new areas).
+  6. Then, in this repo, run `python tools/import_island_data.py` and `python tools/build_index.py`, and release as a PATCH version.
 - **Joy and Aqua reviews in deck-finder-builder.** The pipeline has run on both ships with the current rules. For each ship:
   1. Review `deck-vision/out/<ship>/ship.json` on the review page.
   2. Save the result to `deck-vision/reviewed/ncl/<ship>/ship.json` and commit it in the builder.
