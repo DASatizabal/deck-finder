@@ -1,5 +1,9 @@
 # Changelog
 
+## [1.10.1] - 2026-09-28
+### Changed
+- Great Stirrup Cay places now use the names from the official island map, including first aid, and more places have positions.
+
 ## [1.10.0] - 2026-09-28
 ### Added
 - Great Stirrup Cay island map that works offline, with your location as a blue dot.

@@ -350,7 +350,7 @@ button:focus-visible,input:focus-visible,[tabindex]:focus-visible{outline:3px so
 <div class="sheet" id="islandSheet" role="dialog" aria-label="Island"><div class="scroll" id="islandBody"></div></div>
 
 <script>
-const APP_VERSION = "1.10.0";
+const APP_VERSION = "1.10.1";
 const APP_DATE = "2026-09-28";
 
 // ---------- ships: loaded at runtime from ships/index.json and each ship's ship.json ----------
@@ -1594,6 +1594,8 @@ const CATS = {
 };
 const cat = c => CATS[c] || { label: "Place", group: "Other places", icon: "•", color: "#7F8C8D" };
 const placeLabel = p => p.name + (p.approximate ? " (approximate)" : "");
+// The area and number on NCL's island sign, like "Lagoon 4" (since 1.10.1). Empty when the data has none.
+const legend = v => v && v.official_area && typeof v.official_number === "number" ? v.official_area + " " + v.official_number : "";
 
 // ---------- GPS: one watch while the island map is open ----------
 const gps = { watch: null, fix: null, err: null, listeners: new Set() };
@@ -1809,9 +1811,9 @@ function renderIslMarks(){
 function markInfo(k){
   if (!isl?.d || !k) return null;
   const i = k.indexOf(":"), kind = k.slice(0, i), id = k.slice(i + 1), S = sv(isl.id);
-  if (kind === "place"){ const p = isl.d.places.find(x => x.id === id); return p && { kind, id, lat: p.lat, lon: p.lon, name: placeLabel(p), sub: cat(p.category).label, p }; }
+  if (kind === "place"){ const p = isl.d.places.find(x => x.id === id); return p && { kind, id, lat: p.lat, lon: p.lon, name: placeLabel(p), sub: cat(p.category).label, leg: legend(p), p }; }
   if (kind === "spot"){ const s = islSpots().find(x => x.id === id); return s && { kind, id, lat: s.lat, lon: s.lon, name: s.name, sub: "Your saved spot", s }; }
-  if (kind === "tag"){ const v = isl.d.survey.find(x => x.id === id), r = S.venues[id]; return v && r && typeof r.lat === "number" && { kind, id, lat: r.lat, lon: r.lon, name: r.rename || v.name, sub: "Survey: recorded within " + r.acc + " m" }; }
+  if (kind === "tag"){ const v = isl.d.survey.find(x => x.id === id), r = S.venues[id]; return v && r && typeof r.lat === "number" && { kind, id, lat: r.lat, lon: r.lon, name: r.rename || v.name, sub: "Survey: recorded within " + r.acc + " m", leg: legend(v) }; }
   if (kind === "new"){ const a = S.added.find(x => x.id === id); return a && { kind, id, lat: a.lat, lon: a.lon, name: a.name, sub: "Survey: new place, within " + a.acc + " m" }; }
   return null;
 }
@@ -1830,6 +1832,7 @@ function renderCard(){
   const far = f ? `${distText(distM(f, m))} away. ${walkText(distM(f, m))}.` : "";
   c.hidden = false;
   c.innerHTML = `<div class="row"><div class="grow"><b>${esc(m.name)}</b><small>${esc(m.sub)}</small>
+      ${m.leg ? `<small>On the island map sign: ${esc(m.leg)}</small>` : ""}
       ${m.p && m.p.approximate ? `<small>Approximate location. The real spot may be a short walk away.</small>` : ""}
       ${far ? `<small>${esc(far)}</small>` : ""}</div><button class="x" id="cClose" aria-label="Close">✕</button></div>
     ${m.kind === "spot" ? `<div class="acts"><button id="cBack">Take me back</button><button id="cRename">Rename</button><button id="cDel">Delete</button></div>` : ""}
@@ -2163,8 +2166,9 @@ function openSurvey(msg, keepScroll){
   const gone = Object.values(S.venues).filter(r => r.missing).length;
   const row = v => {
     const r = S.venues[v.id] || {};
-    const bits = [placed.has(v.id) ? "On the map" : "", typeof r.lat === "number" ? "Recorded, within " + r.acc + " m" : "", r.missing ? "Doesn't exist" : "", r.rename ? "Listed as " + v.name : ""].filter(Boolean);
-    return `<div class="svrow${typeof r.lat === "number" ? " done" : ""}${r.missing ? " gone" : ""}"><button class="grow" data-tag="${esc(v.id)}"><b>${esc(surveyVenueName(v, r))}</b>${v.confidence === "unconfirmed" ? ` <span class="badge">check</span>` : ""}<small>${esc(bits.join(", ") || "Not recorded yet")}</small></button><button class="edit" data-sved="${esc(v.id)}">Edit</button></div>`;
+    const state = [placed.has(v.id) ? "On the map" : "", typeof r.lat === "number" ? "Recorded, within " + r.acc + " m" : "", r.missing ? "Doesn't exist" : "", r.rename ? "Listed as " + v.name : ""].filter(Boolean);
+    const bits = [legend(v), v.not_on_official_map ? "Not on the official map" : "", ...(state.length ? state : ["Not recorded yet"])].filter(Boolean);
+    return `<div class="svrow${typeof r.lat === "number" ? " done" : ""}${r.missing ? " gone" : ""}"><button class="grow" data-tag="${esc(v.id)}"><b>${esc(surveyVenueName(v, r))}</b>${v.confidence === "unconfirmed" ? ` <span class="badge">check</span>` : ""}<small>${esc(bits.join(", "))}</small></button><button class="edit" data-sved="${esc(v.id)}">Edit</button></div>`;
   };
   islandSheet(`<h3>Survey: ${esc(placeEntry(isl.id).name)}</h3>
     <div class="hint" style="padding-top:0">Stand at a place and tap its name to record where it is. It takes about 5 seconds. Everything stays on this phone and works with no signal. Places marked "check" have a name nobody has confirmed yet.</div>
@@ -2246,6 +2250,8 @@ function openSurveyVenue(id){
   const tidy = () => { const x = S.venues[id]; if (x && typeof x.lat !== "number" && !x.rename && !x.missing) delete S.venues[id]; };
   islandSheet(`<h3>${esc(surveyVenueName(v, r))}</h3>
     <div class="hint" style="padding-top:0">${esc(cat(v.category).label)}${v.confidence === "unconfirmed" ? ". The name or place isn't confirmed yet" : ""}${r.rename ? ". Listed as " + esc(v.name) : ""}.</div>
+    ${legend(v) ? `<div class="hint">On the island map sign: ${esc(legend(v))}.</div>` : ""}
+    ${v.not_on_official_map ? `<div class="hint">Not on the official map. If it isn't on the island, tap Doesn't exist.</div>` : ""}
     ${v.notes ? `<div class="hint">${esc(v.notes)}</div>` : ""}
     <div class="hint">${typeof r.lat === "number" ? "Recorded within " + r.acc + " m, " + esc(niceTime(new Date(r.at).toTimeString().slice(0, 5))) + "." : "Not recorded yet."}${r.missing ? " Marked as doesn't exist." : ""}</div>
     <button class="btn" id="veRec">${typeof r.lat === "number" ? "Record the position again" : "Record the position here"}</button>
