@@ -16,6 +16,7 @@
   "pier"
  ],
  "merged": {
+  "tram-stop-main-beach-and-jumbey-beach-grill": "tram-stop-great-life-lagoon",
   "silver-cove-pool": "silver-cove-gazebo"
  },
  "removed": [
@@ -130,62 +131,59 @@
   },
   {
    "id": "tram-stop-welcome-plaza",
-   "display_name": "Tram Stop: Welcome Plaza",
+   "display_name": "Tram Stop 1: Welcome Plaza",
    "category": "tram",
    "confidence": "confirmed",
-   "notes": "NCL does not publish official tram stop names. This stop is named here after the area it serves.",
+   "notes": "Check the number and name on the stop's sign.",
    "area_id": "welcome-plaza",
    "area": "Tram",
+   "stop_number": 1,
    "official_area": "General",
    "official_number": 2
   },
   {
    "id": "tram-stop-great-life-lagoon",
-   "display_name": "Tram Stop: Great Life Lagoon",
+   "display_name": "Tram Stop 2: Central Plaza",
    "category": "tram",
-   "confidence": "unconfirmed",
-   "notes": "NCL does not publish official tram stop names. This stop is named here after the area it serves.",
+   "confidence": "confirmed",
+   "notes": "Check the number and name on the stop's sign.",
    "area_id": "lagoon",
-   "area": "Tram"
-  },
-  {
-   "id": "tram-stop-main-beach-and-jumbey-beach-grill",
-   "display_name": "Tram Stop: Main Beach and Jumbey Beach Grill",
-   "category": "tram",
-   "confidence": "unconfirmed",
-   "notes": "NCL does not publish official tram stop names. This stop is named here after the area it serves.",
-   "area_id": "beaches",
    "area": "Tram",
-   "not_on_official_map": true
+   "stop_number": 2
   },
   {
    "id": "tram-stop-great-tides-waterpark",
-   "display_name": "Tram Stop: Great Tides Waterpark",
+   "display_name": "Tram Stop 4: Great Tides Waterpark",
    "category": "tram",
-   "confidence": "unconfirmed",
-   "notes": "A waterpark tram stop was planned while the park was under construction. Confirm it exists now that the park is open.",
+   "confidence": "confirmed",
+   "notes": "Check the number and name on the stop's sign.",
    "area_id": "waterpark",
    "area": "Tram",
+   "stop_number": 4,
    "not_on_official_map": true
   },
   {
    "id": "tram-stop-vibe-shore-club",
-   "display_name": "Tram Stop: Vibe Shore Club",
+   "display_name": "Tram Stop 3: Vibe Shore Club",
    "category": "tram",
    "confidence": "unconfirmed",
-   "notes": "NCL does not publish official tram stop names. This stop is named here after the area it serves.",
+   "notes": "Check the number and name on the stop's sign. The guide does not name this stop; the name is taken from the area it serves.",
    "area_id": "beaches",
    "area": "Tram",
+   "stop_number": 3,
+   "name_confirmed": false,
    "not_on_official_map": true
   },
   {
    "id": "tram-stop-silver-cove",
-   "display_name": "Tram Stop: Silver Cove",
+   "display_name": "Tram Stop 5: Silver Cove",
    "category": "tram",
    "confidence": "unconfirmed",
-   "notes": "NCL does not publish official tram stop names. This stop is named here after the area it serves.",
+   "notes": "Check the number and name on the stop's sign. The guide does not name this stop; the name is taken from the area it serves.",
    "area_id": "silver-cove",
-   "area": "Tram"
+   "area": "Tram",
+   "stop_number": 5,
+   "name_confirmed": false
   },
   {
    "id": "great-life-lagoon",

@@ -9,6 +9,7 @@
   "places": "places.json",
   "survey_list": "survey-list.json",
   "areas": "areas.json",
+  "tram_routes": "tram-routes.json",
   "bounds": {
     "min_lat": 25.817,
     "min_lon": -77.9277,

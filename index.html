@@ -217,6 +217,9 @@ button:focus-visible,input:focus-visible,[tabindex]:focus-visible{outline:3px so
 .o-acc{fill:rgba(26,115,232,.15);stroke:rgba(26,115,232,.5);stroke-width:1}
 .o-walk{fill:none;stroke:#D6336C;stroke-width:3;stroke-linejoin:round;stroke-linecap:round;opacity:.85}
 .o-back{stroke:var(--accent);stroke-width:4;stroke-dasharray:8 6;stroke-linecap:round}
+.t-case{fill:none;stroke:var(--bg);stroke-linecap:round;stroke-linejoin:round;opacity:.9}
+.t-line{fill:none;stroke-linecap:round;stroke-linejoin:round;opacity:.92}
+.t-line.t-approx{stroke-linecap:butt}
 .imarks{position:absolute;inset:0;pointer-events:none}
 .imarks > *{pointer-events:auto}
 .mk{position:absolute;left:0;top:0;width:30px;height:30px;margin:-15px 0 0 -15px;padding:0;border-radius:50%;background:#fff;border:3px solid var(--c);display:grid;place-items:center;box-shadow:0 1px 4px rgba(0,0,0,.35);z-index:1}
@@ -362,6 +365,25 @@ textarea.search{resize:vertical;min-height:84px}
 .mk.inclu{display:none}
 .mkc{position:absolute;left:0;top:0;min-width:36px;height:36px;padding:0 9px;border-radius:18px;background:var(--ac,#7F8C8D);color:#fff;border:3px solid #fff;font-weight:800;font-size:15px;display:flex;align-items:center;justify-content:center;box-shadow:0 1px 6px rgba(0,0,0,.4);z-index:2}
 .mkc.dim{opacity:.28}
+/* 1.13.0: tram guide */
+.mk .snum{position:absolute;top:-8px;right:-10px;min-width:18px;height:18px;padding:0 3px;border-radius:9px;background:#8E44AD;color:#fff;border:2px solid #fff;font-size:11px;font-weight:800;line-height:14px;text-align:center;box-sizing:border-box;box-shadow:0 1px 3px rgba(0,0,0,.35)}
+.mk.tram{z-index:2}
+.tlegend{align-self:flex-start;max-width:100%;display:flex;flex-wrap:wrap;align-items:center;gap:3px 10px;background:var(--surface);color:var(--ink);border-radius:12px;padding:6px 10px;font-size:12px;font-weight:600;box-shadow:0 1px 6px rgba(0,0,0,.25);text-align:left}
+.tlegend[hidden]{display:none}
+.tlegend .tl-h{font-weight:800;font-size:13px}
+.tlegend .tl-r{display:flex;align-items:center;gap:5px;white-space:nowrap}
+.rsw{display:inline-block;width:20px;height:5px;border-radius:3px;background:var(--rc);flex:none}
+.rsw.dash{background:repeating-linear-gradient(90deg,var(--muted) 0 6px,transparent 6px 10px)}
+.snum.inl{display:inline-block;min-width:22px;height:22px;padding:0 5px;border-radius:11px;background:#8E44AD;color:#fff;font-size:12px;font-weight:800;line-height:22px;text-align:center;margin-right:6px;box-sizing:border-box}
+.tinfo{margin-top:6px;display:flex;flex-direction:column;gap:4px}
+.tinfo .trow{display:flex;gap:8px;align-items:flex-start}
+.tinfo .trow .rsw{margin-top:7px}
+.tinfo b{font-size:14px}
+.tsteps{margin:6px 0 4px;padding-left:22px}
+.tsteps li{margin:3px 0}
+.backpanel .tsteps{font-size:14px;margin:4px 0 2px}
+.backpanel .tram-h{margin-top:8px;font-weight:700;font-size:14px}
+.tquick{font-size:18px;font-weight:700;margin:8px 0 2px}
 .imap.clustered .alabel{z-index:4}
 .imap.clustered .alabel span{opacity:.9}
 .nextev{font-size:13px;color:var(--ink);margin-top:2px}
@@ -434,9 +456,9 @@ textarea.search{resize:vertical;min-height:84px}
   </div>
   <div class="aboard" id="iAboard" hidden></div>
   <div class="imap" id="imap">
-    <svg id="isvg" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><g id="igeo"></g><g id="iarea"></g><g id="iover"></g></svg>
+    <svg id="isvg" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><g id="igeo"></g><g id="iarea"></g><g id="itram"></g><g id="iover"></g></svg>
     <div class="imarks" id="imarks"></div>
-    <div class="itopstack"><div class="arow" id="iAreas"></div><div class="inarea-line" id="iInArea" hidden></div><div class="ibanner" id="iBanner" hidden></div><div class="recbar" id="iRec" hidden></div></div>
+    <div class="itopstack"><div class="arow" id="iAreas"></div><div class="inarea-line" id="iInArea" hidden></div><button class="tlegend" id="iTram" hidden></button><div class="ibanner" id="iBanner" hidden></div><div class="recbar" id="iRec" hidden></div></div>
     <div class="itools">
       <button class="zoom" id="iZoomIn" aria-label="Zoom in">+</button>
       <button class="zoom" id="iZoomOut" aria-label="Zoom out">−</button>
@@ -468,7 +490,7 @@ textarea.search{resize:vertical;min-height:84px}
 <div class="toast" id="toast" hidden role="status"></div>
 
 <script>
-const APP_VERSION = "1.12.0";
+const APP_VERSION = "1.13.0";
 const APP_DATE = "2026-09-29";
 
 // ---------- ships: loaded at runtime from ships/index.json and each ship's ship.json ----------
@@ -2113,13 +2135,14 @@ function ensurePlace(id){
   const get = f => fetch(e.path + f).then(r => { if (!r.ok) throw new Error(f + " answered " + r.status); return r.json(); });
   placeLoads[id] = (async () => {
     const info = await get("place.json");
-    const [base, pl, sv, ar] = await Promise.all([get(info.basemap), get(info.places), get(info.survey_list),
-      info.areas ? get(info.areas).catch(() => null) : null]);
+    const [base, pl, sv, ar, tr] = await Promise.all([get(info.basemap), get(info.places), get(info.survey_list),
+      info.areas ? get(info.areas).catch(() => null) : null, info.tram_routes ? get(info.tram_routes).catch(() => null) : null]);
     // Since 1.11.1 the files carry display_name (the name without builder notes); the app shows it as name.
     const named = list => (list || []).map(x => Object.assign({}, x, { name: x.display_name || x.name || x.id }));
-    return (PLACE_DATA[id] = { info, base, places: named(pl.places), survey: named(sv.venues), categories: sv.categories || [],
+    const places = named(pl.places), merged = sv.merged || {};
+    return (PLACE_DATA[id] = { info, base, places, survey: named(sv.venues), categories: sv.categories || [],
       areas: (ar && Array.isArray(ar.areas) ? ar.areas : []).filter(a => a && a.id && Array.isArray(a.outline) && a.outline.length >= 3),
-      merged: sv.merged || {}, removed: sv.removed || [] });
+      merged, removed: sv.removed || [], trams: buildTrams(tr, places, merged) });
   })().finally(() => { delete placeLoads[id]; });
   return placeLoads[id];
 }
@@ -2142,7 +2165,7 @@ async function savePlace(id){
     const get = async f => { const r = await fetch(e.path + f + bust, { cache: "no-store" }); if (!r.ok) throw new Error(f + " answered " + r.status); return r; };
     const infoRes = await get("place.json");
     const info = await infoRes.clone().json();
-    const files = await Promise.all([...new Set([info.basemap, info.places, info.survey_list, info.areas].filter(Boolean))].map(async f => [f, await get(f)]));
+    const files = await Promise.all([...new Set([info.basemap, info.places, info.survey_list, info.areas, info.tram_routes].filter(Boolean))].map(async f => [f, await get(f)]));
     await caches.delete(placeCacheName(id));
     const c = await caches.open(placeCacheName(id));
     await c.put(absUrl(e.path + "place.json"), infoRes);
@@ -2369,6 +2392,10 @@ function islSetup(d){
   // The areas on the island sign: a soft tint of each sign color, under the places.
   d.areas.forEach(a => { if (!a.label) a.label = areaLabelPoint(a.outline); });
   $("iarea").innerHTML = d.areas.map(a => `<path class="a-fill" data-area="${esc(a.id)}" fill="${esc(a.color)}" stroke="${esc(a.color)}" d="${ptsD(a.outline.map(c => [c[1], c[0]])) + "Z"}"/>`).join("");
+  // Dry ground (land, beach and pier outlines as [lat, lon]), for "Open island" away from every area.
+  if (!d.ground) d.ground = (d.base.features || []).filter(f => ["land", "beach", "pier"].includes(f.properties?.kind) && f.geometry?.type === "Polygon")
+    .map(f => f.geometry.coordinates[0].map(c => [c[1], c[0]]));
+  renderTrams();
   adoptMerged(isl.id, d);
   renderAreaRow();
   const at = d.base.attribution || "© OpenStreetMap contributors";
@@ -2408,7 +2435,7 @@ function zoomAt(f, px, py){
 function applyView(){
   if (!isl || !isl.d) return;
   const m = `matrix(${isl.s} 0 0 ${isl.s} ${isl.tx} ${isl.ty})`;
-  $("igeo").setAttribute("transform", m); $("iarea").setAttribute("transform", m); $("iover").setAttribute("transform", m);
+  ["igeo", "iarea", "itram", "iover"].forEach(g => $(g).setAttribute("transform", m));
   $("imap").classList.toggle("labels", isl.s >= LABEL_S);
   // Area names grow with the zoom, from small on the whole island to large, and hide when tiny.
   $("imarks").style.setProperty("--afs", Math.min(22, Math.max(10, isl.s * 45)).toFixed(1) + "px");
@@ -2434,7 +2461,7 @@ function applyView(){
 const ISLAND_OPEN_S = 1.2;   // the zoom the map opens at when you're on the island (1.2 pixels per meter)
 const CLUSTER_PX = 36;       // markers whose centers are closer than this on screen merge
 function clusterMarks(els, pos){
-  const idx = els.map((el, i) => el.classList.contains("mk") && !el.classList.contains("spotmk")
+  const idx = els.map((el, i) => el.classList.contains("mk") && !el.classList.contains("spotmk") && !el.classList.contains("tram")
     && el.dataset.k !== isl.sel && el.dataset.k !== isl.hot ? i : -1).filter(i => i >= 0);
   const parent = new Map(idx.map(i => [i, i]));
   const root = i => { while (parent.get(i) !== i) i = parent.get(i); return i; };
@@ -2568,7 +2595,9 @@ function renderIslMarks(){
   const ac = v => { const a = areaOf(v.area_id); return a ? `;--ac:${esc(a.color)}` : ""; };
   const ain = (v, k) => (areaOf(v.area_id) ? " inarea" : "") + (af && v.area_id !== af && sel !== k ? " dim" : "");
   let h = d.areas.map(a => `<button class="alabel${af && af !== a.id ? " dim" : ""}" data-area="${esc(a.id)}" data-lat="${a.label.lat}" data-lon="${a.label.lon}" style="--ac:${esc(a.color)}" aria-label="Area: ${esc(a.name)}"><span>${esc(a.name)}</span></button>`).join("");
-  h += d.places.map(p => `<button class="mk${p.approximate ? " approx" : ""}${ain(p, "place:" + p.id)}${cls("place:" + p.id)}" data-k="place:${esc(p.id)}" data-area="${esc(p.area_id || "")}" data-lat="${p.lat}" data-lon="${p.lon}" style="--c:${cat(p.category).color}${ac(p)}" aria-label="${esc(placeLabel(p))}"><i>${cat(p.category).icon}</i><span>${esc(placeLabel(p))}</span></button>`).join("");
+  // Tram stops carry their stop number in a badge and never merge into bubbles (1.13.0).
+  const tram = p => p.category === "tram" && typeof p.stop_number === "number";
+  h += d.places.map(p => `<button class="mk${p.approximate ? " approx" : ""}${tram(p) ? " tram" : ""}${ain(p, "place:" + p.id)}${cls("place:" + p.id)}" data-k="place:${esc(p.id)}" data-area="${esc(p.area_id || "")}" data-lat="${p.lat}" data-lon="${p.lon}" style="--c:${cat(p.category).color}${ac(p)}" aria-label="${esc(placeLabel(p))}"><i>${cat(p.category).icon}</i>${tram(p) ? `<b class="snum">${p.stop_number}</b>` : ""}<span>${esc(placeLabel(p))}</span></button>`).join("");
   d.survey.forEach(v => { const r = S.venues[v.id]; if (r && typeof r.lat === "number")
     h += `<button class="svmk${ain(v, "tag:" + v.id)}${cls("tag:" + v.id)}" data-k="tag:${esc(v.id)}" data-lat="${r.lat}" data-lon="${r.lon}" style="--c:${cat(v.category).color}${ac(v)}" aria-label="Survey: ${esc(r.rename || v.name)}"><span>${esc(r.rename || v.name)}</span></button>`; });
   S.added.forEach(a => { h += `<button class="svmk new${cls("new:" + a.id)}" data-k="new:${esc(a.id)}" data-lat="${a.lat}" data-lon="${a.lon}" aria-label="New place: ${esc(a.name)}"><span>${esc(a.name)}</span></button>`; });
@@ -2592,6 +2621,9 @@ function markInfo(k){
 }
 let hotTimer = null;
 function selectMark(k, center){
+  // A place id that was merged into another (like the old Main Beach tram stop) opens the one it became.
+  const mid = k && k.startsWith("place:") && isl.d?.merged?.[k.slice(6)];
+  if (mid) k = "place:" + mid;
   isl.sel = k; isl.hot = k;
   clearTimeout(hotTimer); hotTimer = setTimeout(() => { if (isl && isl.hot === k){ isl.hot = null; const el = $("imarks").querySelector(`[data-k="${CSS.escape(k)}"]`); if (el) el.classList.remove("hot"); } }, 6500);
   const m = markInfo(k);
@@ -2603,15 +2635,18 @@ function renderCard(){
   if (!m || (isl.back && m.kind === "spot")){ c.hidden = true; return; }
   const f = gps.fix && onIsland() ? gps.fix : null;
   const far = f ? `${distText(distM(f, m))} away. ${walkText(distM(f, m))}.` : "";
+  const acts = (m.kind === "spot" ? `<button id="cBack">Take me back</button><button id="cRename">Rename</button><button id="cDel">Delete</button>` : "")
+    + (m.kind === "tag" || m.kind === "new" ? `<button id="cSurvey">Open in Survey</button>` : "")
+    + (isl.d.trams ? `<button id="cTram">🚋 Get there by tram</button>` : "");
   c.hidden = false;
   c.innerHTML = `<div class="row"><div class="grow"><b>${esc(m.name)}</b><small>${esc(m.sub)}</small>
       ${m.leg ? `<small>On the island map sign: ${esc(m.leg)}</small>` : ""}
       ${m.p && m.p.approximate ? `<small>Approximate location. The real spot may be a short walk away.</small>` : ""}
       ${m.p && m.p.status === "surveyed" ? `<small>Measured on the island${typeof m.p.accuracy_m === "number" ? ", within " + esc(distText(m.p.accuracy_m)) : ""}${/^\d{4}-\d{2}-\d{2}$/.test(m.p.survey_date || "") ? ", on " + esc(niceDate(m.p.survey_date)) : ""}.</small>` : ""}
-      ${far ? `<small>${esc(far)}</small>` : ""}</div><button class="x" id="cClose" aria-label="Close">✕</button></div>
-    ${m.kind === "spot" ? `<div class="acts"><button id="cBack">Take me back</button><button id="cRename">Rename</button><button id="cDel">Delete</button></div>` : ""}
-    ${m.kind === "tag" || m.kind === "new" ? `<div class="acts"><button id="cSurvey">Open in Survey</button></div>` : ""}`;
+      ${far ? `<small>${esc(far)}</small>` : ""}${m.p ? stopInfo(m.p) : ""}</div><button class="x" id="cClose" aria-label="Close">✕</button></div>
+    ${acts ? `<div class="acts">${acts}</div>` : ""}`;
   $("cClose").onclick = () => { isl.sel = null; isl.hot = null; renderIslMarks(); };
+  if ($("cTram")) $("cTram").onclick = () => openTramTrip(isl.sel);
   if ($("cBack")) $("cBack").onclick = () => openTakeBack(m.id);
   if ($("cRename")) $("cRename").onclick = () => openSpotEditor(m.id);
   if ($("cDel")) $("cDel").onclick = () => {
@@ -2769,21 +2804,26 @@ function areaLabelPoint(o){
   return best;
 }
 const NEAR_AREA_M = 400;   // "Near: <area>" only within this distance
-// The area you're standing in, or the nearest one: { area, inside }.
+// The area you're standing in, or the nearest one: { area, inside }. Since 1.13.0 the areas cover
+// only the built part of the island, so dry ground farther than NEAR_AREA_M from every area is
+// { open: true } ("Open island"). Out on the water it is null.
 function areaAt(f){
   const areas = isl?.d?.areas || [];
+  if (!areas.length) return null;
   const hit = areas.find(a => inOutline(f.lat, f.lon, a.outline));
   if (hit) return { area: hit, inside: true };
   let best = null, bestM = Infinity;
   areas.forEach(a => { const m = metersToOutline(f.lat, f.lon, a.outline); if (m < bestM){ bestM = m; best = a; } });
-  return best && bestM <= NEAR_AREA_M ? { area: best, inside: false } : null;
+  if (best && bestM <= NEAR_AREA_M) return { area: best, inside: false };
+  return (isl.d.ground || []).some(o => inOutline(f.lat, f.lon, o)) ? { open: true } : null;
 }
 function renderInArea(){
   const el = $("iInArea"); if (!el) return;
   const f = isl?.d && gps.fix && onIsland() ? gps.fix : null;
   const at = f ? areaAt(f) : null;
   el.hidden = !at;
-  if (at) el.innerHTML = `<span class="adot" style="--ac:${esc(at.area.color)}"></span>${at.inside ? "You're in:" : "Near:"} <b>${esc(at.area.name)}</b>`;
+  if (at && at.open) el.innerHTML = `<span class="adot" style="--ac:#7F8C8D"></span><b>Open island</b>`;
+  else if (at) el.innerHTML = `<span class="adot" style="--ac:${esc(at.area.color)}"></span>${at.inside ? "You're in:" : "Near:"} <b>${esc(at.area.name)}</b>`;
 }
 function renderAreaRow(){
   const row = $("iAreas"), areas = isl?.d?.areas || [];
@@ -2828,6 +2868,175 @@ function adoptMerged(placeId, d){
     S.venues[to] = S.venues[from]; delete S.venues[from]; changed = true;
   });
   if (changed) saveSurvey();
+}
+
+// ---------- trams: the island's tram routes (tram-routes.json, since 1.13.0) ----------
+// Each route is a line with its stops in order. Trams are taken to run both ways along a route.
+// Tram times aren't known, so directions count only the walking (about 3 miles per hour, straight line).
+const ROUTE_COLORS = { 1: "#D81B60", 2: "#5E35B1" };
+const TRAM_BACK_M = 600;    // Take me back adds tram directions when the spot is farther than this
+const NEAR_STOP_M = 15;     // closer than this to a stop, there is no walk to or from it
+function buildTrams(rf, places, merged){
+  const byId = new Map(places.filter(p => p.category === "tram").map(p => [p.id, p]));
+  const pt = c => ({ lat: c[1], lon: c[0] });
+  const routes = (rf && Array.isArray(rf.features) ? rf.features : []).map((f, n) => {
+    const pr = f.properties || {};
+    const coords = ((f.geometry && f.geometry.coordinates) || []).filter(c => Array.isArray(c) && isFinite(c[0]) && isFinite(c[1]));
+    const stops = (pr.stops || []).map(s => byId.get(s.id) || byId.get(merged[s.id])).filter(Boolean);
+    if (coords.length < 2 || stops.length < 2) return null;
+    // Split the line where it passes each stop, so each stretch between two stops can be dashed on its own.
+    const cut = [0];
+    for (let i = 1; i < stops.length - 1; i++){
+      let best = cut[i - 1], bd = Infinity;
+      for (let j = cut[i - 1]; j < coords.length; j++){ const d = distM(stops[i], pt(coords[j])); if (d < bd){ bd = d; best = j; } }
+      cut.push(best);
+    }
+    cut.push(coords.length - 1);
+    const segs = stops.slice(1).map((s, i) => {
+      const g = (pr.segments || []).find(x => x.from_stop === stops[i].stop_number && x.to_stop === s.stop_number) || {};
+      const pts = coords.slice(cut[i], cut[i + 1] + 1);
+      let len = 0; for (let j = 1; j < pts.length; j++) len += distM(pt(pts[j - 1]), pt(pts[j]));
+      return { approx: !!g.approximate_path, len: typeof g.length_m === "number" ? g.length_m : len, pts };
+    });
+    const num = typeof pr.route_number === "number" ? pr.route_number : n + 1;
+    return { num, name: pr.name || "Route " + num, color: ROUTE_COLORS[num] || "#555555", stops, segs };
+  }).filter(Boolean);
+  return routes.length ? { routes } : null;
+}
+const stopShort = p => p.name.replace(/^Tram Stop \d+:\s*/, "") || p.name;
+const stopLabel = p => typeof p.stop_number === "number" ? `Stop ${p.stop_number} (${stopShort(p)})` : p.name;
+const routeTitle = r => `Route ${r.num}: ${r.name}`;
+const routesAt = p => (isl?.d?.trams?.routes || []).filter(r => r.stops.includes(p));
+const walkMin = m => Math.max(1, Math.round(m / WALK_M_PER_MIN));
+// Both routes under the markers, with a small legend that opens the Tram guide.
+function renderTrams(){
+  const T = isl.d.trams, lg = $("iTram");
+  if (!T){ $("itram").innerHTML = ""; lg.hidden = true; return; }
+  const w = i => Math.max(3.5, 7 - 3 * i);   // the first route is widest, so a stretch both share shows both colors
+  $("itram").innerHTML = T.routes.map((r, i) => r.segs.map(s => `<path class="t-case" style="stroke-width:${w(i) + 3}px" d="${ptsD(s.pts)}"/>`).join("")).join("")
+    + T.routes.map((r, i) => r.segs.map(s => `<path class="t-line${s.approx ? " t-approx" : ""}" data-route="${r.num}" style="stroke:${r.color};stroke-width:${w(i)}px${s.approx ? `;stroke-dasharray:${w(i) * 1.6}px ${w(i)}px` : ""}" d="${ptsD(s.pts)}"/>`).join("")).join("");
+  lg.hidden = false;
+  lg.setAttribute("aria-label", "Tram guide");
+  lg.innerHTML = `<span class="tl-h">🚋 Tram guide</span>`
+    + T.routes.map(r => `<span class="tl-r"><span class="rsw" style="--rc:${r.color}"></span>${r.num} ${esc(r.name)}</span>`).join("")
+    + (T.routes.some(r => r.segs.some(s => s.approx)) ? `<span class="tl-r"><span class="rsw dash"></span>Path approximate</span>` : "");
+}
+$("iTram").onclick = e => { e.stopPropagation(); openTramGuide(); };
+// The routes that serve a tram stop, with the stops before and after it on each (for the place card).
+function stopInfo(p){
+  if (p.category !== "tram") return "";
+  const rs = routesAt(p);
+  let h = rs.map(r => {
+    const i = r.stops.indexOf(p), b = r.stops[i - 1], a = r.stops[i + 1];
+    return `<div class="trow"><span class="rsw" style="--rc:${r.color}"></span><div><b>${esc(routeTitle(r))}</b>
+      <small>Before: ${b ? esc(stopLabel(b)) : "none, this is the first stop"}.</small><small>After: ${a ? esc(stopLabel(a)) : "none, this is the last stop"}.</small></div></div>`;
+  }).join("");
+  if (rs.length > 1) h += `<small>Change here between the ${rs.map(r => esc(r.name)).join(" and the ")}.</small>`;
+  else if (!rs.length && isl.d.trams) h += `<small>No tram route is known to stop here yet.</small>`;
+  if (p.name_confirmed === false) h += `<small>Name to confirm on the stop's sign.</small>`;
+  return h ? `<div class="tinfo">${h}</div>` : "";
+}
+function rideLeg(r, a, b){
+  const i = r.stops.indexOf(a), j = r.stops.indexOf(b);
+  return { route: r, from: a, to: b, len: r.segs.slice(Math.min(i, j), Math.max(i, j)).reduce((t, s) => t + s.len, 0) };
+}
+// The rides from stop a to stop b: one route when one serves both, otherwise two, changing at a stop they share.
+function rideLegs(a, b){
+  const R = isl?.d?.trams?.routes || [];
+  const cost = legs => legs.length * 1e6 + legs.reduce((t, l) => t + l.len, 0);
+  let best = null;
+  const offer = legs => { if (!best || cost(legs) < cost(best)) best = legs; };
+  R.forEach(r => { if (r.stops.includes(a) && r.stops.includes(b)) offer([rideLeg(r, a, b)]); });
+  if (!best) R.forEach(r1 => R.forEach(r2 => {
+    if (r1 === r2 || !r1.stops.includes(a) || !r2.stops.includes(b)) return;
+    r1.stops.filter(t => t !== a && t !== b && r2.stops.includes(t)).forEach(t => offer([rideLeg(r1, a, t), rideLeg(r2, t, b)]));
+  }));
+  return best;
+}
+// Walk to the stop nearest you, ride, and walk from the stop nearest where you're going. When walking
+// the whole way is shorter than the walks to and from the stops, walking is quicker (walk: true).
+function tramPlan(from, to){
+  const T = isl?.d?.trams; if (!T) return null;
+  const stops = [...new Set(T.routes.flatMap(r => r.stops))];
+  const nearest = q => stops.reduce((b, s) => distM(q, s) < distM(q, b) ? s : b);
+  const a = nearest(from), b = nearest(to), direct = distM(from, to), d1 = distM(from, a), d2 = distM(b, to);
+  const legs = a !== b ? rideLegs(a, b) : null;
+  return { a, b, direct, d1, d2, w1: d1 < NEAR_STOP_M ? 0 : d1, w2: d2 < NEAR_STOP_M ? 0 : d2, legs, walk: !legs || d1 + d2 >= direct };
+}
+function tramSteps(plan, toName){
+  const s = [plan.w1 ? `Walk ${walkMin(plan.w1)} min to ${stopLabel(plan.a)}.` : `Get on at ${stopLabel(plan.a)}.`];
+  plan.legs.forEach((l, i) => {
+    if (i) s.push(`Change to the ${l.route.name}.`, `Ride to ${stopLabel(l.to)}.`);
+    else s.push(`Ride the ${l.route.name} to ${stopLabel(l.to)}.`);
+  });
+  if (plan.w2) s.push(`Walk ${walkMin(plan.w2)} min to ${toName}.`);
+  return s;
+}
+function tramTimesNote(plan){
+  const w = (plan.w1 ? walkMin(plan.w1) : 0) + (plan.w2 ? walkMin(plan.w2) : 0);
+  return (w ? `About ${w} min of walking` : "No walking to or from the stops") + `, instead of about ${walkMin(plan.direct)} min walking the whole way. `
+    + "Tram times aren't known, so waiting for the tram and the ride itself aren't counted.";
+}
+function openTramGuide(){
+  const T = isl?.d?.trams; if (!T) return;
+  const all = [...new Set(T.routes.flatMap(r => r.stops))], shared = all.filter(s => routesAt(s).length > 1);
+  islandSheet(`<h3>🚋 Tram guide</h3>
+    <div class="hint" style="padding-top:0">${T.routes.length === 1 ? "One tram route runs" : (["", "", "Two", "Three", "Four"][T.routes.length] || T.routes.length) + " tram routes run"} on the island.${shared.length ? " " + esc(shared.map(stopLabel).join(" and ")) + " is where you change between them." : ""} Tap a stop to see it on the map.</div>
+    ${T.routes.map(r => `<div class="sectionlabel"><span class="rsw" style="--rc:${r.color}"></span> ${esc(routeTitle(r))}</div>
+      ${r.stops.map(s => `<button class="res" data-k="place:${esc(s.id)}"><span><b class="snum inl">${s.stop_number ?? ""}</b>${esc(stopShort(s))}</span><span>${esc([routesAt(s).length > 1 ? "Change here" : "", s.name_confirmed === false ? "Name to confirm" : ""].filter(Boolean).join(", "))}</span></button>`).join("")}
+      <div class="hint">About ${esc(distText(r.segs.reduce((t, s) => t + s.len, 0)))} from end to end.${r.segs.some(s => s.approx) ? " Its line on the map is dashed where the path is approximate." : ""}</div>`).join("")}
+    <div class="hint">These routes come from a guide and the island sign, and are still being confirmed. Tram times aren't known. Check the sign at each stop.</div>
+    <button class="btn" id="tgMap">Show both routes on the map</button>
+    <button class="btn ghost" id="tgClose">Close</button>`);
+  $("islandBody").querySelectorAll("[data-k]").forEach(b => b.onclick = () => { closeSheets(); isl.moved = true; selectMark(b.dataset.k, true); });
+  $("tgMap").onclick = () => {
+    closeSheets();
+    const cs = T.routes.flatMap(r => r.segs.flatMap(s => s.pts));
+    isl.moved = true; isl.areaFilter = null; renderAreaRow();
+    fitBox(Math.min(...cs.map(c => c[1])), Math.min(...cs.map(c => c[0])), Math.max(...cs.map(c => c[1])), Math.max(...cs.map(c => c[0])), 60);
+    renderIslMarks();
+  };
+  $("tgClose").onclick = closeSheets;
+}
+// Get there by tram, from where you are (on the island) or from a place you pick.
+function openTramTrip(k){
+  const to = markInfo(k); if (!to || !isl.d.trams) return;
+  const here = gps.fix && onIsland();
+  const places = isl.d.places.filter(p => "place:" + p.id !== k).sort((x, y) => x.name.localeCompare(y.name));
+  const spots = islSpots().filter(s => "spot:" + s.id !== k);
+  const keys = [...spots.map(s => "spot:" + s.id), ...places.map(p => "place:" + p.id)];
+  const start = here ? "here" : keys.includes(isl.tramFrom) ? isl.tramFrom : "";
+  islandSheet(`<h3>🚋 Get there by tram</h3>
+    <div class="hint" style="padding-top:0">To <b>${esc(to.name)}</b></div>
+    <label class="field"><span>Starting from</span><select id="ttFrom">
+      ${here ? `<option value="here">Where I am now</option>` : `<option value="">Pick where you're starting</option>`}
+      ${spots.length ? `<optgroup label="Your saved spots">${spots.map(s => `<option value="spot:${esc(s.id)}">⭐ ${esc(s.name)}</option>`).join("")}</optgroup>` : ""}
+      <optgroup label="Places">${places.map(p => `<option value="place:${esc(p.id)}">${esc(p.name)}</option>`).join("")}</optgroup>
+    </select></label>
+    <div id="ttOut"></div>
+    <button class="btn ghost" id="ttClose">Close</button>`);
+  $("ttFrom").value = start;
+  const show = () => {
+    const v = $("ttFrom").value;
+    if (v !== "here") isl.tramFrom = v;
+    const from = v === "here" ? (gps.fix && onIsland() ? gps.fix : null) : markInfo(v);
+    if (!from){ $("ttOut").innerHTML = `<div class="hint">${here ? esc(whyNoFix() || "Waiting for your location...") : "You're not on the island right now, so pick the place you'll start from."}</div>`; return; }
+    const plan = tramPlan(from, to);
+    const out = plan.walk
+      ? `<div class="tquick">Walking is quicker: about ${walkMin(plan.direct)} min</div>
+         <div class="hint">${plan.a === plan.b ? `The same tram stop, ${esc(stopLabel(plan.a))}, is the nearest one to both ends.` : `Walking to ${esc(stopLabel(plan.a))} and from ${esc(stopLabel(plan.b))} would take about ${walkMin(plan.d1) + walkMin(plan.d2)} min on its own.`}</div>`
+      : `<ol class="tsteps">${tramSteps(plan, to.name).map(x => `<li>${esc(x)}</li>`).join("")}</ol>
+         <div class="hint">${esc(tramTimesNote(plan))}</div>`;
+    $("ttOut").innerHTML = out + `<div class="hint">Walking minutes are for about 3 miles per hour in a straight line, so allow a little more.</div>
+      <button class="btn" id="ttMap">Show on the map</button>`;
+    $("ttMap").onclick = () => {
+      closeSheets(); isl.moved = true;
+      fitBox(from.lat, from.lon, to.lat, to.lon, 90);
+      selectMark(k);
+    };
+  };
+  $("ttFrom").onchange = show; show();
+  $("ttClose").onclick = closeSheets;
 }
 
 // ---------- Add from a link: paste an invite or a shared trip (the way iPhone home screen apps get them) ----------
@@ -3019,6 +3228,9 @@ function renderBack(){
         : compass.state === "denied" ? "Motion access is off, so there's no arrow. Follow the orange line on the map. To get the arrow on an iPhone: open Settings, tap Apps, tap Safari, turn on Motion & Orientation Access, then close and reopen Deck Finder."
         : "This phone has no compass here, so follow the orange line on the map.";
       body = `<div class="row">${arrow}<div class="grow"><div class="dist">${esc(distText(m))}</div><small>${esc(walkText(m))}. Head ${compassWord(br)}.</small><small>${esc(note)}</small></div></div>`;
+      // Far from the spot (1.13.0): add the tram directions when the tram saves walking.
+      const plan = m > TRAM_BACK_M ? tramPlan(f, sp) : null;
+      if (plan && !plan.walk) body += `<div class="tram-h">🚋 Or take the tram</div><ol class="tsteps">${tramSteps(plan, sp.name).map(x => `<li>${esc(x)}</li>`).join("")}</ol><small>${esc(tramTimesNote(plan))}</small>`;
     }
   }
   p.hidden = false;

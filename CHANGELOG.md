@@ -1,5 +1,11 @@
 # Changelog
 
+## [1.13.0] - 2026-09-29
+### Added
+- Tram guide for Great Stirrup Cay: both tram routes on the map, numbered stops, and directions to any place by tram.
+### Changed
+- Tram stops now have their numbers and names, and island neighborhoods now end where the built areas end.
+
 ## [1.12.0] - 2026-09-29
 ### Added
 - Buttons to highlight bars, food, restrooms, stairs, elevators, and more on Norwegian Getaway's deck plans.

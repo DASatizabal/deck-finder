@@ -18,7 +18,10 @@ Checks:
     and every place has a lat and lon inside the island's bounds. Since 1.11.1, an island that names
     an "areas" file must have exactly five areas (each with an id, name, #RRGGBB color and an outline
     of at least three [lat, lon] corners), and every place and survey venue's area_id must be one of
-    them. No name the family sees may contain a builder note like "(marker 3-b)".
+    them. No name the family sees may contain a builder note like "(marker 3-b)". Since 1.13.0, an
+    island that names a "tram_routes" file must have valid routes: each a line of at least two
+    [lon, lat] points, with at least two stops, and every stop an active tram stop in the places file
+    (category "tram", same stop_number).
 """
 import json
 import os
@@ -216,6 +219,36 @@ for place_file in sorted(Path("places").glob("*/place.json")):
             for where, x in shown:
                 if x.get("area_id") not in ids:
                     fail(f"{fname} {where}: {x.get('id')!r} has area_id {x.get('area_id')!r}, which is not in {place['areas']}")
+    # Tram routes (1.13.0): valid lines whose stops are all active tram stops.
+    if place.get("tram_routes"):
+        tf = f"{fname}/{place['tram_routes']}"
+        routes = load_json(folder / place["tram_routes"], tf)
+        feats = routes.get("features") if isinstance(routes, dict) else None
+        if isinstance(routes, dict) and (not isinstance(feats, list) or not feats):
+            fail(f"{tf} needs a \"features\" list with at least one route")
+        elif isinstance(feats, list):
+            trams = {x.get("id"): x for x in (plist.get("places") if isinstance(plist, dict) and isinstance(plist.get("places"), list) else [])
+                     if x.get("category") == "tram"}
+            for f in feats:
+                pr = f.get("properties") if isinstance(f, dict) else None
+                geo = f.get("geometry") if isinstance(f, dict) else None
+                name = (pr or {}).get("name") or "a route"
+                if not isinstance(pr, dict) or not pr.get("name") or not isinstance(pr.get("route_number"), int):
+                    fail(f"{tf}: {name!r} needs a name and a route_number")
+                coords = geo.get("coordinates") if isinstance(geo, dict) and geo.get("type") == "LineString" else None
+                if not (isinstance(coords, list) and len(coords) >= 2 and all(isinstance(c, list) and len(c) == 2 and num(c[0]) and num(c[1])
+                                                                               and b["min_lon"] <= c[0] <= b["max_lon"] and b["min_lat"] <= c[1] <= b["max_lat"] for c in coords)):
+                    fail(f"{tf}: {name!r} needs a LineString line of at least two [lon, lat] points inside the island's bounds")
+                stops = (pr or {}).get("stops")
+                if not isinstance(stops, list) or len(stops) < 2:
+                    fail(f"{tf}: {name!r} needs at least two stops")
+                    continue
+                for st in stops:
+                    sid = st.get("id") if isinstance(st, dict) else st
+                    if sid not in trams:
+                        fail(f"{tf}: {name!r} names stop {sid!r}, which is not an active tram stop in {place['places']}")
+                    elif trams[sid].get("stop_number") != st.get("stop_number"):
+                        fail(f"{tf}: {name!r} calls {sid!r} stop {st.get('stop_number')!r}, but {place['places']} says {trams[sid].get('stop_number')!r}")
 
 # 6. ships/index.json is up to date
 sys.path.insert(0, "tools")

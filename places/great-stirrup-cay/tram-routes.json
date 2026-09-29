@@ -1,0 +1,385 @@
+{
+ "type": "FeatureCollection",
+ "island": "Great Stirrup Cay",
+ "file": "tram-routes.json",
+ "created": "2026-09-29",
+ "status": "to confirm on the island",
+ "source_note": "A guide says the island has two tram routes. Route 1 is a shuttle from the Welcome Center to the Central Plaza. Route 2 runs from the Central Plaza to the other stops, and the waterpark is stop number four.",
+ "stops_note": "The island sign is drawn rotated: Welcome Plaza is the easternmost stop, and the numbers run east to west. Stop ids, names and positions are in great-stirrup-cay.places.json (field stop_number).",
+ "path_note": "Each line follows the road and path shapes in the public app basemap (places/great-stirrup-cay/basemap.json, OpenStreetMap), taking the shortest way between stops with roads preferred over footpaths. Line ends less than 3 m from another line were joined. Each stop is joined to the nearest road or path with a short straight line. A segment is marked approximate_path when no road or path connects its stops, or when a stop is more than 30 m from the nearest road or path, and its note says which. Coordinates are [lon, lat].",
+ "features": [
+  {
+   "type": "Feature",
+   "properties": {
+    "route_number": 1,
+    "name": "Welcome Shuttle",
+    "stops": [
+     {
+      "stop_number": 1,
+      "id": "tram-stop-welcome-plaza",
+      "name": "Tram Stop 1: Welcome Plaza"
+     },
+     {
+      "stop_number": 2,
+      "id": "tram-stop-great-life-lagoon",
+      "name": "Tram Stop 2: Central Plaza"
+     }
+    ],
+    "length_m": 906,
+    "segments": [
+     {
+      "from_stop": 1,
+      "to_stop": 2,
+      "approximate_path": true,
+      "on_roads_m": 659,
+      "on_paths_m": 208,
+      "note": "approximate path: stop 1 is 34 m from the nearest road or path, so that end is a straight line to the network",
+      "length_m": 906
+     }
+    ],
+    "status": "to confirm on the island",
+    "source_note": "A guide says the island has two tram routes. Route 1 is a shuttle from the Welcome Center to the Central Plaza. Route 2 runs from the Central Plaza to the other stops, and the waterpark is stop number four."
+   },
+   "geometry": {
+    "type": "LineString",
+    "coordinates": [
+     [
+      -77.907466,
+      25.826089
+     ],
+     [
+      -77.907517,
+      25.825785
+     ],
+     [
+      -77.907664,
+      25.825805
+     ],
+     [
+      -77.907917,
+      25.825862
+     ],
+     [
+      -77.908117,
+      25.825874
+     ],
+     [
+      -77.9083,
+      25.825848
+     ],
+     [
+      -77.908497,
+      25.825771
+     ],
+     [
+      -77.908611,
+      25.8257
+     ],
+     [
+      -77.908769,
+      25.825583
+     ],
+     [
+      -77.909159,
+      25.825229
+     ],
+     [
+      -77.909742,
+      25.824787
+     ],
+     [
+      -77.910303,
+      25.824602
+     ],
+     [
+      -77.910344,
+      25.824559
+     ],
+     [
+      -77.910497,
+      25.82464
+     ],
+     [
+      -77.911744,
+      25.82448
+     ],
+     [
+      -77.911864,
+      25.824386
+     ],
+     [
+      -77.911937,
+      25.823884
+     ],
+     [
+      -77.912078,
+      25.82379
+     ],
+     [
+      -77.912144,
+      25.823764
+     ],
+     [
+      -77.912262,
+      25.823718
+     ],
+     [
+      -77.912815,
+      25.823493
+     ],
+     [
+      -77.912823,
+      25.823492
+     ],
+     [
+      -77.912827,
+      25.823523
+     ],
+     [
+      -77.912881,
+      25.82356
+     ],
+     [
+      -77.912815,
+      25.82396
+     ],
+     [
+      -77.912722,
+      25.824057
+     ],
+     [
+      -77.912628,
+      25.824556
+     ],
+     [
+      -77.912571,
+      25.824646
+     ],
+     [
+      -77.912547,
+      25.824822
+     ],
+     [
+      -77.912563,
+      25.825009
+     ],
+     [
+      -77.912592,
+      25.825085
+     ],
+     [
+      -77.912591,
+      25.825082
+     ],
+     [
+      -77.912366,
+      25.825157
+     ],
+     [
+      -77.912304,
+      25.825132
+     ],
+     [
+      -77.912284,
+      25.825172
+     ]
+    ]
+   }
+  },
+  {
+   "type": "Feature",
+   "properties": {
+    "route_number": 2,
+    "name": "Island Loop",
+    "stops": [
+     {
+      "stop_number": 2,
+      "id": "tram-stop-great-life-lagoon",
+      "name": "Tram Stop 2: Central Plaza"
+     },
+     {
+      "stop_number": 3,
+      "id": "tram-stop-vibe-shore-club",
+      "name": "Tram Stop 3: Vibe Shore Club"
+     },
+     {
+      "stop_number": 4,
+      "id": "tram-stop-great-tides-waterpark",
+      "name": "Tram Stop 4: Great Tides Waterpark"
+     },
+     {
+      "stop_number": 5,
+      "id": "tram-stop-silver-cove",
+      "name": "Tram Stop 5: Silver Cove"
+     }
+    ],
+    "length_m": 838,
+    "segments": [
+     {
+      "from_stop": 2,
+      "to_stop": 3,
+      "approximate_path": false,
+      "on_roads_m": 219,
+      "on_paths_m": 208,
+      "length_m": 437
+     },
+     {
+      "from_stop": 3,
+      "to_stop": 4,
+      "approximate_path": false,
+      "on_roads_m": 196,
+      "on_paths_m": 0,
+      "length_m": 206
+     },
+     {
+      "from_stop": 4,
+      "to_stop": 5,
+      "approximate_path": false,
+      "on_roads_m": 79,
+      "on_paths_m": 110,
+      "length_m": 196
+     }
+    ],
+    "status": "to confirm on the island",
+    "source_note": "A guide says the island has two tram routes. Route 1 is a shuttle from the Welcome Center to the Central Plaza. Route 2 runs from the Central Plaza to the other stops, and the waterpark is stop number four."
+   },
+   "geometry": {
+    "type": "LineString",
+    "coordinates": [
+     [
+      -77.912284,
+      25.825172
+     ],
+     [
+      -77.912304,
+      25.825132
+     ],
+     [
+      -77.912366,
+      25.825157
+     ],
+     [
+      -77.912591,
+      25.825082
+     ],
+     [
+      -77.912592,
+      25.825085
+     ],
+     [
+      -77.912563,
+      25.825009
+     ],
+     [
+      -77.912547,
+      25.824822
+     ],
+     [
+      -77.912571,
+      25.824646
+     ],
+     [
+      -77.912628,
+      25.824556
+     ],
+     [
+      -77.912722,
+      25.824057
+     ],
+     [
+      -77.912815,
+      25.82396
+     ],
+     [
+      -77.912881,
+      25.82356
+     ],
+     [
+      -77.912943,
+      25.823554
+     ],
+     [
+      -77.912987,
+      25.823507
+     ],
+     [
+      -77.912981,
+      25.823446
+     ],
+     [
+      -77.913106,
+      25.823419
+     ],
+     [
+      -77.913706,
+      25.823433
+     ],
+     [
+      -77.914175,
+      25.823489
+     ],
+     [
+      -77.914755,
+      25.823452
+     ],
+     [
+      -77.91496,
+      25.823425
+     ],
+     [
+      -77.914967,
+      25.823469
+     ],
+     [
+      -77.91496,
+      25.823425
+     ],
+     [
+      -77.915636,
+      25.823337
+     ],
+     [
+      -77.916908,
+      25.823322
+     ],
+     [
+      -77.916907,
+      25.823275
+     ],
+     [
+      -77.916908,
+      25.823322
+     ],
+     [
+      -77.917037,
+      25.82332
+     ],
+     [
+      -77.91741,
+      25.823269
+     ],
+     [
+      -77.917682,
+      25.823198
+     ],
+     [
+      -77.918141,
+      25.823418
+     ],
+     [
+      -77.918652,
+      25.823453
+     ],
+     [
+      -77.918686,
+      25.823509
+     ],
+     [
+      -77.918696,
+      25.823504
+     ]
+    ]
+   }
+  }
+ ]
+}
