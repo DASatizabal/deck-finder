@@ -1,5 +1,5 @@
 {
-  "version": "1.13.0",
+  "version": "1.14.0",
   "date": "2026-09-29",
-  "notes": "A tram guide for Great Stirrup Cay: both tram routes on the map, numbered stops, and directions to any place by tram."
+  "notes": "Android app support: real reminder notifications, Clock alarms, and the phone's share sheet. Also a shorter Take me back panel, and tram stops that no longer overlap on the island map."
 }

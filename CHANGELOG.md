@@ -1,5 +1,11 @@
 # Changelog
 
+## [1.14.0] - 2026-09-29
+### Added
+- Android app support: real reminder notifications, Clock alarms, and the phone's share sheet.
+### Fixed
+- A shorter Take me back panel, and tram stops that no longer overlap on the island map.
+
 ## [1.13.0] - 2026-09-29
 ### Added
 - Tram guide for Great Stirrup Cay: both tram routes on the map, numbered stops, and directions to any place by tram.

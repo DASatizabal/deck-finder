@@ -382,7 +382,10 @@ textarea.search{resize:vertical;min-height:84px}
 .tsteps{margin:6px 0 4px;padding-left:22px}
 .tsteps li{margin:3px 0}
 .backpanel .tsteps{font-size:14px;margin:4px 0 2px}
-.backpanel .tram-h{margin-top:8px;font-weight:700;font-size:14px}
+.backpanel .tram-h{margin-top:8px;font-weight:700;font-size:14px;display:flex;align-items:center;gap:8px;width:100%;text-align:left;padding:6px 8px;border-radius:8px;background:var(--chip);color:inherit}
+.backpanel .tram-h .grow{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.backpanel .tram-h .chev{flex:none;font-size:13px}
+.backpanel{max-height:60vh;overflow-y:auto}
 .tquick{font-size:18px;font-weight:700;margin:8px 0 2px}
 .imap.clustered .alabel{z-index:4}
 .imap.clustered .alabel span{opacity:.9}
@@ -490,8 +493,35 @@ textarea.search{resize:vertical;min-height:84px}
 <div class="toast" id="toast" hidden role="status"></div>
 
 <script>
-const APP_VERSION = "1.13.0";
+const APP_VERSION = "1.14.0";
 const APP_DATE = "2026-09-29";
+
+// ---------- Android app (1.14.0): this web app bundled in Capacitor (the deck-finder-android repo) ----------
+// Everything that checks IS_APP runs only inside the Android app. Chrome and iPhone never take those paths.
+const CAP = window.Capacitor;
+const IS_APP = !!(CAP && typeof CAP.isNativePlatform === "function" && CAP.isNativePlatform());
+const LIVE_BASE = "https://dasatizabal.github.io/deck-finder/";            // links shared from the app point here, never localhost
+const APK_PAGE = "https://github.com/DASatizabal/deck-finder/releases/latest";   // where each new Android version is attached
+// A native plugin, or null (always null outside the app, and when the app wasn't built with it).
+const plugin = name => {
+  if (!IS_APP || !CAP.Plugins) return null;
+  if (typeof CAP.isPluginAvailable === "function" && !CAP.isPluginAvailable(name)) return null;
+  return CAP.Plugins[name] || null;
+};
+const isCancel = e => /cancel/i.test(String(e && (e.message || e)));   // the Share plugin says "Share canceled"
+// Open a web page in the phone's browser. Capacitor sends any address outside the app to the browser.
+function openOutside(url){ location.href = url; }
+// Reminder notifications (see "reminder notifications" below). Declared here, before save() can run.
+const notif = { timer: null, sig: null, busy: false, again: false, asked: false, exactAsked: false, tap: null, booted: false };
+// Write a text file into the app's cache folder, then open the phone's share sheet with it.
+// Returns "shared" or "cancelled"; throws when the file couldn't be written or shared.
+async function appShareFile(name, text, title){
+  const Fs = plugin("Filesystem"), Sh = plugin("Share");
+  if (!Fs || !Sh) throw new Error("this app can't share files");
+  const { uri } = await Fs.writeFile({ path: name, data: text, directory: "CACHE", encoding: "utf8" });
+  try { await Sh.share({ title, files: [uri], dialogTitle: title }); return "shared"; }
+  catch (e) { if (isCancel(e)) return "cancelled"; throw e; }
+}
 
 // ---------- ships: loaded at runtime from ships/index.json and each ship's ship.json ----------
 let CATALOG = [];       // every ship in ships/index.json: {id, name, path, decks, bytes, hash, line, lineName}
@@ -765,6 +795,7 @@ function save(){
     localStorage.setItem("deckfinder", JSON.stringify(state));
     localStorage.setItem("deckfinder-trips", JSON.stringify(data));
   } catch (e) {}
+  if (IS_APP) queueNotifSync();   // events may have changed: keep the reminder notifications in step
 }
 // Migration (1.5.0): ship keys became "line/ship", like "ncl/getaway". Safe to run any number of times.
 function migrateShipIds(){
@@ -846,6 +877,7 @@ async function saveShip(id){
 }
 // Save the ship of every trip, and refresh any saved ship whose files changed on the website.
 async function syncOfflineShips(){
+  if (IS_APP) return;    // the Android app has every ship and island built in
   syncOfflinePlaces();   // island maps for island days on the trips
   if (!catalogReady || !("caches" in window) || !navigator.onLine) return;
   const tripShips = new Set(data.trips.map(t => t.ship));
@@ -1269,6 +1301,7 @@ document.addEventListener("keydown", e => { if (e.key === "Escape") closeSheets(
 // menu
 const mb = n => (n / 1048576).toFixed(1) + " MB";
 function offlineBadge(id){
+  if (IS_APP) return `<span class="offl ok">Built into this app</span>`;
   if (downloading[id]) return `<span class="offl">Downloading...</span>`;
   if (SAVED[id]) return `<span class="offl ok">Saved for offline</span>`;
   return `<button class="dl" data-dl="${esc(id)}">${dlFailed[id] ? "Download failed. Tap to retry." : "Download for offline"}</button>`;
@@ -1600,11 +1633,13 @@ async function openEventForm(tripId, evId, msg){
       <option value="custom"${preset === "custom" ? " selected" : ""}>Custom</option>
     </select></label>
     <div id="eCustomBits" ${preset === "custom" ? "" : "hidden"}><label class="field"><span>Minutes before (0 means when it starts)</span><input id="eCustom" type="number" inputmode="numeric" min="0" max="${REMIND_MAX}" step="1" value="${preset === "custom" ? v.remind : ""}"></label></div>
-    <div class="hint">The reminder shows in Deck Finder while it's open. Add to calendar also puts it in your phone's calendar, which reminds you even when Deck Finder is closed.</div>
+    <div class="hint">${IS_APP ? "The reminder comes as a notification on this phone, even when Deck Finder is closed. Add to calendar also puts the event in your phone's calendar."
+      : "The reminder shows in Deck Finder while it's open. Add to calendar also puts it in your phone's calendar, which reminds you even when Deck Finder is closed."}</div>
     <button class="btn" id="eSave">Save event</button>
     <div class="status" id="eStatus">${esc(msg || "")}</div>
     ${ev ? `<button class="btn ghost" id="eCal">Add to calendar</button><div class="status" id="eCalMsg"></div>` : ""}
-    ${ev && canShareFiles() ? `<button class="btn ghost" id="eShareIcs">Share the calendar file</button><div class="status" id="eShareMsg"></div>` : ""}
+    ${ev && !IS_APP && canShareFiles() ? `<button class="btn ghost" id="eShareIcs">Share the calendar file</button><div class="status" id="eShareMsg"></div>` : ""}
+    ${ev && canClockAlarm(ev) ? `<button class="btn ghost" id="eAlarm">Also set a Clock alarm</button><div class="hint" style="padding-top:4px">For ${esc(niceTime(hm(alarmAt(ev))))}${ev.remind ? ", your reminder time" : ""}, in your phone's Clock app.</div><div class="status" id="eAlarmMsg"></div>` : ""}
     <button class="btn ghost" id="eBack">Back</button>
     ${ev ? `<button class="btn danger" id="eDel">Delete event</button>` : ""}`;
   openSheet("tripSheet");
@@ -1670,9 +1705,12 @@ async function openEventForm(tripId, evId, msg){
     const at = ev ? evsNow.findIndex(x => x.id === ev.id) : -1;
     if (at >= 0) evsNow[at] = obj; else evsNow.push(obj);
     save(); render(); checkReminders();
-    openTripForm(tripId, "Saved " + title + ".");
+    const done = () => openTripForm(tripId, "Saved " + title + ".");
+    // Android app: before Android asks about notifications, say why Deck Finder wants them.
+    if (IS_APP && remind != null) askNotifications(done); else done();
   };
   if ($("eCal")) $("eCal").onclick = () => addToCalendar(t, ev, "eCalMsg");
+  if ($("eAlarm")) $("eAlarm").onclick = () => setClockAlarm(ev, "eAlarmMsg");
   if ($("eShareIcs")) $("eShareIcs").onclick = () => shareCalendarFile(t, ev, "eShareMsg");
   if ($("eDel")) $("eDel").onclick = () => {
     if (!confirm(`Delete the event "${ev.title}"?`)) return;
@@ -1756,6 +1794,123 @@ async function showEventPlace(p){
   state.deck = d; render();
 }
 
+// ---------- reminder notifications and Clock alarms (Android app, 1.14.0) ----------
+// Each event with a reminder gets a local notification at its reminder time. Any change to the trips
+// cancels them all and schedules them again (there are only a few), and so does every start of the app.
+// The in-app banner above works as before. Tapping a notification is like the banner's Show me.
+const hm = d => String(d.getHours()).padStart(2, "0") + ":" + String(d.getMinutes()).padStart(2, "0");
+const alarmAt = ev => new Date(evStart(ev).getTime() - (ev.remind || 0) * 60000);   // the reminder time, or the start
+// A Clock alarm takes only an hour and minute, so it's offered only when that time is in the next 24 hours.
+const canClockAlarm = ev => { if (!plugin("DeckFinderAlarm")) return false; const left = alarmAt(ev).getTime() - Date.now(); return left > 0 && left <= 86400000; };
+async function setClockAlarm(ev, statusId){
+  const A = plugin("DeckFinderAlarm"), st = $(statusId) || {}, d = alarmAt(ev);
+  if (!A) return;
+  try {
+    await A.set({ hour: d.getHours(), minute: d.getMinutes(), message: "Deck Finder: " + ev.title });
+    st.textContent = "Clock alarm set for " + niceTime(hm(d)) + ". You'll find it in your phone's Clock app.";
+  } catch (e) { st.textContent = "Couldn't set the Clock alarm. Set one yourself in the Clock app for " + niceTime(hm(d)) + "."; }
+}
+// Android wants a whole number id per notification: a steady one from the trip and event ids.
+const notifId = (t, ev) => { let h = 17; for (const ch of t.id + ":" + ev.id) h = (Math.imul(h, 31) + ch.codePointAt(0)) | 0; return (h & 0x7fffffff) || 1; };
+function notifBody(ev){
+  const soon = ev.remind ? untilText(ev.remind * 60000).replace(/^in/, "In") : "Starting now";
+  return soon + ": " + (ev.remind >= 720 ? niceDate(ev.date) + ", " : "") + niceTime(ev.time) + (ev.place ? ", " + evPlaceText(ev.place) : "");
+}
+function wantedNotifs(){
+  const now = Date.now(), out = [];
+  data.trips.forEach(t => (t.events || []).forEach(ev => {
+    if (ev.remind == null) return;
+    const at = evStart(ev).getTime() - ev.remind * 60000;
+    if (at > now + 5000) out.push({ id: notifId(t, ev), at, title: ev.title, body: notifBody(ev), trip: t.id, ev: ev.id });
+  }));
+  return out;
+}
+function queueNotifSync(){ clearTimeout(notif.timer); notif.timer = setTimeout(() => syncNotifs(false), 400); }
+async function syncNotifs(force){
+  const LN = plugin("LocalNotifications"); if (!LN) return;
+  if (notif.busy){ notif.again = true; return; }
+  const want = wantedNotifs(), sig = JSON.stringify(want);
+  if (!force && sig === notif.sig) return;
+  notif.busy = true;
+  try {
+    // Only with permission: schedule() would otherwise ask Android's question itself, with no explanation first.
+    if ((await LN.checkPermissions()).display !== "granted"){ notif.sig = null; return; }
+    // Exact timing when Android allows it. Asking for exact timing without that permission would open a
+    // settings screen by itself, so then they're scheduled inexact (Android may deliver them a little late).
+    const exact = await LN.checkExactNotificationSetting().then(r => r.exact_alarm === "granted", () => false);
+    const pending = ((await LN.getPending()) || {}).notifications || [];
+    if (pending.length) await LN.cancel({ notifications: pending.map(n => ({ id: n.id })) });
+    if (want.length) await LN.schedule({ notifications: want.map(n => ({ id: n.id, title: n.title, body: n.body,
+      schedule: { at: new Date(n.at), allowWhileIdle: true }, isExactNotification: exact, extra: { trip: n.trip, ev: n.ev } })) });
+    notif.sig = sig;
+  } catch (e) { notif.sig = null; }
+  finally { notif.busy = false; if (notif.again){ notif.again = false; syncNotifs(false); } }
+}
+// Before Android's own notification question: why Deck Finder asks. Shown once per app session at most.
+async function askNotifications(done){
+  const LN = plugin("LocalNotifications");
+  if (!LN || notif.asked) return done();
+  let p = "granted"; try { p = (await LN.checkPermissions()).display; } catch (e) {}
+  if (p === "granted") return askExact(done);
+  notif.asked = true;
+  if (p === "denied"){
+    $("tripBody").innerHTML = `<h3>Notifications are off</h3>
+      <div class="hint" style="padding-top:0">Your event is saved. Android isn't letting Deck Finder show notifications, so the reminder only shows while Deck Finder is open.</div>
+      <div class="sectionlabel">To turn notifications on</div>
+      <ol class="steps">
+        <li>Open your phone's Settings app.</li>
+        <li>Tap Apps. If Deck Finder isn't in the list, tap See all apps.</li>
+        <li>Tap Deck Finder.</li>
+        <li>Tap Notifications.</li>
+        <li>Turn on Show notifications (on some phones it's called Allow notifications).</li>
+        <li>Come back to Deck Finder.</li>
+      </ol>
+      <button class="btn" id="nqOk">OK</button>`;
+    $("nqOk").onclick = done;
+    return;
+  }
+  $("tripBody").innerHTML = `<h3>Get reminders as notifications?</h3>
+    <div class="hint" style="padding-top:0">Deck Finder can remind you about your events with a notification, even when the app is closed or your phone is locked. Tap the notification to see the place on the map.</div>
+    <div class="hint">Android asks you next. Tap Allow.</div>
+    <button class="btn" id="nqYes">Continue</button>
+    <button class="btn ghost" id="nqNo">Not now</button>`;
+  $("nqNo").onclick = done;
+  $("nqYes").onclick = async () => {
+    let r = "denied"; try { r = (await LN.requestPermissions()).display; } catch (e) {}
+    if (r !== "granted") return done();
+    syncNotifs(true); askExact(done);
+  };
+}
+// Android 12 and some phones keep "Alarms and reminders" off, and then reminders can come a few minutes late.
+async function askExact(done){
+  const LN = plugin("LocalNotifications");
+  if (!LN || notif.exactAsked) return done();
+  let ex = "granted"; try { ex = (await LN.checkExactNotificationSetting()).exact_alarm; } catch (e) {}
+  if (ex === "granted") return done();
+  notif.exactAsked = true;
+  $("tripBody").innerHTML = `<h3>Reminders on the minute</h3>
+    <div class="hint" style="padding-top:0">Android can deliver reminders a few minutes late unless "Alarms and reminders" is allowed for Deck Finder. Tap Open the setting, turn on Allow setting alarms and reminders, then tap Back to return here.</div>
+    <button class="btn" id="nqSet">Open the setting</button>
+    <button class="btn ghost" id="nqLater">Not now</button>`;
+  $("nqLater").onclick = done;
+  $("nqSet").onclick = async () => { try { await LN.changeExactNotificationSetting(); } catch (e) {} syncNotifs(true); done(); };
+}
+// Tapping a notification: open the event's place, like Show me, and count the reminder as seen.
+function onNotifTap(a){
+  const x = a && a.notification && a.notification.extra;
+  if (!x || !x.trip) return;
+  notif.tap = x;
+  if (notif.booted) openNotifTap();
+}
+function openNotifTap(){
+  const x = notif.tap; notif.tap = null; if (!x) return;
+  const t = data.trips.find(q => q.id === x.trip), ev = (t?.events || []).find(e => e.id === x.ev);
+  if (!t || !ev) return;
+  const k = remindKey(t, ev);
+  state.remindDone = [...(state.remindDone || []).filter(q => q !== k), k]; save(); checkReminders();
+  if (canShowPlace(ev.place)) showEventPlace(ev.place); else openEventForm(t.id, ev.id);
+}
+
 // ---------- Add to calendar: a calendar file (.ics) with the reminder built in ----------
 // The time is the phone's clock turned into UTC, so the calendar shows it at the same time the app does.
 const icsEsc = x => String(x).replace(/\\/g, "\\\\").replace(/;/g, "\\;").replace(/,/g, "\\,").replace(/\r?\n/g, "\\n");
@@ -1779,8 +1934,18 @@ function icsText(t, ev){
 }
 const icsName = ev => "deck-finder-" + (normName(ev.title).replace(/ /g, "-").slice(0, 40) || "event") + ".ics";
 const isIOS = () => /iPad|iPhone|iPod/.test(navigator.userAgent) || (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
-function addToCalendar(t, ev, statusId){
+async function addToCalendar(t, ev, statusId){
   const ics = icsText(t, ev), name = icsName(ev), st = $(statusId) || {};
+  // Android app: save the file, then the share sheet offers Calendar, Gmail, Drive and so on.
+  if (IS_APP){
+    st.textContent = "Opening the share sheet...";
+    try {
+      const r = await appShareFile(name, ics, ev.title);
+      st.textContent = r === "shared" ? "Sent " + name + " to the app you picked. If you picked your calendar, check the event and tap Save."
+        : "Not added. Tap Add to calendar to try again.";
+    } catch (e) { st.textContent = "Couldn't open the share sheet, so the event wasn't added to your calendar. Try again."; }
+    return;
+  }
   // iPhone: open the file from a real address (sw.js answers calendar.ics, even offline), so the
   // iPhone shows its own Add to Calendar screen. Android: download the file and open it from there.
   if (isIOS() && navigator.serviceWorker && navigator.serviceWorker.controller){
@@ -2180,6 +2345,7 @@ async function savePlace(id){
 }
 // Save the island of every trip that stops there, and refresh a saved island whose files changed.
 async function syncOfflinePlaces(){
+  if (IS_APP) return;    // built into the Android app
   if (!catalogReady || !("caches" in window) || !navigator.onLine) return;
   const wanted = new Set(data.trips.flatMap(t => islandDays(t).map(x => x.place.id)));
   for (const p of PLACES){
@@ -2188,6 +2354,7 @@ async function syncOfflinePlaces(){
   }
 }
 function placeBadge(id){
+  if (IS_APP) return `<span class="offl ok">Built into this app</span>`;
   if (placeDownloading[id]) return `<span class="offl">Downloading...</span>`;
   if (PLACE_SAVED[id]) return `<span class="offl ok">Saved for offline</span>`;
   return `<button class="dl" data-pdl="${esc(id)}">${placeDlFailed[id] ? "Download failed. Tap to retry." : "Download for offline"}</button>`;
@@ -2266,8 +2433,15 @@ function gpsStop(){
 const gpsDenied = () => !!(gps.err && (gps.err.code === 1 || gps.err.code === 0));
 
 // ---------- keep the screen awake (Take me back, recording a walk) ----------
-const wake = { reasons: new Set(), lock: null, busy: false };
+const wake = { reasons: new Set(), lock: null, busy: false, app: false };
 async function wakeSync(){
+  // Android app: the Keep awake plugin, which also holds while the app is hidden and shown again.
+  const KA = plugin("KeepAwake");
+  if (KA){
+    const on = wake.reasons.size > 0;
+    if (on !== wake.app){ wake.app = on; try { await (on ? KA.keepAwake() : KA.allowSleep()); } catch (e) {} }
+    return;
+  }
   if (!("wakeLock" in navigator) || wake.busy) return;
   wake.busy = true;
   try {
@@ -2562,7 +2736,10 @@ function fanOut(els, pos){
     const i = idx[a], j = idx[b];
     if (Math.hypot(pos[i][0] - pos[j][0], pos[i][1] - pos[j][1]) >= FAN_PX) continue;
     const ei = els[i].dataset, ej = els[j].dataset;
-    if (distM({ lat: +ei.lat, lon: +ei.lon }, { lat: +ej.lat, lon: +ej.lon }) > FAN_M) continue;
+    // Tram stops never merge into bubbles, so at the whole-island view Stops 3, 4 and 5 (180 to 370 m
+    // apart) would cover each other. They fan out too, whatever the distance (1.14.0).
+    const trams = els[i].classList.contains("tram") && els[j].classList.contains("tram");
+    if (!trams && distM({ lat: +ei.lat, lon: +ei.lon }, { lat: +ej.lat, lon: +ej.lon }) > FAN_M) continue;
     parent.set(root(i), root(j));
   }
   const groups = new Map();
@@ -2570,9 +2747,17 @@ function fanOut(els, pos){
   const off = {};
   groups.forEach(g => {
     if (g.length < 2) return;
-    g.sort((a, b) => (els[a].dataset.k || "").localeCompare(els[b].dataset.k || ""));   // steady order
     const n = g.length, cx = g.reduce((t, i) => t + pos[i][0], 0) / n, cy = g.reduce((t, i) => t + pos[i][1], 0) / n;
-    const r = n === 2 ? 17 : 22 + (n - 3) * 4, start = n === 2 ? Math.PI : -Math.PI / 2;
+    const r = n === 2 ? 17 : 22 + (n - 3) * 4;
+    let start = n === 2 ? Math.PI : -Math.PI / 2;
+    const ang = i => Math.atan2(pos[i][1] - cy, pos[i][0] - cx);
+    if (g.every(i => els[i].classList.contains("tram"))){
+      // Tram stops keep their side: in order around their middle, turned as little as possible.
+      g.sort((a, b) => ang(a) - ang(b));
+      let sx = 0, sy = 0;
+      g.forEach((i, k) => { const t = ang(i) - 2 * Math.PI * k / n; sx += Math.cos(t); sy += Math.sin(t); });
+      if (sx || sy) start = Math.atan2(sy, sx);
+    } else g.sort((a, b) => (els[a].dataset.k || "").localeCompare(els[b].dataset.k || ""));   // steady order
     g.forEach((i, k) => {
       const t = start + 2 * Math.PI * k / n;
       off[i] = { dx: cx - pos[i][0] + r * Math.cos(t), dy: cy - pos[i][1] + r * Math.sin(t) };
@@ -3095,6 +3280,7 @@ function runIslandSearch(){
 
 // ---------- location help ----------
 function openLocationHelp(){
+  if (IS_APP) return openAppLocationHelp();
   islandSheet(`<h3>Turn on location</h3>
     <div class="hint" style="padding-top:0">Deck Finder uses your location only on this phone, to show the blue dot and to save your spot. It never sends it anywhere.</div>
     <div class="sectionlabel">Android phone (Chrome)</div>
@@ -3123,6 +3309,24 @@ function openLocationHelp(){
       <li>Close Deck Finder completely: swipe up from the bottom of the screen, pause, then swipe the Deck Finder card up and away.</li>
       <li>Open Deck Finder again and open the island map.</li>
       <li>When the iPhone asks to use your location, tap Allow While Using App.</li>
+    </ol>
+    <button class="btn" id="lhTry">Try again</button>
+    <button class="btn ghost" id="lhClose">Close</button>`);
+  $("lhTry").onclick = () => { closeSheets(); gps.err = null; gpsStart(); islGpsChanged(); };
+  $("lhClose").onclick = closeSheets;
+}
+// Android app: location is a setting of the Deck Finder app itself, not of Chrome.
+function openAppLocationHelp(){
+  islandSheet(`<h3>Turn on location</h3>
+    <div class="hint" style="padding-top:0">Deck Finder uses your location only on this phone, to show the blue dot and to save your spot. It never sends it anywhere.</div>
+    <ol class="steps">
+      <li>Open your phone's Settings app.</li>
+      <li>Tap Location, and turn on Use location.</li>
+      <li>Go back to the main Settings screen and tap Apps. If Deck Finder isn't in the list, tap See all apps.</li>
+      <li>Tap Deck Finder, then tap Permissions, then tap Location.</li>
+      <li>Choose Allow only while using the app.</li>
+      <li>Turn on Use precise location.</li>
+      <li>Come back to Deck Finder and tap Try again.</li>
     </ol>
     <button class="btn" id="lhTry">Try again</button>
     <button class="btn ghost" id="lhClose">Close</button>`);
@@ -3230,12 +3434,18 @@ function renderBack(){
       body = `<div class="row">${arrow}<div class="grow"><div class="dist">${esc(distText(m))}</div><small>${esc(walkText(m))}. Head ${compassWord(br)}.</small><small>${esc(note)}</small></div></div>`;
       // Far from the spot (1.13.0): add the tram directions when the tram saves walking.
       const plan = m > TRAM_BACK_M ? tramPlan(f, sp) : null;
-      if (plan && !plan.walk) body += `<div class="tram-h">🚋 Or take the tram</div><ol class="tsteps">${tramSteps(plan, sp.name).map(x => `<li>${esc(x)}</li>`).join("")}</ol><small>${esc(tramTimesNote(plan))}</small>`;
+      // Collapsed to one line by default (1.14.0), so the panel covers no more than about a quarter of the screen.
+      if (plan && !plan.walk){
+        const open = !!isl.back.tramOpen, w = (plan.w1 ? walkMin(plan.w1) : 0) + (plan.w2 ? walkMin(plan.w2) : 0);
+        body += `<button class="tram-h" id="bkTram" aria-expanded="${open}"><span class="grow">🚋 Or take the tram: ${w ? "about " + w + " min walking" : "no walking to the stops"}</span><span class="chev" aria-hidden="true">${open ? "▾" : "▸"}</span></button>`
+          + (open ? `<ol class="tsteps">${tramSteps(plan, sp.name).map(x => `<li>${esc(x)}</li>`).join("")}</ol><small>${esc(tramTimesNote(plan))}</small>` : "");
+      }
     }
   }
   p.hidden = false;
   p.innerHTML = `<div class="row"><div class="grow"><b>Back to ${esc(sp.name)}</b></div><button class="x" id="bkClose" aria-label="Close Take me back">✕</button></div>${body}`;
   $("bkClose").onclick = closeBack;
+  if ($("bkTram")) $("bkTram").onclick = () => { isl.back.tramOpen = !isl.back.tramOpen; renderBack(); };
 }
 function updateArrow(){
   const a = $("bkArrow"), sp = isl?.back && islSpots().find(s => s.id === isl.back.id);
@@ -3516,6 +3726,13 @@ async function exportSurvey(placeId){
   };
   const name = placeId + ".survey-" + ymd(new Date()) + ".json";
   const text = JSON.stringify(out, null, 1) + "\n";
+  // Android app: the WebView can't download or share files, so save it and open the share sheet natively.
+  if (IS_APP){
+    try {
+      const r = await appShareFile(name, text, name);
+      return r === "shared" ? "Sent " + name + " to the app you picked." : "Not shared. Tap Export survey to try again.";
+    } catch (e) { return "Couldn't share " + name + ". Nothing was saved. Tap Export survey to try again."; }
+  }
   const file = typeof File === "function" ? new File([text], name, { type: "application/json" }) : null;
   if (file && navigator.canShare && navigator.share){
     try { if (navigator.canShare({ files: [file] })){ await navigator.share({ files: [file], title: name }); return "Shared " + name + "."; } }
@@ -3557,7 +3774,8 @@ function readLinkHash(){
   try { history.replaceState(history.state, "", location.pathname + location.search); } catch (e) {}
   return { kind: m[1], value: m[2] };
 }
-const appBase = () => new URL("./", location.href).href.split("#")[0];
+// In the Android app the page lives at https://localhost/, which opens nothing on another phone.
+const appBase = () => IS_APP ? LIVE_BASE : new URL("./", location.href).href.split("#")[0];
 const inviteLink = () => appBase() + "#join=" + encodeURIComponent(data.passphrase || "");
 // A pasted invite link in the passphrase field counts as its passphrase.
 function passFromInput(v){
@@ -3576,6 +3794,11 @@ function handleJoin(v){
 // The phone's share sheet, or copy the link, or show it to copy by hand.
 async function shareOrCopy(title, text, url, statusId){
   const st = () => $(statusId) || { set textContent(v){}, set innerHTML(v){} };
+  const Sh = plugin("Share");   // Android app: the WebView has no navigator.share
+  if (Sh){
+    try { await Sh.share({ title, text, url, dialogTitle: title }); st().textContent = "Sent to the app you picked."; return; }
+    catch (e) { if (isCancel(e)){ st().textContent = ""; return; } }
+  }
   if (navigator.share){
     try { await navigator.share({ title, text, url }); st().textContent = "Shared."; return; }
     catch (e) { if (e.name === "AbortError"){ st().textContent = ""; return; } }
@@ -3707,7 +3930,7 @@ function finishShared(id, msg){ closeSheets(); save(); setActive(id); syncOfflin
 // ---------- Ready for sea: a checklist to go through while there's still Wi-Fi ----------
 let installEvt = null;   // Android Chrome's install prompt, used by the Fix button when it's offered
 window.addEventListener("beforeinstallprompt", e => { installEvt = e; });
-const isInstalled = () => ["standalone", "fullscreen", "minimal-ui"].some(m => matchMedia("(display-mode: " + m + ")").matches) || navigator.standalone === true;
+const isInstalled = () => IS_APP || ["standalone", "fullscreen", "minimal-ui"].some(m => matchMedia("(display-mode: " + m + ")").matches) || navigator.standalone === true;
 // The trip to check: the active one unless it's over, otherwise the next one.
 function readyTrip(){
   const today = ymd(new Date()), a = activeTrip();
@@ -3715,11 +3938,18 @@ function readyTrip(){
   return data.trips.filter(t => tripEnd(t) >= today).sort((x, y) => x.date.localeCompare(y.date))[0] || a || null;
 }
 async function locationState(){
+  // Android app: the WebView's navigator.permissions stays at "prompt", so ask the Geolocation plugin.
+  const G = plugin("Geolocation");
+  if (G){
+    try { const s = (await G.checkPermissions()).location; return s === "granted" || s === "denied" ? s : "prompt"; } catch (e) {}
+  }
   if (!("geolocation" in navigator)) return "unsupported";
   try { return (await navigator.permissions.query({ name: "geolocation" })).state; }
   catch (e) { return gps.err && gps.err.code === 1 ? "denied" : gps.fix ? "granted" : "prompt"; }
 }
 function askLocation(){
+  const G = plugin("Geolocation");
+  if (G) return G.requestPermissions().catch(() => {});
   return new Promise(res => navigator.geolocation.getCurrentPosition(() => res(), e => { if (e.code === 1) gps.err = { code: 1 }; res(); }, { timeout: 20000, maximumAge: 600000 }));
 }
 async function installApp(){
@@ -3751,13 +3981,15 @@ async function installApp(){
 async function readyChecks(t){
   const checks = [];
   const e = catEntry(t.ship);
-  if (e && e.decks){
+  if (e && e.decks && IS_APP) checks.push({ key: "ship", ok: true, title: shipName(t.ship) + " deck plans", detail: "Built into this app. They open with no internet." });
+  else if (e && e.decks){
     const ok = SAVED[t.ship] === e.hash;
     checks.push({ key: "ship", ok, title: shipName(t.ship) + " deck plans saved for offline",
       detail: ok ? "They open with no internet." : SAVED[t.ship] ? "A newer copy is on the website. Tap Fix to download it." : "Not saved on this phone yet. Tap Fix to download them.",
       fix: () => saveShip(t.ship) });
   }
   for (const pl of new Map(islandDays(t).map(x => [x.place.id, x.place])).values()){
+    if (IS_APP){ checks.push({ key: "island:" + pl.id, ok: true, title: pl.name + " island map", detail: "Built into this app. It opens with no internet." }); continue; }
     const ok = PLACE_SAVED[pl.id] === pl.hash;
     checks.push({ key: "island:" + pl.id, ok, title: pl.name + " island map saved for offline",
       detail: ok ? "It opens with no internet." : PLACE_SAVED[pl.id] ? "A newer copy is on the website. Tap Fix to download it." : "Not saved on this phone yet. Tap Fix to download it.",
@@ -3775,14 +4007,15 @@ async function readyChecks(t){
       : loc === "unsupported" ? "This browser can't share your location." : "Deck Finder hasn't asked for it yet. Tap Fix, then tap Allow.",
     fix: loc === "unsupported" ? null : loc === "denied" ? openLocationHelp : askLocation, opens: loc === "denied" });
   let info = null;
-  try { const r = await fetch("version.json", { cache: "no-store" }); if (r.ok) info = await r.json(); } catch (x) {}
+  try { const r = await fetch(VERSION_URL, { cache: "no-store" }); if (r.ok) info = await r.json(); } catch (x) {}
   const latest = !!info && !newer(info.version, APP_VERSION);
   checks.push({ key: "version", ok: latest, title: "Latest version of the app",
-    detail: latest ? "Version " + APP_VERSION + "." : info ? "Version " + info.version + " is available. Tap Fix to update." : "Couldn't check. Connect to the internet, then tap Fix to check again.",
-    fix: info ? applyUpdate : async () => {} });
+    detail: latest ? "Version " + APP_VERSION + "." : info ? (IS_APP ? "Version " + info.version + " is available as a new Android app. Tap Fix to download it." : "Version " + info.version + " is available. Tap Fix to update.")
+      : "Couldn't check. Connect to the internet, then tap Fix to check again.",
+    fix: info ? (IS_APP ? async () => openOutside(APK_PAGE) : applyUpdate) : async () => {}, opens: !!info && IS_APP });
   const inst = isInstalled();
   checks.push({ key: "installed", ok: inst, title: "Installed on this phone",
-    detail: inst ? "Deck Finder opens from its own icon." : "It's open in a browser tab. Tap Fix to install it, then open it from its icon.",
+    detail: IS_APP ? "This is the Deck Finder app for Android." : inst ? "Deck Finder opens from its own icon." : "It's open in a browser tab. Tap Fix to install it, then open it from its icon.",
     fix: installApp, opens: true });
   return checks;
 }
@@ -3855,6 +4088,8 @@ window.addEventListener("hashchange", () => {
   if (l.kind === "join") handleJoin(l.value);
   else if (catalogReady) openSharedTrip(l.value);
 });
+// Android app: a tap on a reminder notification can arrive before the app has loaded; it waits in notif.tap.
+if (IS_APP){ try { plugin("LocalNotifications")?.addListener("localNotificationActionPerformed", onNotifTap); } catch (e) {} }
 (async function boot(){
   render(); // shows "Loading deck plans..." until the ship list arrives
   try { await loadCatalog(); }
@@ -3872,6 +4107,7 @@ window.addEventListener("hashchange", () => {
   checkReminders();
   syncOfflineShips();
   refreshReady();
+  if (IS_APP){ notif.booted = true; openNotifTap(); syncNotifs(true); }   // reschedule every reminder on start
 })();
 window.addEventListener("online", () => {
   Object.keys(shipErrors).forEach(k => delete shipErrors[k]);
@@ -3885,6 +4121,8 @@ if ("serviceWorker" in navigator && (location.protocol === "https:" || location.
 }
 
 // ---------- updates: compare the live version.json with this copy ----------
+// The Android app compares with the live website's version.json, not the copy inside the app.
+const VERSION_URL = IS_APP ? LIVE_BASE + "version.json" : "version.json";
 const newer = (a, b) => {
   const x = String(a).split(".").map(Number), y = String(b).split(".").map(Number);
   for (let i = 0; i < 3; i++) { if ((x[i] || 0) !== (y[i] || 0)) return (x[i] || 0) > (y[i] || 0); }
@@ -3893,7 +4131,7 @@ const newer = (a, b) => {
 let liveInfo = null;
 async function fetchVersion(){
   try {
-    const r = await fetch("version.json", { cache: "no-store" });
+    const r = await fetch(VERSION_URL, { cache: "no-store" });
     if (r.ok) liveInfo = await r.json();
   } catch (e) {}
   return liveInfo;
@@ -3902,8 +4140,10 @@ async function checkForUpdate(){
   const info = await fetchVersion();
   const bar = $("updateBar");
   if (info && newer(info.version, APP_VERSION)){
-    bar.textContent = `Update available (v${info.version}). Tap to update.`;
     bar.hidden = false;
+    // Android app: the web files are inside the app, so a new version means installing a new app.
+    if (IS_APP){ bar.textContent = `A new Android version is available (v${info.version}). Tap to download it.`; return; }
+    bar.textContent = `Update available (v${info.version}). Tap to update.`;
     // Start downloading the new version now so the tap is quick.
     if ("serviceWorker" in navigator) navigator.serviceWorker.getRegistration().then(reg => reg && reg.update()).catch(()=>{});
   } else bar.hidden = true;
@@ -3922,9 +4162,17 @@ async function applyUpdate(){
   if (!w) return reload();
   w.addEventListener("statechange", () => { if (w.state === "installed") activate(w); });
 }
-$("updateBar").onclick = applyUpdate;
+$("updateBar").onclick = () => IS_APP ? openOutside(APK_PAGE) : applyUpdate();
 checkForUpdate();
-document.addEventListener("visibilitychange", () => { if (document.visibilityState === "visible"){ checkForUpdate(); checkReminders(); renderStrip(); if (catalogReady) refreshReady(); } });
+let lastFront = 0;
+function onForeground(){
+  if (IS_APP && Date.now() - lastFront < 1500) return;   // the Android app reports a return twice (page and plugin)
+  lastFront = Date.now();
+  checkForUpdate(); checkReminders(); renderStrip(); if (catalogReady) refreshReady();
+  if (IS_APP) syncNotifs(false);
+}
+document.addEventListener("visibilitychange", () => { if (document.visibilityState === "visible") onForeground(); });
+if (IS_APP){ try { plugin("App")?.addListener("resume", onForeground); } catch (e) {} }
 
 // ---------- what's new ----------
 async function openNews(){
@@ -3934,8 +4182,8 @@ async function openNews(){
     <h3>What's new</h3>
     <div class="hint" style="padding-top:0">Version ${esc(info.version)} (${esc(info.date)})</div>
     <div class="news">${esc(info.notes || "No notes for this version.")}</div>
-    ${update ? `<button class="btn" id="nUpdate">Update to v${esc(info.version)}</button>` : `<div class="hint">You have the latest version.</div>`}`;
-  if (update) $("nUpdate").onclick = () => { closeSheets(); applyUpdate(); };
+    ${update ? `<button class="btn" id="nUpdate">${IS_APP ? "Download the new Android version" : "Update to v" + esc(info.version)}</button>` : `<div class="hint">You have the latest version.</div>`}`;
+  if (update) $("nUpdate").onclick = () => { closeSheets(); if (IS_APP) openOutside(APK_PAGE); else applyUpdate(); };
   openSheet("newsSheet");
 }
 </script>
