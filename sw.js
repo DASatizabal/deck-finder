@@ -1,5 +1,5 @@
 // Bump VERSION on every release (it must match APP_VERSION and version.json), so phones grab the update.
-const VERSION = "deckfinder-v1.11.1";
+const VERSION = "deckfinder-v1.12.0";
 // Each ship saved for offline lives in its own cache, "deckfinder-ship-<line>-<ship>".
 // These are NOT tied to the app version: they stay until that ship's hash in ships/index.json changes.
 const SHIP_CACHE_PREFIX = "deckfinder-ship-";
@@ -40,6 +40,18 @@ self.addEventListener("fetch", e => {
   const url = new URL(e.request.url);
   const scope = new URL(self.registration.scope).pathname;
   const rel = url.pathname.startsWith(scope) ? url.pathname.slice(scope.length) : url.pathname;
+  // Add to calendar (1.12.0): the app puts the calendar file in the address and this answers it as a
+  // real .ics file, so an iPhone shows its Add to Calendar screen. It never touches the network.
+  if (rel === "calendar.ics") {
+    const d = url.searchParams.get("d") || "";
+    const name = (url.searchParams.get("n") || "event.ics").replace(/[^\w.-]/g, "").slice(0, 80) || "event.ics";
+    let text = "";
+    try { text = new TextDecoder().decode(Uint8Array.from(atob(d.replace(/-/g, "+").replace(/_/g, "/")), c => c.charCodeAt(0))); } catch (err) {}
+    e.respondWith(/^BEGIN:VCALENDAR\r\n/.test(text)
+      ? new Response(text, { headers: { "Content-Type": "text/calendar; charset=utf-8", "Content-Disposition": 'inline; filename="' + name + '"', "X-Content-Type-Options": "nosniff" } })
+      : new Response("That calendar link is broken. Go back to Deck Finder and tap Add to calendar again.", { status: 400, headers: { "Content-Type": "text/plain; charset=utf-8" } }));
+    return;
+  }
   const isPage = e.request.mode === "navigate" || rel === "" || rel === "index.html";
   if (isPage || rel === "version.json" || rel === "ships/index.json") { e.respondWith(networkFirst(e.request, isPage)); return; }
 

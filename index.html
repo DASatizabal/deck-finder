@@ -337,6 +337,47 @@ details.adv summary{cursor:pointer;font-size:15px;font-weight:600;padding:10px 4
 .adot{display:inline-block;width:12px;height:12px;border-radius:50%;background:var(--ac);flex:none;vertical-align:0}
 .sectionlabel .adot{margin-right:6px}
 textarea.search{resize:vertical;min-height:84px}
+/* 1.12.0: category buttons on the deck plans, island bubbles, trip events and reminders */
+.plancol{position:relative;display:flex;flex-direction:column;gap:5px;min-height:0;min-width:0}
+.plancol .mapwrap{flex:1}
+.catbar{display:flex;gap:5px;overflow-x:auto;scrollbar-width:none;padding:1px;flex:none}
+.catbar[hidden]{display:none}
+.catbar::-webkit-scrollbar{display:none}
+.catb{flex:none;min-width:40px;height:34px;padding:0 6px;border-radius:10px;background:var(--chip);color:var(--ink);display:flex;align-items:center;justify-content:center;gap:4px;font-size:17px;line-height:1}
+.catb svg{width:20px;height:20px;flex:none}
+.catb.on{background:var(--cc);color:#fff;box-shadow:0 0 0 2px var(--cc)}
+.catb.off{opacity:.4;filter:grayscale(1)}
+.catb.more small{font-size:13px;font-weight:700}
+.catcount{position:absolute;left:50%;bottom:10px;transform:translateX(-50%);z-index:3;max-width:calc(100% - 20px);background:var(--surface);color:var(--ink);border:2px solid var(--cc);border-radius:999px;padding:5px 12px;font-size:13px;box-shadow:0 2px 8px rgba(0,0,0,.25);pointer-events:none;text-align:center}
+.catcount[hidden]{display:none}
+.catcount b{color:var(--cc)}
+.catbox{position:absolute;padding:0;border:3px solid var(--cc);background:color-mix(in srgb,var(--cc) 22%,transparent);border-radius:4px;box-shadow:0 0 8px 3px color-mix(in srgb,var(--cc) 70%,transparent);z-index:1;animation:catglow 1.4s ease-in-out 2}
+@keyframes catglow{50%{box-shadow:0 0 18px 8px color-mix(in srgb,var(--cc) 45%,transparent)}}
+.tick .cdot{position:absolute;left:calc(50% + 9px);top:-5px;width:10px;height:10px;border-radius:50%;background:var(--cc);border:2px solid var(--bg);z-index:3}
+.catopt{display:flex;align-items:center;gap:12px;width:100%;text-align:left;padding:12px 4px;border-bottom:1px solid var(--line)}
+.catopt .ci{width:40px;height:34px;border-radius:10px;background:var(--chip);display:grid;place-items:center;font-size:18px;flex:none}
+.catopt.cur .ci{background:var(--cc)}
+.catopt .grow{flex:1;min-width:0}
+.catopt small{display:block;color:var(--muted);font-size:13px}
+.mk.inclu{display:none}
+.mkc{position:absolute;left:0;top:0;min-width:36px;height:36px;padding:0 9px;border-radius:18px;background:var(--ac,#7F8C8D);color:#fff;border:3px solid #fff;font-weight:800;font-size:15px;display:flex;align-items:center;justify-content:center;box-shadow:0 1px 6px rgba(0,0,0,.4);z-index:2}
+.mkc.dim{opacity:.28}
+.imap.clustered .alabel{z-index:4}
+.imap.clustered .alabel span{opacity:.9}
+.nextev{font-size:13px;color:var(--ink);margin-top:2px}
+.evrow{display:flex;align-items:center;gap:10px;padding:10px 4px;border-bottom:1px solid var(--line)}
+.evrow .grow{flex:1;min-width:0;text-align:left}
+.evrow small{display:block;color:var(--muted);font-size:13px}
+.evrow.past b{color:var(--muted)}
+.evrow .edit{padding:8px 10px;border-radius:8px;background:var(--chip);font-size:14px;flex:none}
+.day .ev{font-size:13px;color:var(--ink);margin-top:2px}
+.remindbar{position:fixed;left:12px;right:12px;top:calc(10px + env(safe-area-inset-top,0px));max-width:696px;margin:0 auto;z-index:19;display:flex;align-items:center;gap:8px;padding:10px 10px 10px 14px;border-radius:14px;background:var(--ink);color:var(--bg);box-shadow:0 4px 16px rgba(0,0,0,.35)}
+.remindbar[hidden]{display:none}
+.remindbar .grow{flex:1;min-width:0}
+.remindbar b{display:block;font-size:16px}
+.remindbar small{display:block;font-size:13px;opacity:.85}
+.remindbar .go{background:var(--accent);color:var(--accent-ink);border-radius:10px;padding:9px 12px;font-weight:700;flex:none}
+.remindbar .x{padding:8px 10px;font-size:16px;flex:none}
 @media (prefers-reduced-motion: reduce){*{transition:none!important}.hl{animation:none}}
 </style>
 </head>
@@ -358,7 +399,11 @@ textarea.search{resize:vertical;min-height:84px}
 
   <main class="body">
     <section class="list" id="list" aria-live="polite"></section>
-    <div class="mapwrap" id="mapwrap"></div>
+    <div class="plancol" id="plancol">
+      <div class="catbar" id="catBar" hidden role="toolbar" aria-label="Highlight places"></div>
+      <div class="mapwrap" id="mapwrap"></div>
+      <div class="catcount" id="catCount" hidden role="status"></div>
+    </div>
     <div class="slider" id="slider" role="slider" tabindex="0" aria-label="Deck" aria-orientation="vertical"></div>
   </main>
 
@@ -418,11 +463,13 @@ textarea.search{resize:vertical;min-height:84px}
   <button class="big ghost" id="wLink">Add from a link</button>
   <p class="small">Got an invite link from family? Just tap it. On an iPhone, copy it and tap Add from a link.</p>
 </div>
+<div class="sheet" id="catSheet" role="dialog" aria-label="More places to highlight"><div class="scroll" id="catBody"></div></div>
+<div class="remindbar" id="remindBar" hidden role="alert"><div class="grow"><b id="rbTitle"></b><small id="rbWhen"></small></div><button class="go" id="rbShow">Show me</button><button class="x" id="rbX" aria-label="Dismiss the reminder">✕</button></div>
 <div class="toast" id="toast" hidden role="status"></div>
 
 <script>
-const APP_VERSION = "1.11.1";
-const APP_DATE = "2026-09-28";
+const APP_VERSION = "1.12.0";
+const APP_DATE = "2026-09-29";
 
 // ---------- ships: loaded at runtime from ships/index.json and each ship's ship.json ----------
 let CATALOG = [];       // every ship in ships/index.json: {id, name, path, decks, bytes, hash, line, lineName}
@@ -507,7 +554,7 @@ function applyLayout(){
   app.classList.toggle("full", fullScreen);
   // The one "On this deck" list moves between the page (columns) and its sheet (wide).
   if (isWide() && list.parentElement !== $("listHolder")) $("listHolder").appendChild(list);
-  if (!isWide() && list.parentElement !== document.querySelector(".body")) document.querySelector(".body").insertBefore(list, $("mapwrap"));
+  if (!isWide() && list.parentElement !== document.querySelector(".body")) document.querySelector(".body").insertBefore(list, $("plancol"));
 }
 function setLayout(layout){ state.layout = layout; closeSheets(); save(); render(); }
 function toggleFullScreen(){
@@ -570,6 +617,99 @@ async function showBoxes(id, deck, boxes){
 function highlightVenue(id, deck, name){
   const boxes = venueBoxes(id, deck, name);
   if (boxes.length) showBoxes(id, deck, boxes); else { state.deck = deck; highlight = null; render(); }
+}
+
+// ---------- category buttons (1.12.0): light up every bar, restroom, stairway... on the deck ----------
+// Venues and amenities carry a "category" in geometry.json; restrooms, stairs and elevators are the
+// geometry's landmarks. One category is on at a time, kept in memory only, and it stays on across decks.
+const STAIRS_SVG = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 20h5v-5h5v-5h5V5h3"/></svg>`;
+const DECK_CATS = [
+  { key: "bar", label: "Bars", one: "bar", many: "bars", icon: "🍹", color: "#C0392B", main: true },
+  { key: "food", label: "Food", one: "place to eat", many: "places to eat", icon: "🍴", color: "#E67E22", main: true },
+  { key: "restroom", label: "Restrooms", one: "restroom", many: "restrooms", icon: "🚻", color: "#2C3E50", main: true, landmark: "Restroom" },
+  { key: "stairs", label: "Stairs", one: "stairway", many: "stairways", icon: STAIRS_SVG, color: "#8D6E63", main: true, landmark: "Stairs" },
+  { key: "elevator", label: "Elevators", one: "elevator", many: "elevators", icon: "🛗", color: "#16A085", main: true, landmark: "Elevator" },
+  { key: "pool", label: "Pools", one: "pool", many: "pools", icon: "🏊", color: "#2980B9", main: true },
+  { key: "entertainment", label: "Entertainment", one: "entertainment spot", many: "entertainment spots", icon: "🎭", color: "#D6336C" },
+  { key: "kids", label: "Kids", one: "place for kids", many: "places for kids", icon: "🧸", color: "#B7950B" },
+  { key: "shop", label: "Shops", one: "shop", many: "shops", icon: "🛍️", color: "#9B59B6" },
+  { key: "spa_fitness", label: "Spa and fitness", one: "spa or fitness spot", many: "spa and fitness spots", icon: "💆", color: "#138D75" },
+  { key: "service", label: "Services", one: "service", many: "services", icon: "🛎️", color: "#5D6D7E" },
+  { key: "sports", label: "Sports", one: "sports spot", many: "sports spots", icon: "🏀", color: "#27AE60" },
+];
+const deckCat = k => DECK_CATS.find(c => c.key === k) || null;
+let catOn = null;   // the category that's lit up, or null
+// Every box of a category on one deck, and how many places that is (a venue drawn as two boxes counts once).
+function catHits(id, deck, key){
+  const g = geoDeck(id, deck), c = deckCat(key);
+  if (!g || !c) return { boxes: [], count: 0 };
+  if (c.landmark){
+    const ls = (g.landmarks || []).filter(l => l.kind === key);
+    return { boxes: ls.map(l => ({ box: l.box, name: c.landmark })), count: ls.length };
+  }
+  const vs = (g.venues || []).filter(v => v.category === key), as = (g.amenities || []).filter(a => a.category === key);
+  return { boxes: [...vs.map(v => ({ box: v.box, name: v.name })), ...as.map(a => ({ box: a.box, name: a.kind }))],
+    count: new Set(vs.map(v => normName(v.name))).size + as.length };
+}
+const catDecks = (id, key) => deckList(id).filter(d => catHits(id, d, key).count > 0);
+const catWord = (c, n) => n === 1 ? c.one : c.many;
+// The buttons, the count, the glowing boxes on the plan and the dots on the deck slider. This never
+// rebuilds the plan, so the zoom and the scroll position stay exactly where they are.
+function renderCats(){
+  const bar = $("catBar"), count = $("catCount"), id = state.ship, d = state.deck;
+  const show = !!SHIPS[id] && hasPlans(id);
+  bar.hidden = !show;
+  if (!show || !GEO[id]) catOn = null;
+  const c = deckCat(catOn);
+  if (show){
+    const off = GEO[id] ? "" : " off";
+    const more = c && !c.main ? c : null;
+    bar.innerHTML = DECK_CATS.filter(x => x.main).map(x => `<button class="catb${off}${catOn === x.key ? " on" : ""}" data-cat="${x.key}" style="--cc:${x.color}" aria-label="${esc(x.label)}" aria-pressed="${catOn === x.key}" title="${esc(x.label)}">${x.icon}</button>`).join("")
+      + `<button class="catb more${off}${more ? " on" : ""}" id="catMore" style="--cc:${more ? more.color : "var(--ink)"}" aria-label="More: entertainment, kids, shops, spa and fitness, services, sports" aria-pressed="${!!more}">${more ? more.icon : ""}<small>More</small></button>`;
+    bar.querySelectorAll("[data-cat]").forEach(b => b.onclick = () => setCat(b.dataset.cat));
+    $("catMore").onclick = openCatMore;
+  }
+  const map = $("map");
+  if (map) map.querySelectorAll(".catbox").forEach(x => x.remove());
+  count.hidden = !c;
+  if (c){
+    const hits = catHits(id, d, c.key), n = hits.count;
+    count.style.setProperty("--cc", c.color);
+    count.innerHTML = n ? `<b>${n} ${esc(catWord(c, n))}</b> on Deck ${d}`
+      : catDecks(id, c.key).length ? `No ${esc(c.many)} on Deck ${d}. The dots on the deck slider show where they are.` : `No ${esc(c.many)} on this ship's plans.`;
+    if (map && map.querySelector("img")){
+      map.insertAdjacentHTML("beforeend", hits.boxes.map(h => { const b = h.box;
+        return `<button class="catbox" style="--cc:${c.color};left:${b[0]}%;top:${b[1]}%;width:${b[2] - b[0]}%;height:${b[3] - b[1]}%" aria-label="${esc(h.name)}" data-cname="${esc(h.name)}"></button>`; }).join(""));
+      if (!placing && !addingPin) map.querySelectorAll(".catbox").forEach(b => b.onclick = e => { e.stopPropagation(); toast(b.dataset.cname + ", Deck " + d); });
+    }
+  }
+  if (show) renderSlider();
+}
+function setCat(key){
+  const id = state.ship;
+  if (!GEO[id]){
+    // The ship names a geometry file that hasn't downloaded yet (offline), or it has none at all.
+    return toast(SHIPS[id]?.geometry ? "This ship's place details haven't downloaded yet. Connect to the internet and try again." : "Coming soon for this ship");
+  }
+  catOn = catOn === key ? null : key;
+  closeSheets();
+  renderCats();
+}
+function openCatMore(){
+  const id = state.ship, d = state.deck;
+  if (!GEO[id]) return setCat(null);
+  $("catBody").innerHTML = `<h3>More to highlight</h3>
+    ${DECK_CATS.filter(c => !c.main).map(c => {
+      const n = catHits(id, d, c.key).count, decks = catDecks(id, c.key).length;
+      return `<button class="catopt${catOn === c.key ? " cur" : ""}" data-cat="${c.key}" style="--cc:${c.color}" aria-pressed="${catOn === c.key}"><span class="ci">${c.icon}</span>
+        <span class="grow"><b>${esc(c.label)}</b><small>${n ? n + " " + esc(catWord(c, n)) + " on Deck " + d : "None on Deck " + d}${decks ? ", on " + decks + (decks === 1 ? " deck" : " decks") + " in all" : ""}</small></span></button>`;
+    }).join("")}
+    ${deckCat(catOn) && !deckCat(catOn).main ? `<button class="btn ghost" id="catOff">Turn off the highlight</button>` : ""}
+    <button class="btn ghost" id="catClose">Close</button>`;
+  $("catBody").querySelectorAll("[data-cat]").forEach(b => b.onclick = () => setCat(b.dataset.cat));
+  if ($("catOff")) $("catOff").onclick = () => setCat(catOn);
+  $("catClose").onclick = closeSheets;
+  openSheet("catSheet");
 }
 
 // ---------- custom pins: a "pins" array on each trip, saved with the trips ----------
@@ -740,7 +880,7 @@ function render(){
       ? `<div class="empty"><strong>Not saved yet</strong>${NOT_SAVED_MSG}</div>`
       : `<div class="empty">Loading deck plans...</div>`;
     if (catalogReady && !shipErrors[state.ship]) ensureShip(state.ship).then(render, render);
-    save(); return;
+    renderCats(); save(); return;
   }
   const decks = deckList(state.ship);
 
@@ -749,7 +889,7 @@ function render(){
     $("list").innerHTML = trip && trip.ship === state.ship ? `<h2>Your cabin</h2><ul><li class="cabin">${esc(trip.cabin)} on deck ${cabinDeckNum(trip.cabin) ?? "?"}</li></ul>` : "";
     $("mapwrap").innerHTML = `<div class="empty"><strong>No deck plans yet</strong>Deck plans for ${ship.name} haven't been added to the app. Your trip and itinerary still work.</div>`;
     $("slider").innerHTML = "";
-    save(); return;
+    renderCats(); save(); return;
   }
   if (!decks.includes(state.deck)) state.deck = decks[0];
   const d = state.deck;
@@ -840,7 +980,7 @@ function render(){
     }
     wrap.scrollTop = prevScroll !== null ? prevScroll : 0;
   }
-  renderSlider();
+  renderCats();   // the category highlight and the slider
   if (pendingPlace) { if (pendingPlace.deck === d && pendingPlace.ship === state.ship) armPendingPlace(); else pendingPlace = null; }
   save();
 }
@@ -865,7 +1005,8 @@ function renderStrip(){
     when = shipName(trip.ship)+", "+niceDate(trip.date);
     what = n === 1 ? "Sailing tomorrow" : "Sailing in "+n+" days";
   } else { when = shipName(trip.ship)+", "+niceDate(trip.date); what = days.length ? "Trip complete" : "No itinerary yet"; }
-  s.innerHTML = `<div class="grow"><div class="when">${esc(when)}</div><div class="what">${esc(what)}</div>${aaLine ? `<div class="aa ${aaLine.cls}">${esc(aaLine.text)}</div>` : ""}</div><span class="chev">›</span>`;
+  const ne = nextEvent(trip);
+  s.innerHTML = `<div class="grow"><div class="when">${esc(when)}</div><div class="what">${esc(what)}</div>${aaLine ? `<div class="aa ${aaLine.cls}">${esc(aaLine.text)}</div>` : ""}${ne ? `<div class="nextev">Next: ${esc(ne.title)}, ${esc(evWhen(ne))}</div>` : ""}</div><span class="chev">›</span>`;
 }
 $("strip").onclick = () => activeTrip() ? openItinerary() : openTrips();
 
@@ -875,7 +1016,9 @@ function renderSlider(){
   const s = $("slider"); const n = decks.length;
   const pct = i => n === 1 ? 50 : (1 - i/(n-1)) * 100;
   let html = `<div class="track"></div>`;
-  decks.forEach((dk,i)=>{ html += `<div class="tick ${dk===state.deck?"on":""}" style="top:calc(14px + (100% - 28px) * ${pct(i)/100})"><span>${dk}</span></div>`; });
+  // While a category is lit up, a dot in its color marks every deck that has one (1.12.0).
+  const c = deckCat(catOn), withCat = new Set(c ? catDecks(state.ship, c.key) : []);
+  decks.forEach((dk,i)=>{ html += `<div class="tick ${dk===state.deck?"on":""}" style="top:calc(14px + (100% - 28px) * ${pct(i)/100})"><span>${dk}</span>${withCat.has(dk) ? `<i class="cdot" style="--cc:${c.color}" data-cdeck="${dk}"></i>` : ""}</div>`; });
   html += `<div class="thumb" style="top:calc(14px + (100% - 28px) * ${pct(decks.indexOf(state.deck))/100})">${state.deck}</div>`;
   s.innerHTML = html;
   s.setAttribute("aria-valuemin", decks[0]); s.setAttribute("aria-valuemax", decks[n-1]); s.setAttribute("aria-valuenow", state.deck);
@@ -1197,6 +1340,7 @@ function openTripForm(id, msg, isErr){
   const t = data.trips.find(x => x.id === id) || { ship: "ncl/getaway", date: "", cabin: "" };
   const it = id ? t.itinerary : null;
   const days = it?.days || [];
+  const evs = id ? sortEvents(t.events) : [];
   $("tripBody").innerHTML = `
     <h3>${id ? "Edit trip" : "Add a trip"}</h3>
     <label class="field"><span>Ship</span><select id="fShip">${CATALOG.map(x => `<option value="${esc(x.id)}" ${x.id===t.ship?"selected":""}>${esc(x.name)}</option>`).join("")}</select></label>
@@ -1214,6 +1358,12 @@ function openTripForm(id, msg, isErr){
       : `<div class="hint">No itinerary yet. Tap Save and look up itinerary, or type it in one day at a time.</div>`}
     <button class="btn ghost" id="fAddDay">${days.length ? "Add a day" : "Type in the itinerary"}</button>
     ${it ? `<button class="btn ghost" id="fRelook">Look up the itinerary again</button>` : ""}
+    <div class="sectionlabel">Events</div>
+    ${evs.length ? evs.map(ev => `
+      <div class="evrow${evStart(ev).getTime() < Date.now() ? " past" : ""}"><button class="grow" data-ev="${esc(ev.id)}"><b>${esc(ev.title)}</b><small>${esc(niceDate(ev.date) + ", " + niceTime(ev.time) + (ev.place ? ", " + evPlaceText(ev.place) : ""))}</small><small>${esc(remindText(ev.remind))}</small></button><button class="edit" data-cal="${esc(ev.id)}">Add to calendar</button></div>`).join("")
+      : `<div class="hint">No events yet. Add a show, a dinner booking, or a time to meet, with a reminder.</div>`}
+    <div class="status" id="fCalMsg"></div>
+    <button class="btn ghost" id="fAddEv">Add an event</button>
     <div class="sectionlabel">Share</div>
     <button class="btn ghost" id="fShare">Share trip</button>
     <div class="status" id="fShareMsg"></div>` : ""}
@@ -1237,6 +1387,12 @@ function openTripForm(id, msg, isErr){
     save(); render(); openTripForm(id);
   };
   $("tripBody").querySelectorAll("[data-day]").forEach(b => b.onclick = () => openDayForm(id, Number(b.dataset.day)));
+  $("tripBody").querySelectorAll("[data-ev]").forEach(b => b.onclick = () => openEventForm(id, b.dataset.ev));
+  $("tripBody").querySelectorAll("[data-cal]").forEach(b => b.onclick = () => {
+    const tt = data.trips.find(x => x.id === id), ev = (tt?.events || []).find(x => x.id === b.dataset.cal);
+    if (tt && ev) addToCalendar(tt, ev, "fCalMsg");
+  });
+  if ($("fAddEv")) $("fAddEv").onclick = () => openEventForm(id, null);
   if ($("fAddDay")) $("fAddDay").onclick = () => openDayForm(id, null);
   if ($("fRelook")) $("fRelook").onclick = () => {
     const tt = data.trips.find(x => x.id === id); if (!tt) return;
@@ -1350,6 +1506,280 @@ function normalizeDays(days){
   if (out.length && !out[0].sea) out[0].kind = "embark";
   if (out.length > 1 && !out[out.length - 1].sea) out[out.length - 1].kind = "debark";
   return out;
+}
+
+// ---------- trip events and reminders (1.12.0): trip.events, saved and shared with the trip ----------
+// Each event: { id, title, date "YYYY-MM-DD", time "HH:MM", remind (minutes before, or null for none),
+// place (optional) }. A place is { kind: "venue", ship, deck, name }, { kind: "cabin", ship, cabin },
+// { kind: "island", island, id, name } or { kind: "text", text }. Times are the phone's clock, like all aboard.
+const REMIND_GRACE_MS = 15 * 60000;   // a reminder still shows until 15 minutes after the event starts
+const REMIND_MAX = 10080;             // a custom reminder can be up to a week before
+const evStart = ev => { const [y, m, d] = ev.date.split("-").map(Number), [hh, mi] = ev.time.split(":").map(Number); return new Date(y, m - 1, d, hh, mi); };
+const sortEvents = evs => (evs || []).slice().sort((a, b) => (a.date + a.time).localeCompare(b.date + b.time));
+function evPlaceText(p){
+  if (!p) return "";
+  if (p.kind === "venue") return p.name + ", Deck " + p.deck;
+  if (p.kind === "cabin") return "Cabin " + p.cabin;
+  if (p.kind === "island") return p.name + ", " + (placeEntry(p.island)?.name || "island map");
+  return p.text || "";
+}
+function remindText(n){
+  if (n == null) return "No reminder";
+  if (n === 0) return "Reminder when it starts";
+  if (n % 60 === 0) return "Reminder " + n / 60 + (n === 60 ? " hour" : " hours") + " before";
+  return "Reminder " + n + (n === 1 ? " minute" : " minutes") + " before";
+}
+// "8:00 AM" today, "tomorrow, 8:00 AM", otherwise "Sun, Oct 4, 8:00 AM".
+function evWhen(ev){
+  const today = ymd(new Date());
+  if (ev.date === today) return niceTime(ev.time);
+  if (ev.date === addDaysIso(today, 1)) return "tomorrow, " + niceTime(ev.time);
+  return niceDate(ev.date) + ", " + niceTime(ev.time);
+}
+function nextEvent(t){ const now = Date.now(); return sortEvents(t?.events).find(ev => evStart(ev).getTime() >= now) || null; }
+const tripEnd = t => { const d = t.itinerary?.days || []; return d.length ? d[d.length - 1].date : t.date; };
+
+async function openEventForm(tripId, evId, msg){
+  const t = data.trips.find(x => x.id === tripId); if (!t) return openTrips();
+  const ev = (t.events || []).find(x => x.id === evId) || null;
+  try { await ensureShip(t.ship); } catch (e) {}
+  const today = ymd(new Date());
+  const v = ev || { title: "", date: today >= t.date && today <= tripEnd(t) ? today : t.date, time: "", remind: 30, place: null };
+  const p = v.place || {};
+  const sh = SHIPS[t.ship];
+  // Places on the deck plans, deck by deck: the "On this deck" names, plus any named only in the geometry.
+  const venueOpts = sh ? deckList(t.ship).map(d => {
+    const names = [...(sh.decks[d].venues || [])];
+    (geoDeck(t.ship, d)?.venues || []).forEach(g => { if (!names.some(n => sameVenue(n, g.name))) names.push(g.name); });
+    return names.length ? `<optgroup label="Deck ${d}">${names.map(n => `<option value="${d}|${esc(n)}"${p.kind === "venue" && p.deck === d && p.name === n ? " selected" : ""}>${esc(n)}</option>`).join("")}</optgroup>` : "";
+  }).join("") : "";
+  const preset = v.remind == null ? "none" : [15, 30, 60].includes(v.remind) ? String(v.remind) : "custom";
+  $("tripBody").innerHTML = `
+    <h3>${ev ? "Edit event" : "Add an event"}</h3>
+    <div class="hint" style="padding-top:0">${esc(shipName(t.ship))}, sailing ${niceDate(t.date)}</div>
+    <label class="field"><span>What</span><input id="eTitle" maxlength="60" placeholder="e.g. Silver Cove check-in" value="${esc(v.title)}"></label>
+    <div class="timerow"><label class="field"><span>Date</span><input id="eDate" type="date" value="${esc(v.date)}"></label><label class="field"><span>Time</span><input id="eTime" type="time" value="${esc(v.time)}"></label></div>
+    <label class="field"><span>Where (optional)</span><select id="eKind">
+      <option value="">No place</option>
+      <option value="venue"${p.kind === "venue" ? " selected" : ""}>A place on the deck plans</option>
+      <option value="cabin"${p.kind === "cabin" ? " selected" : ""}>A cabin</option>
+      ${PLACES.length ? `<option value="island"${p.kind === "island" ? " selected" : ""}>A place on an island map</option>` : ""}
+      <option value="text"${p.kind === "text" ? " selected" : ""}>Type in a place</option>
+    </select></label>
+    <div id="eKvenue" hidden><label class="field"><span>Place on the deck plans</span><select id="eVenue">${venueOpts ? `<option value="">Pick a place</option>` + venueOpts : `<option value="">This ship's deck plans aren't on this phone yet</option>`}</select></label></div>
+    <div id="eKcabin" hidden><label class="field"><span>Cabin number</span><input id="eCabin" inputmode="numeric" placeholder="e.g. 5768" value="${esc(p.kind === "cabin" ? p.cabin : t.cabin || "")}"></label></div>
+    <div id="eKisland" hidden><label class="field"><span>Place on the island map</span><select id="eIsland"><option value="">Loading the island map...</option></select></label></div>
+    <div id="eKtext" hidden><label class="field"><span>Place</span><input id="eText" maxlength="80" placeholder="e.g. Meet at the pier" value="${esc(p.kind === "text" ? p.text : "")}"></label></div>
+    <label class="field"><span>Reminder</span><select id="eRemind">
+      <option value="none"${preset === "none" ? " selected" : ""}>No reminder</option>
+      <option value="15"${preset === "15" ? " selected" : ""}>15 minutes before</option>
+      <option value="30"${preset === "30" ? " selected" : ""}>30 minutes before</option>
+      <option value="60"${preset === "60" ? " selected" : ""}>1 hour before</option>
+      <option value="custom"${preset === "custom" ? " selected" : ""}>Custom</option>
+    </select></label>
+    <div id="eCustomBits" ${preset === "custom" ? "" : "hidden"}><label class="field"><span>Minutes before (0 means when it starts)</span><input id="eCustom" type="number" inputmode="numeric" min="0" max="${REMIND_MAX}" step="1" value="${preset === "custom" ? v.remind : ""}"></label></div>
+    <div class="hint">The reminder shows in Deck Finder while it's open. Add to calendar also puts it in your phone's calendar, which reminds you even when Deck Finder is closed.</div>
+    <button class="btn" id="eSave">Save event</button>
+    <div class="status" id="eStatus">${esc(msg || "")}</div>
+    ${ev ? `<button class="btn ghost" id="eCal">Add to calendar</button><div class="status" id="eCalMsg"></div>` : ""}
+    ${ev && canShareFiles() ? `<button class="btn ghost" id="eShareIcs">Share the calendar file</button><div class="status" id="eShareMsg"></div>` : ""}
+    <button class="btn ghost" id="eBack">Back</button>
+    ${ev ? `<button class="btn danger" id="eDel">Delete event</button>` : ""}`;
+  openSheet("tripSheet");
+  let islandFilled = false;
+  const fillIsland = async () => {
+    if (islandFilled) return; islandFilled = true;
+    const sel = $("eIsland");
+    const ids = [...new Set([...islandDays(t).map(x => x.place.id), ...PLACES.map(x => x.id)])];   // this trip's islands first
+    let html = "";
+    for (const pid of ids){
+      let d = null; try { d = await ensurePlace(pid); } catch (e) {}
+      const name = placeEntry(pid)?.name || pid;
+      if (!d){ html += `<optgroup label="${esc(name)}"><option value="" disabled>Not saved on this phone yet. Connect to the internet to load it.</option></optgroup>`; continue; }
+      const areas = d.areas || [];
+      const groups = [...areas.map(a => ({ label: name + ": " + a.name, ps: d.places.filter(x => x.area_id === a.id) })),
+        { label: name + ": other places", ps: d.places.filter(x => !areas.some(a => a.id === x.area_id)) }];
+      html += groups.filter(g => g.ps.length).map(g => `<optgroup label="${esc(g.label)}">${g.ps.slice().sort((a, b) => a.name.localeCompare(b.name)).map(x =>
+        `<option value="${esc(pid)}|${esc(x.id)}"${p.kind === "island" && p.island === pid && p.id === x.id ? " selected" : ""}>${esc(x.name)}</option>`).join("")}</optgroup>`).join("");
+    }
+    if ($("eIsland") === sel) sel.innerHTML = `<option value="">Pick a place</option>` + html;
+  };
+  const kindSync = () => {
+    const k = $("eKind").value;
+    ["venue", "cabin", "island", "text"].forEach(x => { $("eK" + x).hidden = k !== x; });
+    if (k === "island") fillIsland();
+  };
+  $("eKind").onchange = kindSync; kindSync();
+  $("eRemind").onchange = () => { $("eCustomBits").hidden = $("eRemind").value !== "custom"; };
+  $("eBack").onclick = () => openTripForm(tripId);
+  $("eSave").onclick = () => {
+    const st = $("eStatus"); st.className = "status err";
+    const title = $("eTitle").value.trim(), date = $("eDate").value, time = $("eTime").value;
+    if (!title) return st.textContent = "Type what the event is.";
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) return st.textContent = "Pick the date.";
+    if (!/^\d{2}:\d{2}$/.test(time)) return st.textContent = "Pick the time.";
+    const kind = $("eKind").value; let place = null;
+    if (kind === "venue"){
+      const x = $("eVenue").value, i = x.indexOf("|");
+      if (i < 1) return st.textContent = "Pick a place on the deck plans, or choose No place.";
+      place = { kind, ship: t.ship, deck: Number(x.slice(0, i)), name: x.slice(i + 1) };
+    } else if (kind === "cabin"){
+      const c = $("eCabin").value.trim();
+      if (!cabinDeckNum(c)) return st.textContent = "Cabin numbers are 4 or 5 digits, like 5768 or 10212.";
+      place = { kind, ship: t.ship, cabin: c };
+    } else if (kind === "island"){
+      const x = $("eIsland").value, i = x.indexOf("|");
+      if (i < 1) return st.textContent = "Pick a place on the island map, or choose No place.";
+      const island = x.slice(0, i), pid = x.slice(i + 1), pl = PLACE_DATA[island]?.places.find(q => q.id === pid);
+      place = { kind, island, id: pid, name: pl ? pl.name : p.kind === "island" && p.id === pid ? p.name : pid };
+    } else if (kind === "text"){
+      const x = $("eText").value.trim();
+      if (!x) return st.textContent = "Type the place, or choose No place.";
+      place = { kind, text: x };
+    }
+    let remind = null; const r = $("eRemind").value;
+    if (r === "custom"){
+      const raw = $("eCustom").value, n = Number(raw);
+      if (raw === "" || !Number.isInteger(n) || n < 0 || n > REMIND_MAX) return st.textContent = "Type how many minutes before, a whole number from 0 to 10080 (one week).";
+      remind = n;
+    } else if (r !== "none") remind = Number(r);
+    const evsNow = t.events || (t.events = []);
+    const obj = Object.assign({ id: ev ? ev.id : "e" + Date.now(), title, date, time, remind }, place ? { place } : {});
+    const at = ev ? evsNow.findIndex(x => x.id === ev.id) : -1;
+    if (at >= 0) evsNow[at] = obj; else evsNow.push(obj);
+    save(); render(); checkReminders();
+    openTripForm(tripId, "Saved " + title + ".");
+  };
+  if ($("eCal")) $("eCal").onclick = () => addToCalendar(t, ev, "eCalMsg");
+  if ($("eShareIcs")) $("eShareIcs").onclick = () => shareCalendarFile(t, ev, "eShareMsg");
+  if ($("eDel")) $("eDel").onclick = () => {
+    if (!confirm(`Delete the event "${ev.title}"?`)) return;
+    t.events = (t.events || []).filter(x => x.id !== ev.id);
+    save(); render(); checkReminders();
+    openTripForm(tripId, "Deleted " + ev.title + ".");
+  };
+}
+
+// The reminder banner: shows from the reminder time until 15 minutes after the event starts, while
+// the app is open. Dismissed reminders are remembered in state.remindDone (keys that change when
+// the event's time or reminder is edited, so an edited event reminds again).
+const remindKey = (t, ev) => t.id + ":" + ev.id + ":" + ev.date + "T" + ev.time + ":" + ev.remind;
+function dueReminders(){
+  const now = Date.now(), done = new Set(state.remindDone || []), out = [];
+  data.trips.forEach(t => (t.events || []).forEach(ev => {
+    if (ev.remind == null) return;
+    const start = evStart(ev).getTime();
+    if (now >= start - ev.remind * 60000 && now < start + REMIND_GRACE_MS && !done.has(remindKey(t, ev))) out.push({ t, ev, start });
+  }));
+  return out.sort((a, b) => a.start - b.start);
+}
+function untilText(ms){
+  const m = Math.round(ms / 60000), h = Math.floor(m / 60), r = m % 60;
+  if (m < 60) return "in " + m + (m === 1 ? " minute" : " minutes");
+  return "in " + h + (h === 1 ? " hour" : " hours") + (r ? " " + r + (r === 1 ? " minute" : " minutes") : "");
+}
+const canShowPlace = p => !!p && ((p.kind === "venue" || p.kind === "cabin") ? !!catEntry(p.ship) : p.kind === "island" ? !!placeEntry(p.island) : false);
+let remindNow = null, remindTimer = null;
+function checkReminders(){
+  const r = dueReminders()[0] || null, bar = $("remindBar");
+  if (!r){ bar.hidden = true; remindNow = null; }
+  else {
+    const key = remindKey(r.t, r.ev), left = r.start - Date.now();
+    if (!remindNow || remindNow.key !== key){ try { if (navigator.vibrate) navigator.vibrate([200, 100, 200]); } catch (e) {} }
+    remindNow = { key, t: r.t, ev: r.ev };
+    const ago = Math.round(-left / 60000);
+    $("rbTitle").textContent = r.ev.title + (left >= 30000 ? " " + untilText(left) : ago < 1 ? " is starting now" : " started " + ago + (ago === 1 ? " minute ago" : " minutes ago"));
+    $("rbWhen").textContent = [evWhen(r.ev), evPlaceText(r.ev.place)].filter(Boolean).join(", ");
+    $("rbShow").hidden = !canShowPlace(r.ev.place);
+    bar.hidden = false;
+  }
+  // Wake up right when the next reminder is due; the 20-second check below is the backup.
+  clearTimeout(remindTimer);
+  const now = Date.now(); let next = Infinity;
+  data.trips.forEach(t => (t.events || []).forEach(ev => {
+    if (ev.remind == null) return;
+    const at = evStart(ev).getTime() - ev.remind * 60000;
+    if (at > now) next = Math.min(next, at);
+  }));
+  if (next - now < 2147483647) remindTimer = setTimeout(checkReminders, next - now + 250);
+}
+function dismissReminder(){
+  if (!remindNow) return;
+  const live = new Set(data.trips.flatMap(t => (t.events || []).map(ev => remindKey(t, ev))));
+  state.remindDone = [...(state.remindDone || []).filter(k => live.has(k) && k !== remindNow.key), remindNow.key];
+  save();
+}
+$("rbX").onclick = () => { dismissReminder(); checkReminders(); };
+$("rbShow").onclick = () => { const r = remindNow; dismissReminder(); checkReminders(); if (r) showEventPlace(r.ev.place); };
+// Show me: the deck plan with the place highlighted, the cabin, or the island map with the place selected.
+async function showEventPlace(p){
+  if (!canShowPlace(p)) return;
+  closeSheets();
+  if (p.kind === "island"){
+    openIsland(p.island);
+    const k = "place:" + p.id;
+    if (isl && isl.d){ isl.moved = true; selectMark(k, true); } else if (isl) isl.pendingSel = k;
+    return;
+  }
+  if (isl) closeIsland(false);
+  state.ship = p.ship; highlight = null;
+  try { await ensureShip(p.ship); } catch (e) { return render(); }
+  if (p.kind === "venue"){
+    if (!deckList(p.ship).includes(p.deck)) return render();
+    return highlightVenue(p.ship, p.deck, p.name);
+  }
+  const d = cabinDeckNum(p.cabin), c = geoCabin(p.ship, p.cabin);
+  if (!deckList(p.ship).includes(d)) return render();
+  if (c) return showBoxes(p.ship, d, [c.box]);
+  state.deck = d; render();
+}
+
+// ---------- Add to calendar: a calendar file (.ics) with the reminder built in ----------
+// The time is the phone's clock turned into UTC, so the calendar shows it at the same time the app does.
+const icsEsc = x => String(x).replace(/\\/g, "\\\\").replace(/;/g, "\\;").replace(/,/g, "\\,").replace(/\r?\n/g, "\\n");
+function icsFold(line){   // lines longer than 75 bytes continue on the next line after a space
+  const enc = new TextEncoder(); let out = "", n = 0;
+  for (const ch of line){ const b = enc.encode(ch).length; if (n + b > 75){ out += "\r\n "; n = 1; } out += ch; n += b; }
+  return out;
+}
+const icsUtc = d => d.toISOString().replace(/[-:]/g, "").replace(/\.\d{3}/, "");
+function icsText(t, ev){
+  const start = evStart(ev), end = new Date(start.getTime() + 30 * 60000);
+  const p = ev.place, where = p ? evPlaceText(p) + (p.kind === "venue" || p.kind === "cabin" ? ", " + shipName(p.ship) : "") : "";
+  const lines = ["BEGIN:VCALENDAR", "VERSION:2.0", "PRODID:-//Deck Finder//Trip events//EN", "CALSCALE:GREGORIAN", "METHOD:PUBLISH",
+    "BEGIN:VEVENT", "UID:" + ev.id + "-" + t.id + "@dasatizabal.github.io", "DTSTAMP:" + icsUtc(new Date()),
+    "DTSTART:" + icsUtc(start), "DTEND:" + icsUtc(end), "SUMMARY:" + icsEsc(ev.title)];
+  if (where) lines.push("LOCATION:" + icsEsc(where));
+  lines.push("DESCRIPTION:" + icsEsc(shipName(t.ship) + " trip, sailing " + niceDate(t.date) + ". Added from Deck Finder."));
+  if (ev.remind != null) lines.push("BEGIN:VALARM", "ACTION:DISPLAY", "DESCRIPTION:" + icsEsc(ev.title), "TRIGGER:" + (ev.remind ? "-PT" + ev.remind + "M" : "PT0M"), "END:VALARM");
+  lines.push("END:VEVENT", "END:VCALENDAR");
+  return lines.map(icsFold).join("\r\n") + "\r\n";
+}
+const icsName = ev => "deck-finder-" + (normName(ev.title).replace(/ /g, "-").slice(0, 40) || "event") + ".ics";
+const isIOS = () => /iPad|iPhone|iPod/.test(navigator.userAgent) || (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
+function addToCalendar(t, ev, statusId){
+  const ics = icsText(t, ev), name = icsName(ev), st = $(statusId) || {};
+  // iPhone: open the file from a real address (sw.js answers calendar.ics, even offline), so the
+  // iPhone shows its own Add to Calendar screen. Android: download the file and open it from there.
+  if (isIOS() && navigator.serviceWorker && navigator.serviceWorker.controller){
+    st.textContent = "Opening your calendar. Tap Add All, then Done.";
+    location.href = "calendar.ics?n=" + encodeURIComponent(name) + "&d=" + b64uEncode(ics);
+    return;
+  }
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(new Blob([ics], { type: "text/calendar;charset=utf-8" })); a.download = name;
+  document.body.appendChild(a); a.click();
+  setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 4000);
+  st.textContent = "Downloaded " + name + ". Tap Open on the download message, or open it from your notifications or the Files app, then choose your calendar app and tap Save.";
+}
+const canShareFiles = () => { try { return !!(navigator.canShare && navigator.canShare({ files: [new File(["x"], "x.ics", { type: "text/calendar" })] })); } catch (e) { return false; } };
+// The other way in: send the file to yourself (Mail, Gmail, Messages) and open it there.
+async function shareCalendarFile(t, ev, statusId){
+  const st = $(statusId) || {};
+  try {
+    await navigator.share({ title: ev.title, files: [new File([icsText(t, ev)], icsName(ev), { type: "text/calendar" })] });
+    st.textContent = "Shared. Open the file where you sent it, then tap Add to Calendar.";
+  } catch (e) { st.textContent = e.name === "AbortError" ? "" : "This phone couldn't share the file. Use Add to calendar instead."; }
 }
 
 async function startPlacing(id){
@@ -1541,7 +1971,7 @@ function openItinerary(){
       <div class="day ${day.date===today?"today":""}">
         <div class="d">${niceDate(day.date)}</div>
         <div><div class="p">${day.sea ? "At sea" : esc(day.port)}</div>
-        <div class="tm">${esc(dayTimes(day))}</div></div>
+        <div class="tm">${esc(dayTimes(day))}</div>${sortEvents(t.events).filter(ev => ev.date === day.date).map(ev => `<div class="ev">${esc(niceTime(ev.time))}: ${esc(ev.title)}</div>`).join("")}</div>
         ${islandForDay(day) ? `<button class="dl islbtn" data-island="${esc(islandForDay(day).id)}">Island map</button>` : ""}
       </div>`).join("") + `<div class="hint">${gaps ? "Some times aren't listed. Tap Edit itinerary to add them from your cruise documents. " : ""}Times are local port time. Check your ship's daily planner for all-aboard times.</div>`
     : `<div class="hint">Open Trip set up and tap Save and look up itinerary while you have internet, or tap Type in the itinerary.</div>`}
@@ -1947,6 +2377,7 @@ function islSetup(d){
   fitIsland();
   renderIslMarks();
   islGpsChanged();
+  if (isl.pendingSel){ const k = isl.pendingSel; isl.pendingSel = null; isl.moved = true; selectMark(k, true); }
 }
 function mapSize(){ const r = $("imap").getBoundingClientRect(); return { w: r.width || 360, h: r.height || 500 }; }
 function fitBox(lat1, lon1, lat2, lon2, pad){
@@ -1985,12 +2416,113 @@ function applyView(){
   const els = [...$("imarks").querySelectorAll("[data-lat]")];
   const pos = els.map(el => toScreen(+el.dataset.lat, +el.dataset.lon));
   const off = fanOut(els, pos);
+  const groups = isl.s < ISLAND_OPEN_S ? clusterMarks(els, pos) : [];
+  const grouped = new Set(groups.flatMap(g => g.members));
   els.forEach((el, i) => {
     const o = off[i];
     el.style.transform = `translate(${(pos[i][0] + (o ? o.dx : 0)).toFixed(1)}px,${(pos[i][1] + (o ? o.dy : 0)).toFixed(1)}px)`;
     el.classList.toggle("fan-r", !!o && o.dx >= -0.5);
     el.classList.toggle("fan-l", !!o && o.dx < -0.5);
+    el.classList.toggle("inclu", grouped.has(i));
   });
+  renderBubbles(groups);
+}
+// ---------- grouping markers into numbered bubbles when zoomed out (1.12.0) ----------
+// Below the zoom the map opens at on the island, place markers of the same area that overlap on
+// screen merge into one bubble in the area's color. Your saved spots, survey marks, and the selected
+// place always show on their own. Grouping chains: A near B and B near C puts all three together.
+const ISLAND_OPEN_S = 1.2;   // the zoom the map opens at when you're on the island (1.2 pixels per meter)
+const CLUSTER_PX = 36;       // markers whose centers are closer than this on screen merge
+function clusterMarks(els, pos){
+  const idx = els.map((el, i) => el.classList.contains("mk") && !el.classList.contains("spotmk")
+    && el.dataset.k !== isl.sel && el.dataset.k !== isl.hot ? i : -1).filter(i => i >= 0);
+  const parent = new Map(idx.map(i => [i, i]));
+  const root = i => { while (parent.get(i) !== i) i = parent.get(i); return i; };
+  for (let a = 0; a < idx.length; a++) for (let b = a + 1; b < idx.length; b++){
+    const i = idx[a], j = idx[b];
+    if ((els[i].dataset.area || "") !== (els[j].dataset.area || "")) continue;
+    if (Math.hypot(pos[i][0] - pos[j][0], pos[i][1] - pos[j][1]) < CLUSTER_PX) parent.set(root(i), root(j));
+  }
+  const by = new Map();
+  idx.forEach(i => { const r = root(i); (by.get(r) || by.set(r, []).get(r)).push(i); });
+  return [...by.values()].filter(m => m.length > 1).map(m => ({
+    members: m, area: els[m[0]].dataset.area || "",
+    x: m.reduce((t, i) => t + pos[i][0], 0) / m.length, y: m.reduce((t, i) => t + pos[i][1], 0) / m.length,
+    key: m.map(i => els[i].dataset.k).sort().join("|") }));
+}
+// Draw the bubbles. Area names stay on top: a bubble that would cover a name moves to just below it.
+function renderBubbles(groups){
+  const box = $("imarks");
+  $("imap").classList.toggle("clustered", groups.length > 0);
+  const sig = groups.map(g => g.key).join("||") + "#" + (isl.areaFilter || "");
+  if (box.dataset.sig !== sig){
+    box.querySelectorAll(".mkc").forEach(x => x.remove());
+    box.dataset.sig = sig;
+    groups.forEach(g => {
+      const a = areaOf(g.area), n = g.members.length;
+      const b = document.createElement("button");
+      b.className = "mkc" + (isl.areaFilter && g.area !== isl.areaFilter ? " dim" : "");
+      b.dataset.group = g.key;
+      if (a) b.style.setProperty("--ac", a.color);
+      b.textContent = n;
+      b.setAttribute("aria-label", n + " places" + (a ? " in " + a.name : "") + ". Tap to zoom in.");
+      b.onclick = e => { e.stopPropagation(); zoomToGroup(b.dataset.group); };
+      box.appendChild(b);
+    });
+  }
+  if (!groups.length) return;
+  const hideNames = $("imap").classList.contains("nolabels");
+  const labels = hideNames ? [] : [...box.querySelectorAll(".alabel")].map(l => {
+    const sp = l.firstElementChild, [x, y] = toScreen(+l.dataset.lat, +l.dataset.lon);
+    const w = sp ? sp.offsetWidth : 0, h = sp ? sp.offsetHeight : 0;
+    return { l: x - w / 2, r: x + w / 2, t: y - h / 2, b: y + h / 2 };
+  }).filter(r => r.r > r.l);
+  // Bubbles are placed one at a time, biggest first, each on its own spot or the nearest free spot
+  // around it (trying straight down first), so none covers a name or another bubble.
+  const R = 21, at = new Array(groups.length), placed = [];
+  const clear = (x, y) => !labels.some(r => x + R > r.l && x - R < r.r && y + R > r.t && y - R < r.b)
+    && placed.every(q => Math.hypot(q.x - x, q.y - y) >= 2 * R + 2);
+  const turns = [0, 1, -1, 2, -2, 3, -3, 4, -4, 5, -5, 6, -6, 7, -7, 8].map(k => Math.PI / 2 + k * Math.PI / 8);
+  groups.map((g, i) => i).sort((a, b) => groups[b].members.length - groups[a].members.length).forEach(i => {
+    const g = groups[i];
+    let spot = clear(g.x, g.y) ? { x: g.x, y: g.y } : null;
+    for (let ring = 1; !spot && ring <= 14; ring++)
+      for (const t of turns){ const x = g.x + ring * 7 * Math.cos(t), y = g.y + ring * 7 * Math.sin(t); if (clear(x, y)){ spot = { x, y }; break; } }
+    at[i] = spot || { x: g.x, y: g.y };
+    placed.push(at[i]);
+  });
+  groups.forEach((g, i) => {
+    const el = box.querySelector(`.mkc[data-group="${CSS.escape(g.key)}"]`);
+    if (el) el.style.transform = `translate(${at[i].x.toFixed(1)}px,${at[i].y.toFixed(1)}px) translate(-50%,-50%)`;
+  });
+}
+// Tapping a bubble zooms in, centered on its places, until they separate. When the group is too
+// spread out to fit on screen at that zoom, it zooms only as far as keeps them all on screen, and
+// the bubble splits into smaller bubbles there (tap those to keep going).
+function zoomToGroup(key){
+  if (!isl || !isl.d) return;
+  const pts = key.split("|").map(k => markInfo(k)).filter(Boolean).map(m => { const [x, y] = proj(m.lat, m.lon); return { x, y, m }; });
+  if (pts.length < 2) return;
+  const gap = (a, b) => Math.hypot(a.x - b.x, a.y - b.y);
+  let dmin = Infinity;
+  for (let i = 0; i < pts.length; i++) for (let j = i + 1; j < pts.length; j++)
+    if (distM(pts[i].m, pts[j].m) > FAN_M) dmin = Math.min(dmin, gap(pts[i], pts[j]));   // closer ones fan out instead
+  // The zoom where the group first breaks apart is set by the longest link of its chain
+  // (a minimum spanning tree, built one nearest place at a time).
+  let split = 0; const inT = [pts[0]], rest = pts.slice(1);
+  while (rest.length){
+    let best = null;
+    inT.forEach(a => rest.forEach((b, j) => { const d = gap(a, b); if (!best || d < best.d) best = { d, j }; }));
+    split = Math.max(split, best.d); inT.push(rest.splice(best.j, 1)[0]);
+  }
+  const sAll = isFinite(dmin) ? CLUSTER_PX * 1.1 / dmin : ISLAND_OPEN_S;
+  const sSplit = split > 0 ? CLUSTER_PX * 1.1 / split : ISLAND_OPEN_S;
+  const xs = pts.map(p => p.x), ys = pts.map(p => p.y), { w, h } = mapSize();
+  const sFit = Math.min((w - 110) / Math.max(1, Math.max(...xs) - Math.min(...xs)), (h - 230) / Math.max(1, Math.max(...ys) - Math.min(...ys)));
+  const s = clampS(Math.min(ISLAND_OPEN_S, Math.max(sSplit, Math.min(sAll, sFit), isl.s * 1.25)));
+  const cx = (Math.min(...xs) + Math.max(...xs)) / 2, cy = (Math.min(...ys) + Math.max(...ys)) / 2;
+  isl.moved = true; isl.s = s; isl.tx = w / 2 - cx * s; isl.ty = h / 2 - cy * s;
+  applyView();
 }
 // Markers within a few meters of each other that overlap on screen fan out around their shared spot,
 // so each one can be tapped. Their labels go to the outer side so they don't overlap either.
@@ -2036,13 +2568,13 @@ function renderIslMarks(){
   const ac = v => { const a = areaOf(v.area_id); return a ? `;--ac:${esc(a.color)}` : ""; };
   const ain = (v, k) => (areaOf(v.area_id) ? " inarea" : "") + (af && v.area_id !== af && sel !== k ? " dim" : "");
   let h = d.areas.map(a => `<button class="alabel${af && af !== a.id ? " dim" : ""}" data-area="${esc(a.id)}" data-lat="${a.label.lat}" data-lon="${a.label.lon}" style="--ac:${esc(a.color)}" aria-label="Area: ${esc(a.name)}"><span>${esc(a.name)}</span></button>`).join("");
-  h += d.places.map(p => `<button class="mk${p.approximate ? " approx" : ""}${ain(p, "place:" + p.id)}${cls("place:" + p.id)}" data-k="place:${esc(p.id)}" data-lat="${p.lat}" data-lon="${p.lon}" style="--c:${cat(p.category).color}${ac(p)}" aria-label="${esc(placeLabel(p))}"><i>${cat(p.category).icon}</i><span>${esc(placeLabel(p))}</span></button>`).join("");
+  h += d.places.map(p => `<button class="mk${p.approximate ? " approx" : ""}${ain(p, "place:" + p.id)}${cls("place:" + p.id)}" data-k="place:${esc(p.id)}" data-area="${esc(p.area_id || "")}" data-lat="${p.lat}" data-lon="${p.lon}" style="--c:${cat(p.category).color}${ac(p)}" aria-label="${esc(placeLabel(p))}"><i>${cat(p.category).icon}</i><span>${esc(placeLabel(p))}</span></button>`).join("");
   d.survey.forEach(v => { const r = S.venues[v.id]; if (r && typeof r.lat === "number")
     h += `<button class="svmk${ain(v, "tag:" + v.id)}${cls("tag:" + v.id)}" data-k="tag:${esc(v.id)}" data-lat="${r.lat}" data-lon="${r.lon}" style="--c:${cat(v.category).color}${ac(v)}" aria-label="Survey: ${esc(r.rename || v.name)}"><span>${esc(r.rename || v.name)}</span></button>`; });
   S.added.forEach(a => { h += `<button class="svmk new${cls("new:" + a.id)}" data-k="new:${esc(a.id)}" data-lat="${a.lat}" data-lon="${a.lon}" aria-label="New place: ${esc(a.name)}"><span>${esc(a.name)}</span></button>`; });
   islSpots().forEach(s => { h += `<button class="mk spotmk${cls("spot:" + s.id)}" data-k="spot:${esc(s.id)}" data-lat="${s.lat}" data-lon="${s.lon}" aria-label="Saved spot: ${esc(s.name)}"><i>⭐</i><span>${esc(s.name)}</span></button>`; });
   h += `<div class="me" id="iMe" hidden></div>`;
-  $("imarks").innerHTML = h;
+  $("imarks").innerHTML = h; delete $("imarks").dataset.sig;   // the bubbles are drawn again too
   $("imarks").querySelectorAll("[data-k]").forEach(b => b.onclick = e => { e.stopPropagation(); selectMark(b.dataset.k); });
   $("imarks").querySelectorAll(".alabel").forEach(b => b.onclick = e => { e.stopPropagation(); openAreaCard(b.dataset.area); });
   $("iarea").querySelectorAll("[data-area]").forEach(el => el.classList.toggle("dim", !!af && el.dataset.area !== af));
@@ -2115,7 +2647,7 @@ function islGpsChanged(){
   if ($("bHelp")) $("bHelp").onclick = openLocationHelp;
   if (!isl.d) return;
   updateMe(); renderInArea();
-  if (gps.fix && onIsland() && !isl.moved && !isl.centered){ isl.centered = true; centerOn(gps.fix.lat, gps.fix.lon, Math.max(isl.s, 1.2)); }
+  if (gps.fix && onIsland() && !isl.moved && !isl.centered){ isl.centered = true; centerOn(gps.fix.lat, gps.fix.lon, Math.max(isl.s, ISLAND_OPEN_S)); }
   applyView(); drawOverlay();
   if (isl.back) renderBack();
   if (isl.sel) renderCard();
@@ -2527,7 +3059,7 @@ function renderAboard(){
   el.hidden = false; el.className = "aboard " + l.cls;
   el.textContent = l.text + (l.clock && a.left > 0 ? " (" + l.clock + ")" : "");
 }
-setInterval(() => { renderStrip(); renderAboard(); }, 20000);
+setInterval(() => { renderStrip(); renderAboard(); checkReminders(); }, 20000);
 
 // ---------- Survey mode ----------
 let recording = null;     // the position being recorded, while its 5 seconds run
@@ -2863,6 +3395,10 @@ function tripPayload(t){
     if (it.edited) o.itinerary.edited = true;
   }
   if ((t.pins || []).length) o.pins = t.pins.map(p => ({ id: p.id, ship: p.ship, deck: p.deck, x: p.x, y: p.y, label: p.label, color: p.color }));
+  // Events (1.12.0), place by place with only its named fields.
+  const pl = p => p.kind === "venue" ? { kind: p.kind, ship: p.ship, deck: p.deck, name: p.name } : p.kind === "cabin" ? { kind: p.kind, ship: p.ship, cabin: p.cabin }
+    : p.kind === "island" ? { kind: p.kind, island: p.island, id: p.id, name: p.name } : { kind: "text", text: p.text };
+  if ((t.events || []).length) o.events = t.events.map(ev => Object.assign({ id: ev.id, title: ev.title, date: ev.date, time: ev.time, remind: ev.remind ?? null }, ev.place ? { place: pl(ev.place) } : {}));
   return o;
 }
 const tripLink = t => appBase() + "#trip=" + b64uEncode(JSON.stringify(tripPayload(t)));
@@ -2893,6 +3429,20 @@ function parseSharedTrip(v){
     .filter(p => p && catEntry(p.ship) && Number.isInteger(p.deck) && pct(p.x) && pct(p.y))
     .map((p, i) => ({ id: /^[\w-]{1,40}$/.test(p.id || "") ? p.id : "p" + Date.now() + "-" + i, ship: p.ship, deck: p.deck, x: p.x, y: p.y,
       label: str(p.label, 40) || "Pin", color: /^#[0-9A-Fa-f]{6}$/.test(p.color || "") ? p.color : PIN_COLORS[0] }));
+  // Events (1.12.0): a link from an older version has none.
+  t.events = (Array.isArray(o.events) ? o.events : []).slice(0, 100).map((ev, i) => {
+    if (!ev || typeof ev !== "object" || !ISO.test(ev.date) || !HM.test(ev.time) || !str(ev.title, 60)) return null;
+    const out = { id: /^[\w-]{1,40}$/.test(ev.id || "") ? ev.id : "e" + Date.now() + "-" + i, title: str(ev.title, 60), date: ev.date, time: ev.time,
+      remind: Number.isInteger(ev.remind) && ev.remind >= 0 && ev.remind <= REMIND_MAX ? ev.remind : null };
+    const p = ev.place;
+    if (p && typeof p === "object"){
+      if (p.kind === "venue" && catEntry(p.ship) && Number.isInteger(p.deck) && str(p.name, 80)) out.place = { kind: "venue", ship: p.ship, deck: p.deck, name: str(p.name, 80) };
+      else if (p.kind === "cabin" && catEntry(p.ship) && cabinDeckNum(p.cabin)) out.place = { kind: "cabin", ship: p.ship, cabin: String(p.cabin).trim() };
+      else if (p.kind === "island" && placeEntry(p.island) && /^[\w-]{1,80}$/.test(p.id || "") && str(p.name, 80)) out.place = { kind: "island", island: p.island, id: p.id, name: str(p.name, 80) };
+      else if (p.kind === "text" && str(p.text, 80)) out.place = { kind: "text", text: str(p.text, 80) };
+    }
+    return out;
+  }).filter(Boolean);
   return t;
 }
 function openSharedTrip(v){
@@ -2902,17 +3452,17 @@ function openSharedTrip(v){
     $("lkNo").onclick = closeSheets; return openSheet("linkSheet");
   }
   const same = data.trips.find(x => x.ship === t.ship && x.date === t.date);
-  const n = t.pins.length;
+  const n = t.pins.length, ne = t.events.length;
   const summary = `<div class="trip"><div class="grow"><b>${esc(shipName(t.ship))}</b><small>Sailing ${niceDate(t.date)}${t.cabin ? ", cabin " + esc(t.cabin) : ""}</small>
-    <small>${t.itinerary ? t.itinerary.days.length + " days in the itinerary" : "No itinerary"}, ${n} custom ${n === 1 ? "pin" : "pins"}</small></div></div>`;
+    <small>${t.itinerary ? t.itinerary.days.length + " days in the itinerary" : "No itinerary"}, ${n} custom ${n === 1 ? "pin" : "pins"}, ${ne} ${ne === 1 ? "event" : "events"}</small></div></div>`;
   if (!same){
     body.innerHTML = `<h3>Add this trip to your phone?</h3>${summary}
       <button class="btn" id="lkAdd">Add this trip</button><button class="btn ghost" id="lkNo">Not now</button>`;
-    $("lkAdd").onclick = () => { const nt = Object.assign({ id: "t" + Date.now() }, t); data.trips.push(nt); finishShared(nt.id, "Trip added."); };
+    $("lkAdd").onclick = () => { const nt = Object.assign({ id: "t" + Date.now() }, t); data.trips.push(nt); finishShared(nt.id, "Trip added."); checkReminders(); };
   } else {
     body.innerHTML = `<h3>Add this trip to your phone?</h3>${summary}
-      <div class="hint">You already have a trip on ${esc(shipName(t.ship))} sailing ${niceDate(t.date)}. Add the custom pins from this link to it, or replace your trip with this one? Replacing keeps your saved spots.</div>
-      <button class="btn" id="lkMerge">Merge the custom pins</button>
+      <div class="hint">You already have a trip on ${esc(shipName(t.ship))} sailing ${niceDate(t.date)}. Add the custom pins and events from this link to it, or replace your trip with this one? Replacing keeps your saved spots.</div>
+      <button class="btn" id="lkMerge">Merge the pins and events</button>
       <button class="btn ghost" id="lkReplace">Replace the trip</button>
       <button class="btn ghost" id="lkNo">Cancel</button>`;
     $("lkMerge").onclick = () => {
@@ -2921,12 +3471,20 @@ function openSharedTrip(v){
         if (pins.some(q => q.id === p.id || (q.ship === p.ship && q.deck === p.deck && q.x === p.x && q.y === p.y && q.label === p.label))) return;
         pins.push(p); added++;
       });
-      finishShared(same.id, added ? "Added " + added + (added === 1 ? " pin." : " pins.") : "No new pins to add.");
+      const evs = same.events || (same.events = []); let addedEv = 0;
+      t.events.forEach(ev => {
+        if (evs.some(q => q.id === ev.id || (q.title === ev.title && q.date === ev.date && q.time === ev.time))) return;
+        evs.push(ev); addedEv++;
+      });
+      const parts = [added ? added + (added === 1 ? " pin" : " pins") : "", addedEv ? addedEv + (addedEv === 1 ? " event" : " events") : ""].filter(Boolean);
+      finishShared(same.id, parts.length ? "Added " + parts.join(" and ") + "." : "No new pins or events to add.");
+      checkReminders();
     };
     $("lkReplace").onclick = () => {
-      ["cabin", "pin", "itinerary", "allAboard", "pins"].forEach(k => delete same[k]);
+      ["cabin", "pin", "itinerary", "allAboard", "pins", "events"].forEach(k => delete same[k]);
       Object.assign(same, t);
       finishShared(same.id, "Trip replaced.");
+      checkReminders();
     };
   }
   $("lkNo").onclick = closeSheets;
@@ -2938,7 +3496,6 @@ function finishShared(id, msg){ closeSheets(); save(); setActive(id); syncOfflin
 let installEvt = null;   // Android Chrome's install prompt, used by the Fix button when it's offered
 window.addEventListener("beforeinstallprompt", e => { installEvt = e; });
 const isInstalled = () => ["standalone", "fullscreen", "minimal-ui"].some(m => matchMedia("(display-mode: " + m + ")").matches) || navigator.standalone === true;
-const tripEnd = t => { const d = t.itinerary?.days || []; return d.length ? d[d.length - 1].date : t.date; };
 // The trip to check: the active one unless it's over, otherwise the next one.
 function readyTrip(){
   const today = ymd(new Date()), a = activeTrip();
@@ -3091,6 +3648,7 @@ window.addEventListener("hashchange", () => {
   try { await loadCatalog(); }
   catch (e) {
     $("mapwrap").innerHTML = `<div class="empty"><strong>Couldn't load the ship list</strong>Connect to the internet and open the app again.</div>`;
+    checkReminders();
     return;
   }
   if (!catEntry(state.ship) && CATALOG.length) state.ship = CATALOG[0].id;
@@ -3099,6 +3657,7 @@ window.addEventListener("hashchange", () => {
   if (state.island && placeEntry(state.island)) openIsland(state.island);   // it was open when the app closed
   else delete state.island;
   if (startLink && startLink.kind === "trip") openSharedTrip(startLink.value);
+  checkReminders();
   syncOfflineShips();
   refreshReady();
 })();
@@ -3153,7 +3712,7 @@ async function applyUpdate(){
 }
 $("updateBar").onclick = applyUpdate;
 checkForUpdate();
-document.addEventListener("visibilitychange", () => { if (document.visibilityState === "visible"){ checkForUpdate(); if (catalogReady) refreshReady(); } });
+document.addEventListener("visibilitychange", () => { if (document.visibilityState === "visible"){ checkForUpdate(); checkReminders(); renderStrip(); if (catalogReady) refreshReady(); } });
 
 // ---------- what's new ----------
 async function openNews(){

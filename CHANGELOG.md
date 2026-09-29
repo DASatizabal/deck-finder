@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.12.0] - 2026-09-29
+### Added
+- Buttons to highlight bars, food, restrooms, stairs, elevators, and more on Norwegian Getaway's deck plans.
+- Trip events with reminders and Add to calendar.
+### Changed
+- Island map places group into numbered bubbles when zoomed out.
+
 ## [1.11.1] - 2026-09-28
 ### Added
 - Great Stirrup Cay neighborhoods in the same colors as the island signs, with area buttons and a 'You're in' line.
