@@ -16,5 +16,6 @@
     "max_lat": 25.8292,
     "max_lon": -77.8933
   },
-  "bounds_note": "The island's coastline from OpenStreetMap plus about 150 meters, to take in the pier. The west edge stays east of -77.9300, where CocoCay (Little Stirrup Cay) begins."
+  "bounds_note": "The island's coastline from OpenStreetMap plus about 150 meters, to take in the pier. The west edge stays east of -77.9300, where CocoCay (Little Stirrup Cay) begins.",
+  "sign_alignment": "sign-alignment.json"
 }

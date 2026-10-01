@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.15.0] - 2026-09-30
+### Added
+- Great Stirrup Cay category buttons for restrooms, bars, food, tram stops, and more.
+- Map views for the island: the drawn map, satellite (with internet), and the island sign map (add your own copy).
+### Fixed
+- The harbor by the Lagoon now shows as water, place labels no longer pile on top of each other, the Starting from list has no duplicates, and the island map's banner and card no longer stretch across wide screens.
+
 ## [1.14.0] - 2026-09-29
 ### Added
 - Android app support: real reminder notifications, Clock alarms, and the phone's share sheet.

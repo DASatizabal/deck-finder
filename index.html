@@ -327,8 +327,6 @@ details.adv summary{cursor:pointer;font-size:15px;font-weight:600;padding:10px 4
 .mk.inarea{box-shadow:0 0 0 1.5px #fff,0 0 0 4.5px var(--ac),0 1px 5px rgba(0,0,0,.35)}
 .svmk.inarea{box-shadow:0 0 0 2px var(--ac),0 1px 3px rgba(0,0,0,.4)}
 .mk.dim,.svmk.dim{opacity:.28}
-.mk.fan-r span{top:50%;left:100%;transform:translateY(-50%);margin:0 0 0 5px}
-.mk.fan-l span{top:50%;left:auto;right:100%;transform:translateY(-50%);margin:0 5px 0 0}
 .arow{display:flex;gap:6px;overflow-x:auto;scrollbar-width:none;padding:1px}
 .arow::-webkit-scrollbar{display:none}
 .abtn{flex:none;padding:7px 11px;border-radius:999px;background:var(--surface);color:var(--ink);border:2px solid var(--ac);font-weight:700;font-size:13px;box-shadow:0 1px 4px rgba(0,0,0,.25);display:flex;align-items:center;gap:6px}
@@ -403,6 +401,33 @@ textarea.search{resize:vertical;min-height:84px}
 .remindbar small{display:block;font-size:13px;opacity:.85}
 .remindbar .go{background:var(--accent);color:var(--accent-ink);border-radius:10px;padding:9px 12px;font-weight:700;flex:none}
 .remindbar .x{padding:8px 10px;font-size:16px;flex:none}
+/* 1.15.0: island category buttons, label placement, map views, compact banner and card */
+.ibanner,.icard,.backpanel{align-self:flex-start;width:100%;max-width:420px}
+.g-land,.g-beach{fill-rule:evenodd}
+.icats{display:flex;gap:5px;overflow-x:auto;scrollbar-width:none;padding:1px}
+.icats::-webkit-scrollbar{display:none}
+.icats .catb{background:var(--surface);box-shadow:0 1px 4px rgba(0,0,0,.25)}
+.icats .catb.on{background:var(--cc)}
+.catb .redx,.catopt .redx{width:20px;height:20px;display:block}
+.icount{align-self:flex-start;background:var(--surface);color:var(--ink);border:2px solid var(--cc);border-radius:999px;padding:5px 12px;font-size:13px;box-shadow:0 1px 6px rgba(0,0,0,.25)}
+.icount[hidden]{display:none}
+.icount b{color:var(--cc)}
+.mk.cathit{z-index:3;box-shadow:0 0 0 2px #fff,0 0 0 6px var(--cc),0 0 16px 7px color-mix(in srgb,var(--cc) 60%,transparent);animation:catring 1.4s ease-in-out 2}
+@keyframes catring{50%{box-shadow:0 0 0 2px #fff,0 0 0 6px var(--cc),0 0 24px 12px color-mix(in srgb,var(--cc) 40%,transparent)}}
+#itram.dim{opacity:.3}
+.mk span.lp,.svmk span.lp{top:0;left:0;right:auto;margin:0}
+.mk span.lhide,.svmk span.lhide{visibility:hidden}
+.itiles{position:absolute;inset:0;overflow:hidden;pointer-events:none;z-index:0}
+.itiles[hidden]{display:none}
+.itiles img{position:absolute;left:0;top:0;transform-origin:0 0;max-width:none;user-select:none;-webkit-user-drag:none}
+.imap.sat #igeo{display:none}
+.imap.sat{background:#0B2233}
+.iopac{align-self:flex-start;display:flex;align-items:center;gap:8px;background:var(--surface);color:var(--ink);border-radius:999px;padding:4px 12px;font-size:13px;font-weight:700;box-shadow:0 1px 6px rgba(0,0,0,.25)}
+.iopac[hidden]{display:none}
+.iopac input{width:140px}
+.zoom.lyr svg{width:20px;height:20px;display:block;margin:auto}
+.catopt[disabled]{opacity:.55}
+.catopt .ci.vimg{font-size:20px}
 @media (prefers-reduced-motion: reduce){*{transition:none!important}.hl{animation:none}}
 </style>
 </head>
@@ -459,22 +484,26 @@ textarea.search{resize:vertical;min-height:84px}
   </div>
   <div class="aboard" id="iAboard" hidden></div>
   <div class="imap" id="imap">
-    <svg id="isvg" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><g id="igeo"></g><g id="iarea"></g><g id="itram"></g><g id="iover"></g></svg>
+    <div class="itiles" id="iTiles" hidden></div>
+    <svg id="isvg" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><defs><clipPath id="iclip"></clipPath></defs><g id="igeo"></g><g id="isign"></g><g id="iarea"></g><g id="itram"></g><g id="iover"></g></svg>
     <div class="imarks" id="imarks"></div>
-    <div class="itopstack"><div class="arow" id="iAreas"></div><div class="inarea-line" id="iInArea" hidden></div><button class="tlegend" id="iTram" hidden></button><div class="ibanner" id="iBanner" hidden></div><div class="recbar" id="iRec" hidden></div></div>
+    <div class="itopstack"><div class="icats" id="iCats" role="toolbar" aria-label="Highlight places"></div><div class="arow" id="iAreas"></div><div class="icount" id="iCount" hidden role="status"></div><div class="inarea-line" id="iInArea" hidden></div><button class="tlegend" id="iTram" hidden></button><div class="ibanner" id="iBanner" hidden></div><div class="recbar" id="iRec" hidden></div></div>
     <div class="itools">
       <button class="zoom" id="iZoomIn" aria-label="Zoom in">+</button>
       <button class="zoom" id="iZoomOut" aria-label="Zoom out">−</button>
       <button class="zoom" id="iLocate" aria-label="Show where I am">◎</button>
+      <button class="zoom lyr" id="iLayers" aria-label="Map view"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><path d="M12 3 2 8l10 5 10-5z"/><path d="m2 12 10 5 10-5"/><path d="m2 16 10 5 10-5"/></svg></button>
     </div>
     <div class="ibottom">
       <div class="icard" id="iCard" hidden></div>
       <div class="backpanel" id="iBackPanel" hidden></div>
+      <div class="iopac" id="iOpac" hidden><label for="iOpacR">Island sign</label><input type="range" id="iOpacR" min="0" max="100" step="5" aria-label="How strongly the island sign shows over the drawn map"></div>
       <div class="iattr" id="iAttr"></div>
       <div class="ibar"><button id="iSpot">Save my spot</button><button id="iTake">Take me back</button><button id="iSurvey">Survey</button></div>
     </div>
     <div class="imsg" id="iMsg" hidden></div>
   </div>
+  <input type="file" id="iSignFile" accept="image/*" hidden>
 </div>
 <div class="sheet" id="islandSheet" role="dialog" aria-label="Island"><div class="scroll" id="islandBody"></div></div>
 <div class="sheet" id="readySheet" role="dialog" aria-label="Ready for sea"><div class="scroll" id="readyBody"></div></div>
@@ -493,7 +522,7 @@ textarea.search{resize:vertical;min-height:84px}
 <div class="toast" id="toast" hidden role="status"></div>
 
 <script>
-const APP_VERSION = "1.14.0";
+const APP_VERSION = "1.15.0";
 const APP_DATE = "2026-09-29";
 
 // ---------- Android app (1.14.0): this web app bundled in Capacitor (the deck-finder-android repo) ----------
@@ -2300,14 +2329,15 @@ function ensurePlace(id){
   const get = f => fetch(e.path + f).then(r => { if (!r.ok) throw new Error(f + " answered " + r.status); return r.json(); });
   placeLoads[id] = (async () => {
     const info = await get("place.json");
-    const [base, pl, sv, ar, tr] = await Promise.all([get(info.basemap), get(info.places), get(info.survey_list),
-      info.areas ? get(info.areas).catch(() => null) : null, info.tram_routes ? get(info.tram_routes).catch(() => null) : null]);
+    const [base, pl, sv, ar, tr, sa] = await Promise.all([get(info.basemap), get(info.places), get(info.survey_list),
+      info.areas ? get(info.areas).catch(() => null) : null, info.tram_routes ? get(info.tram_routes).catch(() => null) : null,
+      info.sign_alignment ? get(info.sign_alignment).catch(() => null) : null]);
     // Since 1.11.1 the files carry display_name (the name without builder notes); the app shows it as name.
     const named = list => (list || []).map(x => Object.assign({}, x, { name: x.display_name || x.name || x.id }));
     const places = named(pl.places), merged = sv.merged || {};
     return (PLACE_DATA[id] = { info, base, places, survey: named(sv.venues), categories: sv.categories || [],
       areas: (ar && Array.isArray(ar.areas) ? ar.areas : []).filter(a => a && a.id && Array.isArray(a.outline) && a.outline.length >= 3),
-      merged, removed: sv.removed || [], trams: buildTrams(tr, places, merged) });
+      merged, removed: sv.removed || [], trams: buildTrams(tr, places, merged), sign: validSignAlignment(sa) });
   })().finally(() => { delete placeLoads[id]; });
   return placeLoads[id];
 }
@@ -2330,7 +2360,7 @@ async function savePlace(id){
     const get = async f => { const r = await fetch(e.path + f + bust, { cache: "no-store" }); if (!r.ok) throw new Error(f + " answered " + r.status); return r; };
     const infoRes = await get("place.json");
     const info = await infoRes.clone().json();
-    const files = await Promise.all([...new Set([info.basemap, info.places, info.survey_list, info.areas, info.tram_routes].filter(Boolean))].map(async f => [f, await get(f)]));
+    const files = await Promise.all([...new Set([info.basemap, info.places, info.survey_list, info.areas, info.tram_routes, info.sign_alignment].filter(Boolean))].map(async f => [f, await get(f)]));
     await caches.delete(placeCacheName(id));
     const c = await caches.open(placeCacheName(id));
     await c.put(absUrl(e.path + "place.json"), infoRes);
@@ -2565,16 +2595,19 @@ function islSetup(d){
   }).join("");
   // The areas on the island sign: a soft tint of each sign color, under the places.
   d.areas.forEach(a => { if (!a.label) a.label = areaLabelPoint(a.outline); });
-  $("iarea").innerHTML = d.areas.map(a => `<path class="a-fill" data-area="${esc(a.id)}" fill="${esc(a.color)}" stroke="${esc(a.color)}" d="${ptsD(a.outline.map(c => [c[1], c[0]])) + "Z"}"/>`).join("");
-  // Dry ground (land, beach and pier outlines as [lat, lon]), for "Open island" away from every area.
+  // Since 1.15.0 the tints are clipped to land and beach, so no area is painted over the water.
+  const dry = (d.base.features || []).filter(f => ["land", "beach"].includes(f.properties?.kind) && f.geometry?.type === "Polygon");
+  $("iclip").innerHTML = dry.map(f => `<path clip-rule="evenodd" d="${f.geometry.coordinates.map(r => ptsD(r) + "Z").join("")}"/>`).join("");
+  $("iarea").innerHTML = `<g${dry.length ? ` clip-path="url(#iclip)"` : ""}>` + d.areas.map(a => `<path class="a-fill" data-area="${esc(a.id)}" fill="${esc(a.color)}" stroke="${esc(a.color)}" d="${ptsD(a.outline.map(c => [c[1], c[0]])) + "Z"}"/>`).join("") + `</g>`;
+  // Dry ground (land, beach and pier shapes, each a list of rings of [lat, lon]), for "Open island"
+  // away from every area. Since 1.15.0 land can have holes (water cut out of it).
   if (!d.ground) d.ground = (d.base.features || []).filter(f => ["land", "beach", "pier"].includes(f.properties?.kind) && f.geometry?.type === "Polygon")
-    .map(f => f.geometry.coordinates[0].map(c => [c[1], c[0]]));
+    .map(f => f.geometry.coordinates.map(r => r.map(c => [c[1], c[0]])));
   renderTrams();
   adoptMerged(isl.id, d);
-  renderAreaRow();
-  const at = d.base.attribution || "© OpenStreetMap contributors";
-  $("iAttr").innerHTML = `<a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">${esc(at)}</a>`;
+  renderAreaRow(); renderIslCats();
   $("iMsg").hidden = true;
+  applyMapView();
   fitIsland();
   renderIslMarks();
   islGpsChanged();
@@ -2609,7 +2642,7 @@ function zoomAt(f, px, py){
 function applyView(){
   if (!isl || !isl.d) return;
   const m = `matrix(${isl.s} 0 0 ${isl.s} ${isl.tx} ${isl.ty})`;
-  ["igeo", "iarea", "itram", "iover"].forEach(g => $(g).setAttribute("transform", m));
+  ["igeo", "isign", "iarea", "itram", "iover"].forEach(g => $(g).setAttribute("transform", m));
   $("imap").classList.toggle("labels", isl.s >= LABEL_S);
   // Area names grow with the zoom, from small on the whole island to large, and hide when tiny.
   $("imarks").style.setProperty("--afs", Math.min(22, Math.max(10, isl.s * 45)).toFixed(1) + "px");
@@ -2619,14 +2652,79 @@ function applyView(){
   const off = fanOut(els, pos);
   const groups = isl.s < ISLAND_OPEN_S ? clusterMarks(els, pos) : [];
   const grouped = new Set(groups.flatMap(g => g.members));
+  const at = pos.map((p, i) => off[i] ? [p[0] + off[i].dx, p[1] + off[i].dy] : p);
   els.forEach((el, i) => {
-    const o = off[i];
-    el.style.transform = `translate(${(pos[i][0] + (o ? o.dx : 0)).toFixed(1)}px,${(pos[i][1] + (o ? o.dy : 0)).toFixed(1)}px)`;
-    el.classList.toggle("fan-r", !!o && o.dx >= -0.5);
-    el.classList.toggle("fan-l", !!o && o.dx < -0.5);
+    el.style.transform = `translate(${at[i][0].toFixed(1)}px,${at[i][1].toFixed(1)}px)`;
     el.classList.toggle("inclu", grouped.has(i));
   });
-  renderBubbles(groups);
+  const bubbles = renderBubbles(groups);
+  placeLabels(els, at, off, grouped, bubbles);
+  renderTiles();
+}
+// ---------- labels that don't pile up (1.15.0) ----------
+// Each label that shows goes below its marker when that spot is free. When it would cover another
+// label, a marker or a bubble, it tries above, then right, left and the four corners, and takes the
+// first free spot, then one row farther above and below. A label with no free spot anywhere hides
+// (its marker stays, and tapping it shows the name), except the selected place and your saved spots.
+// Labels placed first keep their spot: the selected place, your saved spots, lit-up places, tram
+// stops, restrooms and first aid, then the rest in a fixed order, so panning never shuffles them. Fanned-out markers try their
+// outer side first.
+const LABEL_H = 15, LABEL_GAP = 3;
+let labelCtx = null;
+function labelWidth(sp){
+  if (sp.dataset.lw) return +sp.dataset.lw;
+  if (!labelCtx) labelCtx = document.createElement("canvas").getContext("2d");
+  labelCtx.font = "700 11px " + getComputedStyle(sp).fontFamily;
+  const w = Math.min(190, Math.ceil(labelCtx.measureText(sp.textContent).width) + 10);
+  sp.dataset.lw = w;
+  return w;
+}
+function placeLabels(els, pts, off, grouped, bubbles){
+  const on = $("imap").classList.contains("labels"), items = [];
+  els.forEach((el, i) => {
+    const mk = el.classList.contains("mk");
+    if (grouped.has(i) || (!mk && !el.classList.contains("svmk"))) return;
+    const sp = el.querySelector(":scope > span"); if (!sp) return;
+    const spot = el.classList.contains("spotmk");
+    items.push({ el, sp, i, x: pts[i][0], y: pts[i][1], half: spot ? 17 : mk ? 15 : 7, border: mk ? 3 : 2,
+      shown: on || el.classList.contains("sel") || spot });
+  });
+  // Other markers count by their inner part, so a label may touch a neighbor's white rim but not its icon.
+  const marks = items.map(t => { const q = t.half * 0.6; return { l: t.x - q, r: t.x + q, t: t.y - q, b: t.y + q, el: t.el }; });
+  (bubbles || []).forEach(b => marks.push({ l: b.x - 21, r: b.x + 21, t: b.y - 21, b: b.y + 21 }));
+  const has = (t, c) => t.el.classList.contains(c);
+  const rank = t => has(t, "sel") ? 0 : has(t, "spotmk") ? 1 : has(t, "cathit") ? 2 : has(t, "tram") ? 3
+    : ["restroom", "first_aid"].includes(t.el.dataset.cat) ? 4 : 5;
+  const todo = items.filter(t => t.shown).sort((a, b) => rank(a) - rank(b) || (a.el.dataset.k || "").localeCompare(b.el.dataset.k || ""));
+  const over = (a, b) => Math.max(0, Math.min(a.r, b.r) - Math.max(a.l, b.l)) * Math.max(0, Math.min(a.b, b.b) - Math.max(a.t, b.t));
+  const placed = [];
+  todo.forEach(t => {
+    const w = labelWidth(t.sp), h = LABEL_H, m = t.half, g = LABEL_GAP, x = t.x, y = t.y, c = m * 0.6;
+    const spots = { b: [x - w / 2, y + m + g], a: [x - w / 2, y - m - g - h], r: [x + m + g + 2, y - h / 2], l: [x - m - g - 2 - w, y - h / 2],
+      br: [x + c, y + m + g], bl: [x - c - w, y + m + g], ar: [x + c, y - m - g - h], al: [x - c - w, y - m - g - h],
+      b2: [x - w / 2, y + m + g + h + 1], a2: [x - w / 2, y - m - g - 2 * h - 1], br2: [x + c, y + m + g + h + 1], bl2: [x - c - w, y + m + g + h + 1],
+      ar2: [x + c, y - m - g - 2 * h - 1], al2: [x - c - w, y - m - g - 2 * h - 1] };
+    const o = off[t.i], side = o && Math.abs(o.dx) > 0.5 ? (o.dx > 0 ? "r" : "l") : null;
+    const order = (side === "r" ? ["r", "br", "ar", "b", "a", "l", "bl", "al"] : side === "l" ? ["l", "bl", "al", "b", "a", "r", "br", "ar"]
+      : ["b", "a", "r", "l", "br", "bl", "ar", "al"]).concat(["b2", "a2", "br2", "bl2", "ar2", "al2"]);
+    let best = null;
+    for (const k of order){
+      const rect = { l: spots[k][0], r: spots[k][0] + w, t: spots[k][1], b: spots[k][1] + h };
+      let cost = 0;
+      placed.forEach(p => { cost += over(rect, p); });
+      marks.forEach(q => { if (q.el !== t.el) cost += over(rect, q); });
+      if (!best || cost < best.cost - 0.5) best = { k, rect, cost };
+      if (!cost) break;
+    }
+    const hide = best.cost > 4 && rank(t) > 1;
+    t.sp.classList.toggle("lhide", hide);
+    if (hide){ t.el.dataset.lab = "hidden"; return; }
+    placed.push(best.rect);
+    // The label sits inside the marker's box, whose inner corner is half a marker up and left of its center.
+    t.sp.classList.add("lp");
+    t.sp.style.transform = `translate(${(best.rect.l - (x - m + t.border)).toFixed(1)}px,${(best.rect.t - (y - m + t.border)).toFixed(1)}px)`;
+    t.el.dataset.lab = best.k;
+  });
 }
 // ---------- grouping markers into numbered bubbles when zoomed out (1.12.0) ----------
 // Below the zoom the map opens at on the island, place markers of the same area that overlap on
@@ -2635,8 +2733,9 @@ function applyView(){
 const ISLAND_OPEN_S = 1.2;   // the zoom the map opens at when you're on the island (1.2 pixels per meter)
 const CLUSTER_PX = 36;       // markers whose centers are closer than this on screen merge
 function clusterMarks(els, pos){
+  // Places lit up by a category button never merge either (1.15.0), so each glowing ring shows.
   const idx = els.map((el, i) => el.classList.contains("mk") && !el.classList.contains("spotmk") && !el.classList.contains("tram")
-    && el.dataset.k !== isl.sel && el.dataset.k !== isl.hot ? i : -1).filter(i => i >= 0);
+    && !el.classList.contains("cathit") && el.dataset.k !== isl.sel && el.dataset.k !== isl.hot ? i : -1).filter(i => i >= 0);
   const parent = new Map(idx.map(i => [i, i]));
   const root = i => { while (parent.get(i) !== i) i = parent.get(i); return i; };
   for (let a = 0; a < idx.length; a++) for (let b = a + 1; b < idx.length; b++){
@@ -2655,14 +2754,14 @@ function clusterMarks(els, pos){
 function renderBubbles(groups){
   const box = $("imarks");
   $("imap").classList.toggle("clustered", groups.length > 0);
-  const sig = groups.map(g => g.key).join("||") + "#" + (isl.areaFilter || "");
+  const sig = groups.map(g => g.key).join("||") + "#" + (isl.areaFilter || "") + "#" + (isl.cat || "");
   if (box.dataset.sig !== sig){
     box.querySelectorAll(".mkc").forEach(x => x.remove());
     box.dataset.sig = sig;
     groups.forEach(g => {
       const a = areaOf(g.area), n = g.members.length;
       const b = document.createElement("button");
-      b.className = "mkc" + (isl.areaFilter && g.area !== isl.areaFilter ? " dim" : "");
+      b.className = "mkc" + ((isl.areaFilter && g.area !== isl.areaFilter) || isl.cat ? " dim" : "");
       b.dataset.group = g.key;
       if (a) b.style.setProperty("--ac", a.color);
       b.textContent = n;
@@ -2671,7 +2770,7 @@ function renderBubbles(groups){
       box.appendChild(b);
     });
   }
-  if (!groups.length) return;
+  if (!groups.length) return [];
   const hideNames = $("imap").classList.contains("nolabels");
   const labels = hideNames ? [] : [...box.querySelectorAll(".alabel")].map(l => {
     const sp = l.firstElementChild, [x, y] = toScreen(+l.dataset.lat, +l.dataset.lon);
@@ -2696,6 +2795,7 @@ function renderBubbles(groups){
     const el = box.querySelector(`.mkc[data-group="${CSS.escape(g.key)}"]`);
     if (el) el.style.transform = `translate(${at[i].x.toFixed(1)}px,${at[i].y.toFixed(1)}px) translate(-50%,-50%)`;
   });
+  return at;
 }
 // Tapping a bubble zooms in, centered on its places, until they separate. When the group is too
 // spread out to fit on screen at that zoom, it zooms only as far as keeps them all on screen, and
@@ -2779,13 +2879,19 @@ function renderIslMarks(){
   // Each marker keeps its category color and icon, with an outline in its area's color (1.11.1).
   const ac = v => { const a = areaOf(v.area_id); return a ? `;--ac:${esc(a.color)}` : ""; };
   const ain = (v, k) => (areaOf(v.area_id) ? " inarea" : "") + (af && v.area_id !== af && sel !== k ? " dim" : "");
+  // A lit-up category (1.15.0): its places glow, everything else dims (the selected place stays bright).
+  const ch = islCat(isl.cat);
+  const pin = (p, k) => (areaOf(p.area_id) ? " inarea" : "") + (ch && catHit(p) ? " cathit" : (ch || (af && p.area_id !== af)) && sel !== k ? " dim" : "");
+  const sdim = k => ch && sel !== k ? " dim" : "";
+  $("imarks").style.setProperty("--cc", ch ? ch.color : "transparent");
+  $("itram").classList.toggle("dim", !!ch && ch.key !== "tram");
   let h = d.areas.map(a => `<button class="alabel${af && af !== a.id ? " dim" : ""}" data-area="${esc(a.id)}" data-lat="${a.label.lat}" data-lon="${a.label.lon}" style="--ac:${esc(a.color)}" aria-label="Area: ${esc(a.name)}"><span>${esc(a.name)}</span></button>`).join("");
   // Tram stops carry their stop number in a badge and never merge into bubbles (1.13.0).
   const tram = p => p.category === "tram" && typeof p.stop_number === "number";
-  h += d.places.map(p => `<button class="mk${p.approximate ? " approx" : ""}${tram(p) ? " tram" : ""}${ain(p, "place:" + p.id)}${cls("place:" + p.id)}" data-k="place:${esc(p.id)}" data-area="${esc(p.area_id || "")}" data-lat="${p.lat}" data-lon="${p.lon}" style="--c:${cat(p.category).color}${ac(p)}" aria-label="${esc(placeLabel(p))}"><i>${cat(p.category).icon}</i>${tram(p) ? `<b class="snum">${p.stop_number}</b>` : ""}<span>${esc(placeLabel(p))}</span></button>`).join("");
+  h += d.places.map(p => `<button class="mk${p.approximate ? " approx" : ""}${tram(p) ? " tram" : ""}${pin(p, "place:" + p.id)}${cls("place:" + p.id)}" data-k="place:${esc(p.id)}" data-cat="${esc(p.category || "")}" data-area="${esc(p.area_id || "")}" data-lat="${p.lat}" data-lon="${p.lon}" style="--c:${cat(p.category).color}${ac(p)}" aria-label="${esc(placeLabel(p))}"><i>${cat(p.category).icon}</i>${tram(p) ? `<b class="snum">${p.stop_number}</b>` : ""}<span>${esc(placeLabel(p))}</span></button>`).join("");
   d.survey.forEach(v => { const r = S.venues[v.id]; if (r && typeof r.lat === "number")
-    h += `<button class="svmk${ain(v, "tag:" + v.id)}${cls("tag:" + v.id)}" data-k="tag:${esc(v.id)}" data-lat="${r.lat}" data-lon="${r.lon}" style="--c:${cat(v.category).color}${ac(v)}" aria-label="Survey: ${esc(r.rename || v.name)}"><span>${esc(r.rename || v.name)}</span></button>`; });
-  S.added.forEach(a => { h += `<button class="svmk new${cls("new:" + a.id)}" data-k="new:${esc(a.id)}" data-lat="${a.lat}" data-lon="${a.lon}" aria-label="New place: ${esc(a.name)}"><span>${esc(a.name)}</span></button>`; });
+    h += `<button class="svmk${ain(v, "tag:" + v.id)}${sdim("tag:" + v.id)}${cls("tag:" + v.id)}" data-k="tag:${esc(v.id)}" data-lat="${r.lat}" data-lon="${r.lon}" style="--c:${cat(v.category).color}${ac(v)}" aria-label="Survey: ${esc(r.rename || v.name)}"><span>${esc(r.rename || v.name)}</span></button>`; });
+  S.added.forEach(a => { h += `<button class="svmk new${sdim("new:" + a.id)}${cls("new:" + a.id)}" data-k="new:${esc(a.id)}" data-lat="${a.lat}" data-lon="${a.lon}" aria-label="New place: ${esc(a.name)}"><span>${esc(a.name)}</span></button>`; });
   islSpots().forEach(s => { h += `<button class="mk spotmk${cls("spot:" + s.id)}" data-k="spot:${esc(s.id)}" data-lat="${s.lat}" data-lon="${s.lon}" aria-label="Saved spot: ${esc(s.name)}"><i>⭐</i><span>${esc(s.name)}</span></button>`; });
   h += `<div class="me" id="iMe" hidden></div>`;
   $("imarks").innerHTML = h; delete $("imarks").dataset.sig;   // the bubbles are drawn again too
@@ -2793,7 +2899,7 @@ function renderIslMarks(){
   $("imarks").querySelectorAll(".alabel").forEach(b => b.onclick = e => { e.stopPropagation(); openAreaCard(b.dataset.area); });
   $("iarea").querySelectorAll("[data-area]").forEach(el => el.classList.toggle("dim", !!af && el.dataset.area !== af));
   $("iarea").querySelectorAll("[data-area]").forEach(el => el.classList.toggle("on", el.dataset.area === af));
-  updateMe(); applyView(); drawOverlay(); renderCard(); renderInArea();
+  updateMe(); applyView(); drawOverlay(); renderCard(); renderInArea(); renderIslCount();
 }
 function markInfo(k){
   if (!isl?.d || !k) return null;
@@ -2963,6 +3069,8 @@ function inOutline(lat, lon, o){
   }
   return inside;
 }
+// Inside a shape with holes: inside an odd number of its rings.
+const inRings = (lat, lon, rings) => rings.filter(r => inOutline(lat, lon, r)).length % 2 === 1;
 // Meters from a point to an outline's edge.
 function metersToOutline(lat, lon, o){
   const kx = 111320 * Math.cos(rad(lat)), ky = 110574;
@@ -3000,7 +3108,7 @@ function areaAt(f){
   let best = null, bestM = Infinity;
   areas.forEach(a => { const m = metersToOutline(f.lat, f.lon, a.outline); if (m < bestM){ bestM = m; best = a; } });
   if (best && bestM <= NEAR_AREA_M) return { area: best, inside: false };
-  return (isl.d.ground || []).some(o => inOutline(f.lat, f.lon, o)) ? { open: true } : null;
+  return (isl.d.ground || []).some(rings => inRings(f.lat, f.lon, rings)) ? { open: true } : null;
 }
 function renderInArea(){
   const el = $("iInArea"); if (!el) return;
@@ -3054,6 +3162,358 @@ function adoptMerged(placeId, d){
   });
   if (changed) saveSurvey();
 }
+
+// ---------- island category buttons (1.15.0), like the ones on the deck plans ----------
+// Each button maps to the places' "category" in places.json. Rentals are the activities whose name
+// says Rental; Activities are the rest. Landmarks and piers have no button. One category is on at a
+// time, in memory only. With an area button on too, only that area's places light up and count.
+const RED_CROSS = `<svg class="redx" viewBox="0 0 24 24" aria-hidden="true"><rect x="1" y="1" width="22" height="22" rx="5" fill="#fff"/><path fill="#D32F2F" d="M9.5 3.5h5v6h6v5h-6v6h-5v-6h-6v-5h6z"/></svg>`;
+const isRental = p => /\brentals?\b/i.test(p.name || "");
+const ISL_CATS = [
+  { key: "restroom", label: "Restrooms", one: "restroom", many: "restrooms", icon: "🚻", color: "#34495E", main: true, test: p => p.category === "restroom" },
+  { key: "bar", label: "Bars", one: "bar", many: "bars", icon: "🍹", color: "#C0392B", main: true, test: p => p.category === "bar" },
+  { key: "food", label: "Food", one: "place to eat", many: "places to eat", icon: "🍴", color: "#E67E22", main: true, test: p => p.category === "food" },
+  { key: "tram", label: "Tram stops", one: "tram stop", many: "tram stops", icon: "🚋", color: "#8E44AD", main: true, test: p => p.category === "tram" },
+  { key: "pool", label: "Pools", one: "pool", many: "pools", icon: "🏊", color: "#2980B9", main: true, test: p => p.category === "pool" },
+  { key: "beach", label: "Beaches", one: "beach", many: "beaches", icon: "🏖️", color: "#C9A227", main: true, test: p => p.category === "beach" },
+  { key: "first_aid", label: "First aid", one: "first aid station", many: "first aid stations", icon: RED_CROSS, color: "#D32F2F", test: p => p.category === "first_aid" },
+  { key: "shop", label: "Shops", one: "shop", many: "shops", icon: "🛍️", color: "#9B59B6", test: p => p.category === "shop" },
+  { key: "activity", label: "Activities", one: "activity", many: "activities", icon: "🎯", color: "#27AE60", test: p => p.category === "activity" && !isRental(p) },
+  { key: "cabana", label: "Cabanas", one: "cabana or villa", many: "cabanas and villas", icon: "⛱️", color: "#16A085", test: p => p.category === "cabana" },
+  { key: "rental", label: "Rentals", one: "rental", many: "rentals", icon: "🛟", color: "#0E7C86", test: p => p.category === "activity" && isRental(p) },
+];
+const islCat = k => ISL_CATS.find(c => c.key === k) || null;
+const catHit = p => { const c = islCat(isl?.cat); return !!c && c.test(p) && (!isl.areaFilter || p.area_id === isl.areaFilter); };
+const islCatCount = (c, area) => (isl?.d?.places || []).filter(p => c.test(p) && (!area || p.area_id === area)).length;
+function renderIslCats(){
+  if (!isl || !isl.d) return;
+  const bar = $("iCats"), c = islCat(isl.cat), more = c && !c.main ? c : null;
+  bar.innerHTML = ISL_CATS.filter(x => x.main).map(x => `<button class="catb${isl.cat === x.key ? " on" : ""}" data-icat="${x.key}" style="--cc:${x.color}" aria-label="${esc(x.label)}" aria-pressed="${isl.cat === x.key}" title="${esc(x.label)}">${x.icon}</button>`).join("")
+    + `<button class="catb more${more ? " on" : ""}" id="iCatMore" style="--cc:${more ? more.color : "var(--ink)"}" aria-label="More: first aid, shops, activities, cabanas, rentals" aria-pressed="${!!more}">${more ? more.icon : ""}<small>More</small></button>`;
+  bar.querySelectorAll("[data-icat]").forEach(b => b.onclick = e => { e.stopPropagation(); setIslCat(b.dataset.icat); });
+  $("iCatMore").onclick = e => { e.stopPropagation(); openIslCatMore(); };
+  renderIslCount();
+}
+function renderIslCount(){
+  const el = $("iCount"), c = isl && islCat(isl.cat);
+  el.hidden = !c; if (!c) return;
+  const a = areaOf(isl.areaFilter), n = islCatCount(c, isl.areaFilter);
+  el.style.setProperty("--cc", c.color);
+  el.innerHTML = n ? `<b>${n} ${esc(n === 1 ? c.one : c.many)}</b> ${a ? "in " + esc(a.name) : "on the island"}`
+    : `No ${esc(c.many)} ${a ? "in " + esc(a.name) : "on the map yet"}`;
+}
+function setIslCat(key){
+  if (!isl || !isl.d) return;
+  isl.cat = isl.cat === key ? null : key;
+  closeSheets(); renderIslCats(); renderIslMarks();
+}
+function openIslCatMore(){
+  if (!isl || !isl.d) return;
+  const a = areaOf(isl.areaFilter);
+  islandSheet(`<h3>More to highlight</h3>
+    ${ISL_CATS.filter(c => !c.main).map(c => {
+      const n = islCatCount(c, isl.areaFilter);
+      return `<button class="catopt${isl.cat === c.key ? " cur" : ""}" data-icat="${c.key}" style="--cc:${c.color}" aria-pressed="${isl.cat === c.key}"><span class="ci">${c.icon}</span>
+        <span class="grow"><b>${esc(c.label)}</b><small>${n ? n + " " + esc(n === 1 ? c.one : c.many) : "None"}${a ? " in " + esc(a.name) : " on the island"}</small></span></button>`;
+    }).join("")}
+    ${islCat(isl.cat) && !islCat(isl.cat).main ? `<button class="btn ghost" id="icOff">Turn off the highlight</button>` : ""}
+    <button class="btn ghost" id="icClose">Close</button>`);
+  $("islandBody").querySelectorAll("[data-icat]").forEach(b => b.onclick = () => setIslCat(b.dataset.icat));
+  if ($("icOff")) $("icOff").onclick = () => setIslCat(isl.cat);
+  $("icClose").onclick = closeSheets;
+}
+
+// ---------- map views (1.15.0): the drawn map, satellite, and the island sign ----------
+// The choice is remembered in state.islView. Satellite needs internet; its tiles are never saved for
+// offline (sw.js leaves other websites alone). The island sign is each phone's own copy of the image,
+// kept in IndexedDB on that phone, laid over the drawn map with sign-alignment.json.
+const SAT = {
+  // EOxCloudless (Sentinel-2 cloudless 2025) by EOX: free for non-commercial use with this credit shown.
+  url: (z, x, y) => `https://tiles.maps.eox.at/wmts/1.0.0/s2cloudless-2025_3857/default/g/${z}/${y}/${x}.jpg`,
+  maxZ: 16,
+  credit: `<a href="https://cloudless.eox.at" target="_blank" rel="noopener">EOxCloudless</a> by EOX IT Services GmbH (Contains modified Copernicus Sentinel data 2025)`,
+};
+const signs = {};   // place id -> { has, url, box, loading, failed }
+const sg = id => signs[id] || (signs[id] = {});
+const islViewWanted = () => ["drawn", "sat", "sign"].includes(state.islView) ? state.islView : "drawn";
+function islViewNow(){
+  const v = islViewWanted();
+  if (v === "sat") return navigator.onLine ? "sat" : "drawn";
+  if (v === "sign") return isl?.d?.sign && sg(isl.id).url ? "sign" : "drawn";
+  return "drawn";
+}
+const signOpacity = () => Number.isFinite(state.signOpacity) ? Math.min(100, Math.max(0, state.signOpacity)) : 70;
+function applyMapView(){
+  if (!isl || !isl.d) return;
+  const v = islViewNow(), S = sg(isl.id);
+  $("imap").classList.toggle("sat", v === "sat");
+  if (v === "sign"){
+    const [x, y, w, h] = S.box;
+    $("isign").innerHTML = `<image href="${S.url}" x="${x.toFixed(1)}" y="${y.toFixed(1)}" width="${w.toFixed(1)}" height="${h.toFixed(1)}" preserveAspectRatio="none"/>`;
+    $("isign").style.opacity = signOpacity() / 100;
+  } else $("isign").innerHTML = "";
+  $("iOpac").hidden = v !== "sign"; $("iOpacR").value = signOpacity();
+  if (v !== "sat"){ $("iTiles").hidden = true; $("iTiles").innerHTML = ""; tiles.clear(); }
+  const osm = `<a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">${esc(isl.d.base.attribution || "© OpenStreetMap contributors")}</a>`;
+  $("iAttr").innerHTML = v === "sat" ? SAT.credit + " · " + osm : osm + (v === "sign" ? " · Island sign: your own copy" : "");
+  applyView();
+  if (islViewWanted() === "sign" && isl.d.sign && !S.url && !S.loading && S.has !== false) loadSign();
+}
+$("iOpacR").oninput = e => { state.signOpacity = +e.target.value; $("isign").style.opacity = signOpacity() / 100; save(); };
+window.addEventListener("online", () => applyMapView());
+window.addEventListener("offline", () => applyMapView());
+
+// Satellite tiles (Web Mercator) placed on the app's own map. Over an island this small, the map's
+// straight latitude scale and Mercator differ by well under a meter.
+const tiles = new Map();   // "z/x/y" -> <img>
+let satWarned = false;
+function renderTiles(){
+  if (!isl || !isl.d || islViewNow() !== "sat") return;
+  const box = $("iTiles"); box.hidden = false;
+  const { w, h } = mapSize();
+  const z = Math.max(3, Math.min(SAT.maxZ, Math.ceil(Math.log2(156543.034 * Math.cos(rad(isl.lat0)) * isl.s))));
+  const n = 2 ** z;
+  const ll = (sx, sy) => ({ lon: isl.lon0 + (sx - isl.tx) / isl.s / isl.kx, lat: isl.lat0 - (sy - isl.ty) / isl.s / isl.ky });
+  const tx = lon => Math.floor((lon + 180) / 360 * n), ty = lat => Math.floor((1 - Math.asinh(Math.tan(rad(lat))) / Math.PI) / 2 * n);
+  const lonOf = (x, zz) => x / 2 ** zz * 360 - 180, latOf = (y, zz) => Math.atan(Math.sinh(Math.PI * (1 - 2 * y / 2 ** zz))) * 180 / Math.PI;
+  const a = ll(0, 0), b = ll(w, h);
+  const x0 = tx(a.lon), x1 = tx(b.lon), y0 = Math.max(0, ty(a.lat)), y1 = Math.min(n - 1, ty(b.lat));
+  if ((x1 - x0 + 1) * (y1 - y0 + 1) > 120) return;
+  const want = new Set();
+  let ready = true;
+  for (let x = x0; x <= x1; x++) for (let y = y0; y <= y1; y++){
+    const key = z + "/" + x + "/" + y; want.add(key);
+    let img = tiles.get(key);
+    if (!img){
+      img = new Image(); img.alt = ""; img.decoding = "async"; img.draggable = false; img.style.width = img.style.height = "256px";
+      img.onload = () => { img.dataset.ok = "1"; renderTiles(); };
+      img.onerror = () => { img.dataset.ok = "0"; if (!satWarned){ satWarned = true; toast("Satellite pictures didn't load. Check the internet connection.", true); } };
+      img.src = SAT.url(z, x, y); img.dataset.z = z;
+      tiles.set(key, img); box.appendChild(img);
+    }
+    if (!img.dataset.ok) ready = false;
+  }
+  // Tiles of the last zoom stay underneath until the new ones have loaded, so the map never flashes empty.
+  tiles.forEach((img, key) => {
+    const [zz, x, y] = key.split("/").map(Number);
+    const [sx0, sy0] = toScreen(latOf(y, zz), lonOf(x, zz)), [sx1, sy1] = toScreen(latOf(y + 1, zz), lonOf(x + 1, zz));
+    const seen = sx1 > 0 && sy1 > 0 && sx0 < w && sy0 < h;
+    if (!want.has(key) && (ready || !seen || zz === z)){ img.remove(); tiles.delete(key); return; }
+    img.style.zIndex = zz === z ? 2 : 1;
+    img.style.transform = `translate(${sx0.toFixed(1)}px,${sy0.toFixed(1)}px) scale(${((sx1 - sx0 + 0.5) / 256).toFixed(5)},${((sy1 - sy0 + 0.5) / 256).toFixed(5)})`;
+  });
+}
+
+// The island sign: alignment from sign-alignment.json, the image from this phone's IndexedDB.
+function validSignAlignment(a){
+  const okPair = p => p && [p.x, p.y, p.lat, p.lon].every(Number.isFinite);
+  if (!a || !Array.isArray(a.pairs) || a.pairs.filter(okPair).length < 3) return null;
+  const im = a.image || {}, mp = a.map_panel || {}, pr = a.projection || {};
+  if (!(im.width > 0 && im.height > 0) || !/^[0-9a-f]{64}$/.test(im.fingerprint?.value || "")) return null;
+  if (![mp.x0, mp.y0, mp.x1, mp.y1, pr.lat0, pr.lon0].every(Number.isFinite)) return null;
+  return Object.assign({}, a, { pairs: a.pairs.filter(okPair) });
+}
+// Thin-plate spline, the same transform as the builder's place editor (fitted on kilometers).
+function solveLin(A, B){
+  const n = A.length, m = B[0].length, M = A.map((row, i) => row.concat(B[i]));
+  for (let c = 0; c < n; c++){
+    let p = c;
+    for (let r = c + 1; r < n; r++) if (Math.abs(M[r][c]) > Math.abs(M[p][c])) p = r;
+    if (Math.abs(M[p][c]) < 1e-12) throw new Error("singular");
+    [M[c], M[p]] = [M[p], M[c]];
+    for (let r = 0; r < n; r++){
+      if (r === c) continue;
+      const f = M[r][c] / M[c][c];
+      if (f) for (let k = c; k < n + m; k++) M[r][k] -= f * M[c][k];
+    }
+  }
+  return M.map((row, i) => row.slice(n).map(x => x / row[i]));
+}
+const tpsU = r2 => r2 === 0 ? 0 : 0.5 * r2 * Math.log(r2);
+function fitTPS(src, dst){
+  const n = src.length, A = [], B = [];
+  const d2 = (a, b) => (a[0] - b[0]) ** 2 + (a[1] - b[1]) ** 2;
+  for (let i = 0; i < n; i++){ A.push([...src.map(q => tpsU(d2(src[i], q))), 1, src[i][0], src[i][1]]); B.push([dst[i][0], dst[i][1]]); }
+  for (let k = 0; k < 3; k++){ A.push([...src.map(q => k === 0 ? 1 : q[k - 1]), 0, 0, 0]); B.push([0, 0]); }
+  const X = solveLin(A, B);
+  return p => {
+    const out = [X[n][0] + X[n + 1][0] * p[0] + X[n + 2][0] * p[1], X[n][1] + X[n + 1][1] * p[0] + X[n + 2][1] * p[1]];
+    for (let q = 0; q < n; q++){ const u = tpsU(d2(p, src[q])); out[0] += X[q][0] * u; out[1] += X[q][1] * u; }
+    return out;
+  };
+}
+// Draw the sign image bent onto the map, once, into a picture in map meters (about 1.5 m per pixel).
+async function warpSign(img, a){
+  const W = img.naturalWidth || img.width, H = img.naturalHeight || img.height, k = W / a.image.width;
+  const pr = a.projection, kx0 = (pr.m_per_deg_lon_at_equator || 111320) * Math.cos(rad(pr.lat0)), ky0 = pr.m_per_deg_lat || 110574;
+  const src = a.pairs.map(p => [p.x / 1000, p.y / 1000]);
+  const dst = a.pairs.map(p => [(p.lon - pr.lon0) * kx0 / 1000, (p.lat - pr.lat0) * ky0 / 1000]);
+  const fwd = fitTPS(src, dst), inv = fitTPS(dst, src);
+  const toMap = (x, y) => { const m = fwd([x / 1000, y / 1000]); return proj(pr.lat0 + m[1] * 1000 / ky0, pr.lon0 + m[0] * 1000 / kx0); };
+  const P = a.map_panel;
+  let bx0 = Infinity, by0 = Infinity, bx1 = -Infinity, by1 = -Infinity;
+  for (let i = 0; i <= 40; i++){
+    const fx = P.x0 + (P.x1 - P.x0) * i / 40, fy = P.y0 + (P.y1 - P.y0) * i / 40;
+    [toMap(fx, P.y0), toMap(fx, P.y1), toMap(P.x0, fy), toMap(P.x1, fy)].forEach(([x, y]) => {
+      bx0 = Math.min(bx0, x); by0 = Math.min(by0, y); bx1 = Math.max(bx1, x); by1 = Math.max(by1, y); });
+  }
+  let res = 1.5;
+  while ((bx1 - bx0) / res * (by1 - by0) / res > 6e6) res *= 1.2;
+  const cw = Math.ceil((bx1 - bx0) / res), ch = Math.ceil((by1 - by0) / res);
+  const sc = document.createElement("canvas"); sc.width = W; sc.height = H;
+  const sx = sc.getContext("2d"); sx.drawImage(img, 0, 0);
+  const sd = sx.getImageData(0, 0, W, H).data;
+  // The inverse transform on a coarse grid (every 8 pixels), filled in between: the spline is smooth.
+  const G = 8, gw = Math.ceil(cw / G) + 1, gh = Math.ceil(ch / G) + 1, gx = new Float32Array(gw * gh), gy = new Float32Array(gw * gh);
+  for (let j = 0; j < gh; j++) for (let i = 0; i < gw; i++){
+    const X = bx0 + i * G * res, Y = by0 + j * G * res, lat = isl.lat0 - Y / isl.ky, lon = isl.lon0 + X / isl.kx;
+    const q = inv([(lon - pr.lon0) * kx0 / 1000, (lat - pr.lat0) * ky0 / 1000]);
+    gx[j * gw + i] = q[0] * 1000 * k; gy[j * gw + i] = q[1] * 1000 * k;
+  }
+  const oc = document.createElement("canvas"); oc.width = cw; oc.height = ch;
+  const ox = oc.getContext("2d"), out = ox.createImageData(cw, ch), od = out.data;
+  const px0 = P.x0 * k, py0 = P.y0 * k, px1 = Math.min(W, P.x1 * k), py1 = Math.min(H, P.y1 * k);
+  for (let y = 0; y < ch; y++){
+    const gj = Math.min(gh - 2, Math.floor(y / G)), fy = y / G - gj;
+    for (let x = 0; x < cw; x++){
+      const gi = Math.min(gw - 2, Math.floor(x / G)), fx = x / G - gi, o = gj * gw + gi;
+      const u = (gx[o] * (1 - fx) + gx[o + 1] * fx) * (1 - fy) + (gx[o + gw] * (1 - fx) + gx[o + gw + 1] * fx) * fy;
+      const v = (gy[o] * (1 - fx) + gy[o + 1] * fx) * (1 - fy) + (gy[o + gw] * (1 - fx) + gy[o + gw + 1] * fx) * fy;
+      if (u < px0 || v < py0 || u >= px1 - 1 || v >= py1 - 1) continue;
+      const ui = u | 0, vi = v | 0, du = u - ui, dv = v - vi, t = (y * cw + x) * 4;
+      for (let c = 0; c < 3; c++){
+        const s0 = (vi * W + ui) * 4 + c;
+        od[t + c] = (sd[s0] * (1 - du) + sd[s0 + 4] * du) * (1 - dv) + (sd[s0 + W * 4] * (1 - du) + sd[s0 + W * 4 + 4] * du) * dv;
+      }
+      od[t + 3] = 255;
+    }
+  }
+  ox.putImageData(out, 0, 0);
+  const blob = await new Promise(r => oc.toBlob(r, "image/png"));
+  return { url: URL.createObjectURL(blob), box: [bx0, by0, cw * res, ch * res] };
+}
+// The fingerprint of an image, the same way as tools/make_sign_alignment.py: gray on white, a grid of
+// 17 by 16 averages, one bit per neighbor pair in each row.
+function signHash(img){
+  const W0 = img.naturalWidth || img.width, H0 = img.naturalHeight || img.height, f = Math.min(1, 1500 / W0);
+  const W = Math.max(17, Math.round(W0 * f)), H = Math.max(16, Math.round(H0 * f));
+  const c = document.createElement("canvas"); c.width = W; c.height = H;
+  const x = c.getContext("2d"); x.fillStyle = "#fff"; x.fillRect(0, 0, W, H); x.drawImage(img, 0, 0, W, H);
+  const d = x.getImageData(0, 0, W, H).data, sum = new Float64Array(16 * 17), cnt = new Float64Array(16 * 17);
+  for (let yy = 0; yy < H; yy++){
+    const rr = Math.min(15, Math.ceil(16 * (yy + 1) / H) - 1);   // the row whose first pixel is floor(r * H / 16)
+    for (let xx = 0; xx < W; xx++){
+      const cc = Math.min(16, Math.ceil(17 * (xx + 1) / W) - 1), i = (yy * W + xx) * 4, o = rr * 17 + cc;
+      sum[o] += (d[i] * 299 + d[i + 1] * 587 + d[i + 2] * 114) / 1000; cnt[o]++;
+    }
+  }
+  let bits = "";
+  for (let r = 0; r < 16; r++) for (let cc = 0; cc < 16; cc++) bits += sum[r * 17 + cc] / cnt[r * 17 + cc] > sum[r * 17 + cc + 1] / cnt[r * 17 + cc + 1] ? "1" : "0";
+  let hex = ""; for (let i = 0; i < 256; i += 4) hex += parseInt(bits.slice(i, i + 4), 2).toString(16);
+  return hex;
+}
+const hexBits = (a, b) => { let n = 0; for (let i = 0; i < a.length; i++){ let v = parseInt(a[i], 16) ^ parseInt(b[i], 16); while (v){ n += v & 1; v >>= 1; } } return n; };
+// IndexedDB "deckfinder-sign", store "images": { data (ArrayBuffer), type, w, h, saved } per island id.
+function signDb(){
+  return new Promise((ok, bad) => {
+    if (!("indexedDB" in window)) return bad(new Error("no IndexedDB"));
+    const r = indexedDB.open("deckfinder-sign", 1);
+    r.onupgradeneeded = () => r.result.createObjectStore("images");
+    r.onsuccess = () => ok(r.result); r.onerror = () => bad(r.error);
+  });
+}
+async function signStore(mode, id, val){
+  const db = await signDb();
+  try {
+    return await new Promise((ok, bad) => {
+      const tx = db.transaction("images", mode === "get" ? "readonly" : "readwrite"), st = tx.objectStore("images");
+      const r = mode === "get" ? st.get(id) : mode === "put" ? st.put(val, id) : st.delete(id);
+      r.onsuccess = () => ok(r.result); r.onerror = () => bad(r.error);
+    });
+  } finally { db.close(); }
+}
+const loadImg = url => new Promise((ok, bad) => { const i = new Image(); i.onload = () => ok(i); i.onerror = () => bad(new Error("not an image")); i.src = url; });
+async function loadSign(){
+  const id = isl?.id, a = isl?.d?.sign; if (!id || !a) return;
+  const S = sg(id); S.loading = true;
+  try {
+    const rec = await signStore("get", id);
+    S.has = !!rec;
+    if (rec){
+      const url = URL.createObjectURL(new Blob([rec.data], { type: rec.type || "image/webp" }));
+      try { Object.assign(S, await warpSign(await loadImg(url), a)); } finally { URL.revokeObjectURL(url); }
+    }
+  } catch (e) { S.failed = true; }
+  S.loading = false;
+  if (isl && isl.id === id) applyMapView();
+}
+async function checkSignStored(){
+  const id = isl?.id; if (!id || !isl.d || !isl.d.sign || sg(id).has !== undefined) return;
+  try { sg(id).has = !!(await signStore("get", id)); } catch (e) { sg(id).has = false; }
+}
+function setIslView(v){
+  state.islView = v; save(); closeSheets(); applyMapView();
+}
+function openMapViews(){
+  if (!isl || !isl.d) return;
+  const v = islViewWanted(), on = navigator.onLine, a = isl.d.sign, S = sg(isl.id);
+  const opt = (k, icon, title, sub, off) => `<button class="catopt${v === k ? " cur" : ""}" data-view="${k}" style="--cc:var(--accent)" aria-pressed="${v === k}"${off ? " disabled" : ""}><span class="ci vimg">${icon}</span><span class="grow"><b>${title}</b><small>${sub}</small></span></button>`;
+  islandSheet(`<h3>Map view</h3>
+    ${opt("drawn", "🗺️", "Drawn map", "Works with no internet. Drawn from OpenStreetMap.")}
+    ${opt("sat", "🛰️", "Satellite", on ? "Needs internet. Pictures from space, blurry when you zoom in close." : "Needs internet" + (v === "sat" ? ". Showing the drawn map until you're back online." : ""), !on)}
+    ${a ? opt("sign", "🪧", "Island sign", S.has ? "Your copy of NCL's island sign map, laid over the drawn map. Fade it with the slider at the bottom of the map." : "Add your own copy of the island sign map from this phone.") : ""}
+    ${a && S.has ? `<button class="btn ghost" id="mvRemove">Remove the sign image</button>` : ""}
+    <button class="btn ghost" id="mvClose">Close</button>`);
+  $("islandBody").querySelectorAll("[data-view]").forEach(b => b.onclick = () => {
+    const k = b.dataset.view;
+    if (k === "sign" && !S.has) return openSignAdd();
+    setIslView(k);
+  });
+  if ($("mvRemove")) $("mvRemove").onclick = async () => {
+    try { await signStore("delete", isl.id); } catch (e) {}
+    if (S.url) URL.revokeObjectURL(S.url);
+    signs[isl.id] = { has: false };
+    if (islViewWanted() === "sign") state.islView = "drawn";
+    save(); closeSheets(); applyMapView();
+    toast("The island sign image is removed from this phone.");
+  };
+  $("mvClose").onclick = closeSheets;
+}
+$("iLayers").onclick = async e => { e.stopPropagation(); await checkSignStored(); openMapViews(); };
+function openSignAdd(){
+  islandSheet(`<h3>Add the island sign map</h3>
+    <div class="hint" style="padding-top:0">This view lays NCL's island sign map (the big map of Great Stirrup Cay on the signs at the pier) over the drawn map, lined up with the real places. The sign picture isn't part of the app, so each phone adds its own copy once.</div>
+    <div class="hint">Pick the picture of the island sign map from your photos or files. It stays on this phone only and is never uploaded anywhere.</div>
+    <button class="btn" id="sgPick">Pick the image</button>
+    <div class="status" id="sgMsg"></div>
+    <button class="btn ghost" id="sgClose">Cancel</button>`);
+  $("sgPick").onclick = () => { $("iSignFile").value = ""; $("iSignFile").click(); };
+  $("sgClose").onclick = closeSheets;
+}
+$("iSignFile").onchange = async e => {
+  const file = e.target.files && e.target.files[0], msg = $("sgMsg");
+  if (!file || !isl || !isl.d || !isl.d.sign) return;
+  const say = (t, err) => { if (msg){ msg.textContent = t; msg.classList.toggle("err", !!err); } };
+  const bad = () => say("This image doesn't match the island sign map this app was aligned to.", true);
+  say("Checking the image...");
+  const a = isl.d.sign, url = URL.createObjectURL(file);
+  try {
+    const img = await loadImg(url).catch(() => null);
+    if (!img) return bad();
+    const W = img.naturalWidth, H = img.naturalHeight, ratio = a.image.width / a.image.height;
+    if (!W || !H || Math.abs(W / H - ratio) / ratio > 0.01 || W < a.image.width * 0.4) return bad();
+    if (hexBits(signHash(img), a.image.fingerprint.value) > (a.image.fingerprint.max_bits || 40)) return bad();
+    say("Saving it on this phone...");
+    await signStore("put", isl.id, { data: await file.arrayBuffer(), type: file.type || "image/webp", w: W, h: H, saved: new Date().toISOString() });
+    const S = sg(isl.id); if (S.url) URL.revokeObjectURL(S.url);
+    signs[isl.id] = { has: true };
+    state.islView = "sign"; save(); closeSheets();
+    toast("Island sign map added. Drawing it on the map...");
+    applyMapView();
+  } catch (err) {
+    say("The image couldn't be saved on this phone. Try again, or free up some space.", true);
+  } finally { URL.revokeObjectURL(url); }
+};
 
 // ---------- trams: the island's tram routes (tram-routes.json, since 1.13.0) ----------
 // Each route is a line with its stops in order. Trams are taken to run both ways along a route.
@@ -3183,20 +3643,44 @@ function openTramGuide(){
   };
   $("tgClose").onclick = closeSheets;
 }
+// The places for "Starting from" (1.15.0): no removed or merged places, no true duplicates (the same id,
+// or the same name within 30 m), and names that several places share carry their sign number or area,
+// like "Beaches Bar (Beaches 3)", plus the nearest other place when even that is shared. Grouped by
+// area in sign order, sorted by name in each group.
+function tramStartGroups(k){
+  const d = isl.d, gone = new Set([...(d.removed || []), ...Object.keys(d.merged || {})]), list = [];
+  d.places.forEach(p => {
+    if ("place:" + p.id === k || gone.has(p.id) || list.some(q => q.id === p.id || (q.name === p.name && distM(q, p) <= 30))) return;
+    list.push(p);
+  });
+  const shared = (f, x) => list.filter(q => f(q) === f(x)).length > 1;
+  const first = p => shared(q => q.name, p) ? `${p.name} (${legend(p) || areaOf(p.area_id)?.name || "Open island"})` : p.name;
+  const label = p => {
+    const l = first(p);
+    if (!shared(first, p)) return l;
+    const near = list.filter(q => q.name !== p.name).reduce((b, q) => !b || distM(p, q) < distM(p, b) ? q : b, null);
+    return near ? l.slice(0, -1) + `, near ${near.name})` : l;
+  };
+  const items = list.map(p => ({ p, label: label(p) }));
+  const order = [...d.areas.map(a => a.id), ""];
+  return order.map(id => ({ name: areaOf(id)?.name || "Other places",
+    items: items.filter(x => (areaOf(x.p.area_id) ? x.p.area_id : "") === id).sort((a, b) => a.label.localeCompare(b.label)) }))
+    .filter(g => g.items.length);
+}
 // Get there by tram, from where you are (on the island) or from a place you pick.
 function openTramTrip(k){
   const to = markInfo(k); if (!to || !isl.d.trams) return;
   const here = gps.fix && onIsland();
-  const places = isl.d.places.filter(p => "place:" + p.id !== k).sort((x, y) => x.name.localeCompare(y.name));
+  const groups = tramStartGroups(k);
   const spots = islSpots().filter(s => "spot:" + s.id !== k);
-  const keys = [...spots.map(s => "spot:" + s.id), ...places.map(p => "place:" + p.id)];
+  const keys = [...spots.map(s => "spot:" + s.id), ...groups.flatMap(g => g.items.map(x => "place:" + x.p.id))];
   const start = here ? "here" : keys.includes(isl.tramFrom) ? isl.tramFrom : "";
   islandSheet(`<h3>🚋 Get there by tram</h3>
     <div class="hint" style="padding-top:0">To <b>${esc(to.name)}</b></div>
     <label class="field"><span>Starting from</span><select id="ttFrom">
       ${here ? `<option value="here">Where I am now</option>` : `<option value="">Pick where you're starting</option>`}
       ${spots.length ? `<optgroup label="Your saved spots">${spots.map(s => `<option value="spot:${esc(s.id)}">⭐ ${esc(s.name)}</option>`).join("")}</optgroup>` : ""}
-      <optgroup label="Places">${places.map(p => `<option value="place:${esc(p.id)}">${esc(p.name)}</option>`).join("")}</optgroup>
+      ${groups.map(g => `<optgroup label="${esc(g.name)}">${g.items.map(x => `<option value="place:${esc(x.p.id)}">${esc(x.label)}</option>`).join("")}</optgroup>`).join("")}
     </select></label>
     <div id="ttOut"></div>
     <button class="btn ghost" id="ttClose">Close</button>`);

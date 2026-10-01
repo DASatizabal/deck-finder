@@ -1,5 +1,5 @@
 {
-  "version": "1.14.0",
-  "date": "2026-09-29",
-  "notes": "Android app support: real reminder notifications, Clock alarms, and the phone's share sheet. Also a shorter Take me back panel, and tram stops that no longer overlap on the island map."
+  "version": "1.15.0",
+  "date": "2026-09-30",
+  "notes": "Island map: category buttons, map views (drawn, satellite, island sign), the harbor by the Lagoon as water, and labels that no longer overlap."
 }

@@ -21,7 +21,11 @@ Checks:
     them. No name the family sees may contain a builder note like "(marker 3-b)". Since 1.13.0, an
     island that names a "tram_routes" file must have valid routes: each a line of at least two
     [lon, lat] points, with at least two stops, and every stop an active tram stop in the places file
-    (category "tram", same stop_number).
+    (category "tram", same stop_number). Since 1.15.0, an island that names a "sign_alignment" file
+    must have valid control points (at least three, each with x, y, lat and lon, the lat and lon
+    inside the island's bounds), the image's width, height and a 64-digit fingerprint, and a map
+    panel; and no image file of any kind may sit anywhere under places/, because the island sign
+    image must never be published.
 """
 import json
 import os
@@ -249,6 +253,27 @@ for place_file in sorted(Path("places").glob("*/place.json")):
                         fail(f"{tf}: {name!r} names stop {sid!r}, which is not an active tram stop in {place['places']}")
                     elif trams[sid].get("stop_number") != st.get("stop_number"):
                         fail(f"{tf}: {name!r} calls {sid!r} stop {st.get('stop_number')!r}, but {place['places']} says {trams[sid].get('stop_number')!r}")
+
+    # Island sign alignment (1.15.0): control points only, never the image.
+    if place.get("sign_alignment"):
+        sf = f"{fname}/{place['sign_alignment']}"
+        sa = load_json(folder / place["sign_alignment"], sf)
+        if isinstance(sa, dict):
+            pairs = sa.get("pairs")
+            im = sa.get("image") if isinstance(sa.get("image"), dict) else {}
+            mp = sa.get("map_panel") if isinstance(sa.get("map_panel"), dict) else {}
+            if not (isinstance(pairs, list) and len(pairs) >= 3 and all(isinstance(q, dict) and all(num(q.get(k)) for k in ("x", "y", "lat", "lon"))
+                                                                       and b["min_lat"] <= q["lat"] <= b["max_lat"] and b["min_lon"] <= q["lon"] <= b["max_lon"] for q in pairs)):
+                fail(f"{sf} needs at least three control points, each with x, y, lat and lon inside the island's bounds")
+            if not (isinstance(im.get("width"), int) and isinstance(im.get("height"), int) and im["width"] > 0 and im["height"] > 0
+                    and re.fullmatch(r"[0-9a-f]{64}", str((im.get("fingerprint") or {}).get("value", "")))):
+                fail(f"{sf} needs the image's width, height and fingerprint. Run python tools/make_sign_alignment.py.")
+            if not all(num(mp.get(k)) for k in ("x0", "y0", "x1", "y1")):
+                fail(f"{sf} needs a map_panel with x0, y0, x1 and y1")
+            if any(k in sa for k in ("data", "image_data", "base64")):
+                fail(f"{sf} must hold coordinates only, never image data")
+for img in sorted(x for x in Path("places").rglob("*") if x.is_file() and x.suffix.lower() in (".webp", ".png", ".jpg", ".jpeg", ".gif", ".avif", ".heic", ".bmp", ".tif", ".tiff")):
+    fail(f"{img.as_posix()} is an image under places/. Island images (like the island sign) must never be published. Remove it.")
 
 # 6. ships/index.json is up to date
 sys.path.insert(0, "tools")

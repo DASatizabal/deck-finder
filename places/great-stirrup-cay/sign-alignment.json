@@ -1,0 +1,87 @@
+{
+ "island": "Great Stirrup Cay",
+ "note": "Control points for laying the island sign map over the real map. Coordinates only: the image is never published. Each phone adds its own copy, kept on that phone.",
+ "source": "control-points.json from the builder's place editor, saved 2026-09-28T15:11:33.867Z",
+ "image": {
+  "width": 1500,
+  "height": 1865,
+  "fingerprint": {
+   "method": "dhash-17x16-gray-on-white",
+   "value": "14f55d15298d805903bb6f1e606c218b1b5347c137c1f34198cc98cf9ccdd9c3",
+   "max_bits": 40
+  },
+  "sha256": "e1323d320b81f7ac7d55f477755a9ded04099eba5be6053aef2d846b410faa85"
+ },
+ "map_panel": {
+  "x0": 0,
+  "y0": 292,
+  "x1": 1500,
+  "y1": 1333
+ },
+ "model": "tps",
+ "projection": {
+  "lat0": 25.8231433,
+  "lon0": -77.9105027,
+  "m_per_deg_lat": 110574,
+  "m_per_deg_lon_at_equator": 111320,
+  "units": "km"
+ },
+ "pairs": [
+  {
+   "id": 2,
+   "x": 379.5,
+   "y": 954.1,
+   "lat": 25.826075,
+   "lon": -77.910313
+  },
+  {
+   "id": 3,
+   "x": 602,
+   "y": 700.6,
+   "lat": 25.823442,
+   "lon": -77.912893
+  },
+  {
+   "id": 4,
+   "x": 538,
+   "y": 526.1,
+   "lat": 25.821736,
+   "lon": -77.912247
+  },
+  {
+   "id": 6,
+   "x": 1216.5,
+   "y": 796.1,
+   "lat": 25.824297,
+   "lon": -77.920291
+  },
+  {
+   "id": 7,
+   "x": 1187.5,
+   "y": 722.6,
+   "lat": 25.823529,
+   "lon": -77.919953
+  },
+  {
+   "id": 8,
+   "x": 1268,
+   "y": 860.1,
+   "lat": 25.824877,
+   "lon": -77.920913
+  },
+  {
+   "id": 9,
+   "x": 110.5,
+   "y": 995.6,
+   "lat": 25.826594,
+   "lon": -77.90732
+  },
+  {
+   "id": 10,
+   "x": 1161,
+   "y": 816.1,
+   "lat": 25.824399,
+   "lon": -77.919615
+  }
+ ]
+}

@@ -2,8 +2,16 @@
 Builds places/great-stirrup-cay/basemap.json, the island map the app draws itself (no map tiles).
 
 It downloads Great Stirrup Cay from the OpenStreetMap Overpass API: the coastline and land,
-beaches, water and pools, paths and roads, piers, and buildings. The bounding box stops at
-longitude -77.9300 on the west, so nothing from Little Stirrup Cay (Royal Caribbean's CocoCay)
+beaches, water and pools, paths and roads, piers, and buildings.
+
+Sea water inside the coastline (since 1.15.0): OpenStreetMap draws the island's coastline straight
+across the two entrances of the harbor by the Lagoon (the basin the Panoramic Bridge crosses, where
+Tweed's Tenders docks), so the coastline alone paints the harbor as land. The harbor itself is a
+separate "waterway=dock" + "harbour=yes" multipolygon (relation 9102656). Docks, bays, and water
+tagged water=harbour or water=dock are downloaded and cut out of the land and the beaches, so the
+sea shows through. The cut needs shapely (pip install shapely).
+
+The bounding box stops at longitude -77.9300 on the west, so nothing from Little Stirrup Cay (Royal Caribbean's CocoCay)
 is included, and anything that still reaches west of that line is dropped. Shapes are simplified
 (Douglas-Peucker, in meters) and coordinates rounded to 6 decimals (about 10 cm).
 
@@ -39,6 +47,10 @@ QUERY = f"""
   relation["natural"~"^(beach|sand)$"]{BB};
   way["natural"="water"]{BB};
   relation["natural"="water"]{BB};
+  way["waterway"="dock"]{BB};
+  relation["waterway"="dock"]{BB};
+  way["natural"="bay"]{BB};
+  relation["natural"="bay"]{BB};
   way["leisure"="swimming_pool"]{BB};
   way["highway"]{BB};
   way["building"]{BB};
@@ -151,7 +163,15 @@ def geom_of(way):
     return [[p["lon"], p["lat"]] for p in way.get("geometry", []) if p]
 
 
+def is_sea(tags):
+    """Sea water that OpenStreetMap may leave inside the coastline: docks, harbors and bays."""
+    return (tags.get("waterway") == "dock" or tags.get("natural") == "bay"
+            or (tags.get("natural") == "water" and tags.get("water") in ("harbour", "dock", "bay")))
+
+
 def classify(tags):
+    if is_sea(tags):
+        return "sea"
     if tags.get("building"):
         return "building"
     if tags.get("leisure") == "swimming_pool":
@@ -173,6 +193,7 @@ def main():
     elements = data.get("elements", [])
     features, dropped_west = [], 0
     land_lines = []
+    sea = []          # (outer rings, inner rings, osm id) of sea water to cut out of the land
 
     def west(coords):
         return any(c[0] < WEST_LIMIT for c in coords)
@@ -208,6 +229,10 @@ def main():
             kind = classify(tags)
             if not kind:
                 continue
+            if kind == "sea":
+                if len(coords) >= 4 and coords[0] == coords[-1] and not west(coords):
+                    sea.append(([coords], [], f"way {el['id']}"))
+                continue
             closed = len(coords) >= 4 and coords[0] == coords[-1] and kind not in ("road", "path")
             if kind == "pier" and not closed:
                 add(kind, coords, False)
@@ -219,6 +244,14 @@ def main():
                 land_lines += outers
                 continue
             kind = classify(tags)
+            if kind == "sea":
+                inners = [geom_of(m) for m in el.get("members", []) if m.get("type") == "way" and m.get("role") == "inner"]
+                outer_rings, _ = join_lines(outers)
+                inner_rings, _ = join_lines(inners)
+                outer_rings = [r for r in outer_rings if not west(r)]
+                if outer_rings:
+                    sea.append((outer_rings, inner_rings, f"relation {el['id']}"))
+                continue
             if kind in ("beach", "water"):
                 rings, _ = join_lines(outers)
                 for r in rings:
@@ -241,6 +274,10 @@ def main():
                      "geometry": {"type": "Polygon", "coordinates": [rnd(simplify(r, TOLERANCE["land"]))]}})
     if not land:
         raise SystemExit("No closed coastline found for the island. Nothing was written.")
+    # The island's outline before any cut, for island_bounds (the whole island, harbor or not).
+    main_ring = max((f["geometry"]["coordinates"][0] for f in land), key=lambda r: abs(ring_area(r)))
+    if sea:
+        land, features = cut_sea(land, features, sea)
     if open_lines:
         print(f"note: {len(open_lines)} coastline piece(s) did not close into a ring and were left out", file=sys.stderr)
 
@@ -250,8 +287,8 @@ def main():
     features.sort(key=lambda f: order.index(f["properties"]["kind"]))
     features = land + features
 
-    lons = [c[0] for c in land[0]["geometry"]["coordinates"][0]]
-    lats = [c[1] for c in land[0]["geometry"]["coordinates"][0]]
+    lons = [c[0] for c in main_ring]
+    lats = [c[1] for c in main_ring]
     out = {
         "type": "FeatureCollection",
         "name": "Great Stirrup Cay",
@@ -260,6 +297,8 @@ def main():
         "source": endpoint,
         "generated": date.today().isoformat(),
         "island_bounds": {"min_lat": min(lats), "min_lon": min(lons), "max_lat": max(lats), "max_lon": max(lons)},
+        "sea_cut": {"note": "Sea water inside OpenStreetMap's coastline (docks, harbors, bays), cut out of the land and beaches.",
+                    "from": [x[2] for x in sea]},
         "features": features,
     }
     OUT.parent.mkdir(parents=True, exist_ok=True)
@@ -274,6 +313,59 @@ def main():
     print(f"  island bounds: {out['island_bounds']}")
     if dropped_west:
         print(f"  dropped {dropped_west} shape(s) reaching west of {WEST_LIMIT} (CocoCay side)")
+
+
+def from_m(x, y):
+    return (WEST + x / MX, SOUTH + y / MY)
+
+
+def cut_sea(land, features, sea):
+    """Cut the sea polygons out of the land and beach polygons (shapely, in meters)."""
+    try:
+        from shapely.geometry import Polygon, MultiPolygon
+        from shapely.geometry.polygon import orient
+        from shapely.ops import unary_union
+    except ImportError:
+        raise SystemExit("Cutting the harbor out of the land needs shapely: pip install shapely")
+
+    def poly_m(outer, inners=()):
+        return Polygon([to_m(c) for c in outer], [[to_m(c) for c in r] for r in inners]).buffer(0)
+
+    water = unary_union([poly_m(o, [r for r in inners if poly_m(o).contains(poly_m(r))]) for outers, inners, _ in sea for o in outers])
+
+    def pieces(g):
+        if g.is_empty:
+            return []
+        return [g] if g.geom_type == "Polygon" else [x for x in getattr(g, "geoms", []) if x.geom_type == "Polygon"]
+
+    def back(p, tol):
+        p = orient(p.simplify(tol, preserve_topology=True), 1.0)    # outer ring counter-clockwise, holes clockwise
+        rings = [p.exterior.coords] + [r.coords for r in p.interiors]
+        return [rnd([list(from_m(x, y)) for x, y in r]) for r in rings]
+
+    def cut(feats, kind, min_area):
+        out = []
+        for f in feats:
+            rings = f["geometry"]["coordinates"]
+            g = poly_m(rings[0], rings[1:])
+            if not g.intersects(water):
+                out.append(f)
+                continue
+            for p in pieces(g.difference(water)):
+                if p.area < min_area:
+                    continue
+                out.append({"type": "Feature", "properties": dict(f["properties"]),
+                            "geometry": {"type": "Polygon", "coordinates": back(p, TOLERANCE[kind])}})
+        return out
+
+    before = sum(poly_m(f["geometry"]["coordinates"][0]).area for f in land)
+    land = cut(land, "land", 4)
+    after = sum(poly_m(r["geometry"]["coordinates"][0], r["geometry"]["coordinates"][1:]).area for r in land)
+    beaches = cut([f for f in features if f["properties"]["kind"] == "beach"], "beach", 2)
+    features = beaches + [f for f in features if f["properties"]["kind"] != "beach"]
+    print(f"  cut {len(sea)} sea shape(s) out of the land ({', '.join(x[2] for x in sea)}): "
+          f"{(before - after) / 10000:.2f} hectares of water that the coastline had painted as land")
+    return land, features
 
 
 if __name__ == "__main__":
