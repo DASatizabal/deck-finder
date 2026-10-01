@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.16.2] - 2026-10-01
+### Changed
+- Directions on Norwegian Getaway use hand-checked hallway maps, real venue entrances (like the Getaway Theater's doors on Deck 7), and the atrium stairs, and take elevators instead of long climbs.
+### Fixed
+- Directions now reach places on separate parts of a deck, like the Sports Complex on Deck 17 and the Sun Deck and Basketball Court on Deck 18.
+- In the Android app, the Clock alarm message now says the Clock app opened with your alarm, so you can check it there.
+
 ## [1.16.1] - 2026-10-01
 ### Fixed
 - Adding the island sign picture works on the first try, the update banner no longer covers map controls, and the Android app only offers an update when one is ready to download.

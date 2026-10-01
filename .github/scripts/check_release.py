@@ -29,7 +29,9 @@ Checks:
 11. Since 1.16.0, a ship.json that names a "walkable" index must have a grid for every deck (each a
     bitmap of exactly cols x rows cells, with access cells inside it), and every stairs or elevator
     connection must name only decks the ship has. A "directions" rules file must have its costs as
-    positive numbers and a list of tips.
+    positive numbers and a list of tips. Since 1.16.2 its "either" stairs limit must be a whole number
+    above 0, and each of its "names" must name a stairway or elevator bank of the walkable index (with
+    the same decks).
 """
 import base64
 import json
@@ -169,6 +171,7 @@ for ship_file in ship_files:
     # 11. Walkable grids for Directions (1.16.0): every deck has a grid of the right size, and every
     #     stairs or elevator connection names real decks, with access cells inside the grids.
     wk = ship.get("walkable")
+    widx = None
     if wk is not None:
         wpath = ship_file.parent / str(wk)
         widx = load_json(wpath, f"{folder}/{wk}") if isinstance(wk, str) else None
@@ -211,6 +214,21 @@ for ship_file in ship_files:
                 fail(f"{folder}/{dr} needs \"costs\" with {', '.join(need)} as positive numbers")
             if not isinstance(rules.get("tips"), list) or not all(isinstance(t, dict) and t.get("id") and t.get("text") for t in rules["tips"]):
                 fail(f"{folder}/{dr} needs a \"tips\" list, each with an id and a text")
+            # Since 1.16.2: the stairs limit in Either mode, and friendly names for stairways and elevator
+            # banks, each naming a connection of the walkable index with the same decks.
+            ei = rules.get("either")
+            if ei is not None and not (isinstance(ei, dict) and isinstance(ei.get("max_stairs_decks_in_a_row"), int) and ei["max_stairs_decks_in_a_row"] > 0):
+                fail(f"{folder}/{dr}: \"either\" needs \"max_stairs_decks_in_a_row\" as a whole number above 0")
+            names = rules.get("names")
+            if names is not None:
+                conns = {c.get("id"): c.get("decks") for c in (widx or {}).get("connections") or [] if isinstance(c, dict)}
+                for cid, n in (names.items() if isinstance(names, dict) else []):
+                    if not (isinstance(n, dict) and isinstance(n.get("text"), str) and n["text"].strip()):
+                        fail(f"{folder}/{dr}: the name for {cid!r} needs a \"text\"")
+                    elif cid not in conns or (n.get("decks") is not None and sorted(n["decks"]) != sorted(conns[cid] or [])):
+                        fail(f"{folder}/{dr}: the name for {cid!r} (decks {n.get('decks')}) matches no stairway or elevator bank in {folder}/{wk} (found decks {conns.get(cid)}). The builder may have renumbered it: check the walkable index and fix the name.")
+                if not isinstance(names, dict):
+                    fail(f"{folder}/{dr}: \"names\" must map connection ids to names")
 
 # 10. Island maps: the files exist, are valid JSON, and every place sits inside the island's bounds
 num = lambda v: isinstance(v, (int, float)) and not isinstance(v, bool)

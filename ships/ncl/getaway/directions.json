@@ -1,5 +1,5 @@
 {
-  "note": "Rules for Directions on Norwegian Getaway (1.16.0). Costs are in seconds and set how routes are chosen; tips are the one-line hints under the steps. Edit this file to change them, then run python tools/build_index.py.",
+  "note": "Rules for Directions on Norwegian Getaway (1.16.0, names and the Either limit since 1.16.2). Costs are in seconds and set how routes are chosen; tips are the one-line hints under the steps. Edit this file to change them, then run python tools/build_index.py.",
   "costs": {
     "ship_length_m": 325.7,
     "walk_m_per_s": 1.2,
@@ -8,11 +8,29 @@
     "elevator_wait_s": 60,
     "elevator_s_per_deck": 4
   },
+  "either": {
+    "note": "Since 1.16.2: in Either mode a route uses the stairs for at most this many decks in a row (up or down, counting stairs joined by a walk across a deck), then the elevators. When no route fits (the elevators don't reach that deck), it takes the stairs anyway. Stairs mode and the Advanced limits don't use it.",
+    "max_stairs_decks_in_a_row": 3
+  },
+  "names_note": "Friendly names for stairways and elevator banks, by their id in walkable/index.json. A name is used only while that id serves exactly these decks, so a renumbered id in a later import falls back to the plain name (and the release check fails).",
+  "names": {
+    "stairs midship-left": {
+      "text": "the atrium stairs",
+      "decks": [
+        6,
+        7,
+        8
+      ]
+    }
+  },
   "tips": [
     {
       "id": "after-arrival",
       "day": "port",
-      "minutes_after_arrival": [0, 90],
+      "minutes_after_arrival": [
+        0,
+        90
+      ],
       "uses": "elevator",
       "max_elevator_decks": 3,
       "text": "Elevators are busiest just after arrival. Stairs may be quicker."
@@ -26,9 +44,22 @@
     },
     {
       "id": "buffet",
-      "times": [["07:00", "09:30"], ["11:30", "13:30"]],
+      "times": [
+        [
+          "07:00",
+          "09:30"
+        ],
+        [
+          "11:30",
+          "13:30"
+        ]
+      ],
       "uses": "elevator",
-      "busy_place": { "deck": 15, "name": "Garden Cafe", "label": "Garden Café" },
+      "busy_place": {
+        "deck": 15,
+        "name": "Garden Cafe",
+        "label": "Garden Café"
+      },
       "similar_within": 0.2,
       "text": "Mealtime at the {place}: {bank} are farther from it and take about as long."
     }

@@ -114,6 +114,16 @@ def main():
     print("  changed: " + (", ".join(changed) if changed else "nothing, the files were already the same"))
     if removed:
         print("  removed: " + ", ".join(removed))
+    # Friendly names in directions.json (1.16.2) are keyed by connection id, and the builder can renumber
+    # ids ("stairs midship-left 2" and similar). Say so when a name no longer matches.
+    dr = ship.get("directions")
+    if dr and (ship_dir / dr).is_file():
+        names = json.loads((ship_dir / dr).read_text(encoding="utf-8")).get("names") or {}
+        conns = {c["id"]: sorted(c["decks"]) for c in idx.get("connections", [])}
+        for cid, n in names.items():
+            if cid not in conns or (n.get("decks") is not None and sorted(n["decks"]) != conns[cid]):
+                print(f"  WARNING: {dr} names {cid!r} \"{n.get('text')}\" for decks {n.get('decks')}, but the new index has "
+                      + (f"it on decks {conns[cid]}" if cid in conns else "no such id") + ". Fix the name before releasing.")
     sys.stdout.flush()
     subprocess.run([sys.executable, "tools/build_index.py"], check=True)
     print("Next: test the routes, bump the version (PATCH), add a CHANGELOG entry, and run python .github/scripts/check_release.py")

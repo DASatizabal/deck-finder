@@ -556,7 +556,7 @@ textarea.search{resize:vertical;min-height:84px}
 <div class="toast" id="toast" hidden role="status"></div>
 
 <script>
-const APP_VERSION = "1.16.1";
+const APP_VERSION = "1.16.2";
 const APP_DATE = "2026-10-01";
 
 // ---------- Android app (1.14.0): this web app bundled in Capacitor (the deck-finder-android repo) ----------
@@ -633,10 +633,19 @@ function sameVenue(a, b){
   if (ta.length < 2 || tb.length < 2) return false;      // one-word names must match exactly
   return ta.filter(w => tb.includes(w)).length / new Set([...ta, ...tb]).size >= 0.5;
 }
-function venueBoxes(id, deck, name){
+function venueMatch(id, deck, name){
   const vs = geoDeck(id, deck)?.venues || [];
   const exact = vs.filter(v => normName(v.name) === normName(name));
-  const found = exact.length ? exact : vs.filter(v => sameVenue(v.name, name));
+  return exact.length ? exact : vs.filter(v => sameVenue(v.name, name));
+}
+// The doors of a venue (geometry.json "entrances", 1.16.2): [{ deck, x, y }] in percent, without repeats.
+function venueDoors(id, deck, name){
+  const seen = new Set();
+  return venueMatch(id, deck, name).flatMap(v => v.entrances || []).filter(e => {
+    const k = e.deck + "|" + e.x + "|" + e.y; if (seen.has(k) || !Number.isFinite(e.deck) || !Number.isFinite(e.x) || !Number.isFinite(e.y)) return false; seen.add(k); return true; });
+}
+function venueBoxes(id, deck, name){
+  const found = venueMatch(id, deck, name);
   if (found.length) return found.map(v => v.box);
   // A listed name like "Pool" is stored as an amenity in the geometry: highlight those.
   return amenityBoxes(id, deck, name);
@@ -851,6 +860,11 @@ function loadWalk(id){
     const [idx, rules] = await Promise.all([get(sh.walkable), sh.directions ? get(sh.directions).catch(() => ({})) : {}]);
     const decks = {};
     await Promise.all(Object.entries(idx.decks || {}).map(async ([d, f]) => { decks[d] = walkGrid(await get(dir + f), sh.decks[d], rules); }));
+    shipNetwork(decks, idx.connections || []);
+    // Friendly names (directions.json "names"), used only while the id serves exactly the same decks.
+    const names = rules?.names || {};
+    (idx.connections || []).forEach(c => { const n = names[c.id];
+      if (n && typeof n.text === "string" && (!Array.isArray(n.decks) || [...n.decks].sort((a, b) => a - b).join() === [...c.decks].sort((a, b) => a - b).join())) c.name = n.text; });
     return (WALKS[id] = { idx, rules: rules || {}, decks });
   })().finally(() => { delete walkLoads[id]; });
   return walkLoads[id];
@@ -862,33 +876,62 @@ function walkGrid(g, info, rules){
   const e = info?.ship_extent, H = g.image_size[1];
   const shipPx = (e && e.bottom > e.top ? (e.bottom - e.top) / 100 : 1) * H;
   const L = typeof rules?.costs?.ship_length_m === "number" ? rules.costs.ship_length_m : 300;
-  return { cols: g.cols, rows: g.rows, cell: g.cell_px, W: g.image_size[0], H, walk, conns: g.connections || [], mpc: L / shipPx * g.cell_px, main: null };
+  return { cols: g.cols, rows: g.rows, cell: g.cell_px, W: g.image_size[0], H, walk, conns: g.connections || [], mpc: L / shipPx * g.cell_px, net: null };
 }
-// The biggest connected walkable area of a deck (the hallways), found once. Places anchor to it, so a
-// sealed-looking room on the plan never strands a route.
-function mainArea(g){
-  if (g.main) return g.main;
-  const n = g.cols * g.rows, lab = new Int32Array(n), q = new Int32Array(n);
-  let best = 0, bestSize = 0, next = 0;
+// The separate walkable pieces of a deck (4-connected, which is also how the walk moves, since it never
+// cuts a corner): { lab: piece number per cell (0 = not walkable), sizes: cells per piece (index 0 unused) }.
+function deckPieces(g){
+  const n = g.cols * g.rows, lab = new Int32Array(n), q = new Int32Array(n), sizes = [0];
   for (let s0 = 0; s0 < n; s0++){
     if (!g.walk[s0] || lab[s0]) continue;
-    next++; lab[s0] = next; let h = 0, t = 0; q[t++] = s0;
+    const k = sizes.length; lab[s0] = k; let h = 0, t = 0; q[t++] = s0;
     while (h < t){
       const i = q[h++], c = i % g.cols;
-      const nb = [c > 0 ? i - 1 : -1, c < g.cols - 1 ? i + 1 : -1, i - g.cols, i + g.cols];
-      for (const j of nb) if (j >= 0 && j < n && g.walk[j] && !lab[j]){ lab[j] = next; q[t++] = j; }
+      if (c > 0 && g.walk[i - 1] && !lab[i - 1]){ lab[i - 1] = k; q[t++] = i - 1; }
+      if (c < g.cols - 1 && g.walk[i + 1] && !lab[i + 1]){ lab[i + 1] = k; q[t++] = i + 1; }
+      if (i >= g.cols && g.walk[i - g.cols] && !lab[i - g.cols]){ lab[i - g.cols] = k; q[t++] = i - g.cols; }
+      if (i < n - g.cols && g.walk[i + g.cols] && !lab[i + g.cols]){ lab[i + g.cols] = k; q[t++] = i + g.cols; }
     }
-    if (t > bestSize){ bestSize = t; best = next; }
+    sizes.push(t);
   }
-  const main = new Uint8Array(n);
-  for (let i = 0; i < n; i++) main[i] = lab[i] === best ? 1 : 0;
-  return (g.main = main);
+  return { lab, sizes };
+}
+// The walkable cells reached from the rest of the ship (1.16.2), as g.net on every deck. Every piece of
+// every deck is a node, and a stairway or elevator bank joins the pieces its access cells sit in, on each
+// deck it serves. The ship's network is the biggest group joined that way, so a piece cut off on its own
+// deck but reached by its own stairs (the Sports Complex on Deck 17, the Basketball Court on Deck 18)
+// still counts. Places anchor to the network piece nearest them, never to a piece no route can reach.
+function shipNetwork(decks, conns){
+  const P = {}, base = {}; let n = 0;
+  for (const d in decks){ P[d] = deckPieces(decks[d]); base[d] = n; n += P[d].sizes.length; }
+  const parent = Array.from({ length: n }, (_, i) => i);
+  const find = i => { while (parent[i] !== i){ parent[i] = parent[parent[i]]; i = parent[i]; } return i; };
+  conns.forEach(c => {
+    const nodes = [];
+    c.decks.forEach(d => {
+      const g = decks[d]; if (!g) return;
+      (g.conns.find(x => x.id === c.id)?.access || []).forEach(([col, row]) => {
+        if (col < 0 || row < 0 || col >= g.cols || row >= g.rows) return;
+        const k = P[d].lab[row * g.cols + col]; if (k) nodes.push(base[d] + k);
+      });
+    });
+    nodes.slice(1).forEach(x => { parent[find(x)] = find(nodes[0]); });
+  });
+  const total = new Map();
+  for (const d in P) P[d].sizes.forEach((s, k) => { if (k){ const r = find(base[d] + k); total.set(r, (total.get(r) || 0) + s); } });
+  let best = -1, most = 0; total.forEach((s, r) => { if (s > most){ most = s; best = r; } });
+  for (const d in decks){
+    const { lab, sizes } = P[d], keep = sizes.map((s, k) => k > 0 && find(base[d] + k) === best ? 1 : 0), net = new Uint8Array(lab.length);
+    for (let i = 0; i < lab.length; i++) net[i] = keep[lab[i]];
+    decks[d].net = net;
+  }
 }
 // The walkable hallway cells next to some boxes (percent of the plan), each with its distance in
 // cells from the nearest box: a Map of cell -> cost. Inside or right next to the box first, farther only
-// when nothing is close.
+// when nothing is close. Only cells of the ship's network count (see shipNetwork). A door (a box with no
+// size) anchors to the hallway cells right at it, so the route starts or ends at the door itself.
 function anchorCells(g, boxes){
-  const main = mainArea(g);
+  const main = g.net || g.walk, doors = boxes.every(b => b[0] === b[2] && b[1] === b[3]);
   for (const reach of [6, 12, 24, 40]){
     const m = new Map();
     for (const b of boxes){
@@ -901,9 +944,32 @@ function anchorCells(g, boxes){
           if (d <= reach && !(m.get(i) <= d)) m.set(i, d);
         }
     }
+    if (m.size && doors){ const near = Math.min(...m.values()) + 1; m.forEach((d, i) => { if (d > near) m.delete(i); }); }
     if (m.size) return m;
   }
   return new Map();
+}
+// The stairways and elevator banks on deck d with their access cells there, as search groups.
+function connGroups(W, d){
+  const C = W.connG || (W.connG = {});
+  return C[d] || (C[d] = (W.idx.connections || []).map((c, ci) => ({ ci, cells: c.decks.includes(+d) ? accessCells(W.decks[d], c.id) : null })).filter(x => x.cells));
+}
+// The walks on deck d from one stairway or elevator bank to all the others (1.16.2). They don't depend on
+// the route, so the results (not the trails, which are redone for the walks a route uses) stay with the
+// ship's grids, and warmHops works them out ahead while the Directions screen is open.
+function hopSearch(W, ci, d){
+  const H = W.hops || (W.hops = {}), key = ci + "@" + d;
+  if (H[key]) return H[key];
+  const g = W.decks[d], groups = connGroups(W, d), seeds = accessCells(g, W.idx.connections[ci].id);
+  return (H[key] = { d, groups, seeds, best: gridSearch(g, seeds, groups, Infinity).best, prev: null });
+}
+function warmHops(W){
+  if (W.warm) return;
+  const todo = [];
+  (W.idx.connections || []).forEach((c, ci) => c.decks.forEach(d => { if (W.decks[d] && accessCells(W.decks[d], c.id)) todo.push([ci, d]); }));
+  W.warm = true;
+  const step = () => { const t = todo.shift(); if (!t) return; hopSearch(W, t[0], t[1]); setTimeout(step, 0); };
+  setTimeout(step, 0);
 }
 const accessCells = (g, cid) => { const c = g?.conns.find(x => x.id === cid); return c && c.access?.length ? new Map(c.access.map(([col, row]) => [row * g.cols + col, 0])) : null; };
 // Shortest walks on one deck (8 directions, never cutting a corner) from seed cells to groups of target
@@ -918,14 +984,16 @@ function gridSearch(g, seeds, groups, maxCost){
     while (k){ const pk = (k - 1) >> 1; if (hk[pk] <= c) break; hk[k] = hk[pk]; hv[k] = hv[pk]; k = pk; }
     hk[k] = c; hv[k] = i;
   };
-  const tgt = new Map();
-  groups.forEach((gr, gi) => gr.cells.forEach((x, i) => { (tgt.get(i) || tgt.set(i, []).get(i)).push([gi, x]); }));
+  const tgt = new Map(), mark = new Uint8Array(n);
+  groups.forEach((gr, gi) => gr.cells.forEach((x, i) => { mark[i] = 1; (tgt.get(i) || tgt.set(i, []).get(i)).push([gi, x]); }));
   const best = groups.map(() => null);
   let unreached = groups.length, worst = 0;
   seeds.forEach((c, i) => { if (W[i] && c < dist[i]){ dist[i] = c; push(c, i); } });
   const S2 = Math.SQRT2;
+  let c = 0, i = 0;
+  const relax = (j, w) => { const v = c + w; if (v < dist[j]){ dist[j] = v; prev[j] = i; push(v, j); } };
   while (hk.length){
-    const c = hk[0], i = hv[0];
+    c = hk[0]; i = hv[0];
     const lc = hk.pop(), li = hv.pop();
     if (hk.length){
       let k = 0; const L = hk.length;
@@ -935,7 +1003,7 @@ function gridSearch(g, seeds, groups, maxCost){
     if (c > dist[i]) continue;
     if (c > maxCost) break;
     if (!unreached && c >= worst) break;
-    const hits = tgt.get(i);
+    const hits = mark[i] ? tgt.get(i) : null;
     if (hits) for (const [gi, x] of hits){
       const v = c + x;
       if (!best[gi]){ best[gi] = { cost: v, cell: i }; unreached--; }
@@ -943,7 +1011,6 @@ function gridSearch(g, seeds, groups, maxCost){
       worst = Math.max(...best.map(b => b ? b.cost : 0));
     }
     const col = i % C, up = i >= C, dn = i < n - C, lf = col > 0, rt = col < C - 1;
-    const relax = (j, w) => { const v = c + w; if (v < dist[j]){ dist[j] = v; prev[j] = i; push(v, j); } };
     const N = up && W[i - C], S = dn && W[i + C], Wl = lf && W[i - 1], E = rt && W[i + 1];
     if (N) relax(i - C, 1); if (S) relax(i + C, 1); if (Wl) relax(i - 1, 1); if (E) relax(i + 1, 1);
     if (N && Wl && W[i - C - 1]) relax(i - C - 1, S2); if (N && E && W[i - C + 1]) relax(i - C + 1, S2);
@@ -966,8 +1033,10 @@ function trail(g, prev, i){
   });
   return out;
 }
-// "elevators aft" -> "the aft elevators", "stairs forward-left 2" -> "the forward left stairs".
+// "elevators aft" -> "the aft elevators", "stairs forward-left 2" -> "the forward left stairs", or the
+// friendly name from directions.json ("stairs midship-left" -> "the atrium stairs").
 function connName(c){
+  if (c.name) return c.name;
   const pos = String(c.id).split(" ").slice(1).filter(x => !/^\d+$/.test(x)).join(" ").replace(/-/g, " ");
   return "the " + (pos ? pos + " " : "") + (c.kind === "elevator" ? "elevators" : "stairs");
 }
@@ -1001,21 +1070,25 @@ function planRoute(W, from, to, opt){
   const all = W.idx.connections || [];
   const ok = c => !(opt.avoid && opt.avoid.has(c.id)) && (opt.using === "either" || (opt.using === "stairs") === (c.kind === "stairs"));
   // Every stairway and elevator bank on deck d with its access cells there (whatever the choices).
-  const connsOn = d => (K["c" + d] || (K["c" + d] = all.map((c, ci) => ({ ci, cells: c.decks.includes(+d) ? accessCells(W.decks[d], c.id) : null })).filter(x => x.cells)));
-  const search = (key, d, seeds, groups) => K[key] || (K[key] = Object.assign({ d, groups }, gridSearch(W.decks[d], seeds, groups, Infinity)));
+  const connsOn = d => connGroups(W, d);
+  const search = (key, d, seeds, groups) => K[key] || (K[key] = Object.assign({ d, groups, seeds }, gridSearch(W.decks[d], seeds, groups, Infinity)));
   const fromSearch = () => search("S", from.deck, fromSeeds, [...connsOn(from.deck), ...(tByDeck[from.deck] ? [{ ti: true, cells: tByDeck[from.deck].cells }] : [])]);
   const toSearch = d => search("T" + d, d, tByDeck[d].cells, connsOn(d));
   const lim = v => typeof v === "number" && v >= 0 ? v : Infinity;
   const maxUp = lim(opt.maxUp), maxDown = lim(opt.maxDown);
+  // Either mode (1.16.2): stairs for at most this many decks in a row one way (up, or down; an elevator
+  // ride or a turn the other way starts a new count), so a long climb takes the elevators and then the
+  // stairs only where the elevators don't reach. row: decks in the current run, + up, - down.
+  const rowLim = opt.using === "either" ? lim(W.rules?.either?.max_stairs_decks_in_a_row) : Infinity;
   const secs = (d, cells) => cells * W.decks[d].mpc / speed;
-  function run(hops){
-    const pq = [{ key: "S", d: from.deck, cost: 0, up: 0, down: 0, par: null }], done = new Set();
+  function run(hops, maxRow){
+    const pq = [{ key: "S", d: from.deck, cost: 0, up: 0, down: 0, row: 0, par: null }], done = new Set();
     let best = null;
     while (pq.length){
       let bi = 0; for (let k = 1; k < pq.length; k++) if (pq[k].cost < pq[bi].cost) bi = k;
       const st = pq.splice(bi, 1)[0];
       if (best && st.cost >= best.cost) break;
-      const sk = st.key + "|" + st.d + "|" + st.up + "|" + st.down;
+      const sk = st.key + "|" + st.d + "|" + st.up + "|" + st.down + "|" + st.row;
       if (done.has(sk)) continue; done.add(sk);
       if (st.key === "T"){ best = st; break; }
       if (st.key === "S"){
@@ -1023,8 +1096,8 @@ function planRoute(W, from, to, opt){
         s.groups.forEach((gr, k) => {
           const b = s.best[k]; if (!b) return;
           const walk = { search: s, cell: b.cell, cells: b.cost };
-          if (gr.ti) pq.push({ key: "T", d: st.d, cost: secs(st.d, b.cost), up: 0, down: 0, par: st, walk, ti: tByDeck[st.d].owner.get(b.cell) });
-          else if (ok(all[gr.ci])) pq.push({ key: "w:" + gr.ci, d: st.d, cost: secs(st.d, b.cost), up: 0, down: 0, par: st, walk });
+          if (gr.ti) pq.push({ key: "T", d: st.d, cost: secs(st.d, b.cost), up: 0, down: 0, row: 0, par: st, walk, ti: tByDeck[st.d].owner.get(b.cell) });
+          else if (ok(all[gr.ci])) pq.push({ key: "w:" + gr.ci, d: st.d, cost: secs(st.d, b.cost), up: 0, down: 0, row: 0, par: st, walk });
         });
       } else if (st.key.startsWith("r:")){
         const ci = +st.key.split(":")[1];
@@ -1033,14 +1106,14 @@ function planRoute(W, from, to, opt){
           if (b){
             // The backward search ends at this bank's access cell; its trail starts at the destination.
             let j = b.cell; while (s.prev[j] >= 0) j = s.prev[j];
-            pq.push({ key: "T", d: st.d, cost: st.cost + secs(st.d, b.cost), up: st.up, down: st.down, par: st, walk: { search: s, cell: b.cell, cells: b.cost, back: true }, ti: tByDeck[st.d].owner.get(j) });
+            pq.push({ key: "T", d: st.d, cost: st.cost + secs(st.d, b.cost), up: st.up, down: st.down, row: st.row, par: st, walk: { search: s, cell: b.cell, cells: b.cost, back: true }, ti: tByDeck[st.d].owner.get(j) });
           }
         }
         if (hops){
-          const s = search("F" + ci + "@" + st.d, st.d, accessCells(W.decks[st.d], all[ci].id), connsOn(st.d));
+          const s = hopSearch(W, ci, st.d);
           s.groups.forEach((gr, k) => {
             const b = s.best[k]; if (!b || gr.ci === ci || !ok(all[gr.ci])) return;
-            pq.push({ key: "w:" + gr.ci, d: st.d, cost: st.cost + secs(st.d, b.cost), up: st.up, down: st.down, par: st, walk: { search: s, cell: b.cell, cells: b.cost } });
+            pq.push({ key: "w:" + gr.ci, d: st.d, cost: st.cost + secs(st.d, b.cost), up: st.up, down: st.down, row: st.row, par: st, walk: { search: s, cell: b.cell, cells: b.cost } });
           });
         }
       } else {
@@ -1049,19 +1122,22 @@ function planRoute(W, from, to, opt){
           if (d2 === st.d || !W.decks[d2] || !accessCells(W.decks[d2], c.id)) return;
           if (!hops && !tByDeck[d2]) return;          // a direct trip goes straight to a destination deck
           const n = Math.abs(d2 - st.d), goingUp = d2 > st.d;
-          let cost, up = st.up, down = st.down;
+          let cost, up = st.up, down = st.down, row = 0;
           if (c.kind === "stairs"){
             if (goingUp) up += n; else down += n;
-            if (up > maxUp || down > maxDown) return;
+            row = goingUp ? Math.max(st.row, 0) + n : Math.min(st.row, 0) - n;
+            if (up > maxUp || down > maxDown || Math.abs(row) > maxRow) return;
             cost = n * (goingUp ? upS : downS);
           } else cost = waitS + n * rideS;
-          pq.push({ key: "r:" + ci, d: d2, cost: st.cost + cost, up, down, par: st, ride: { conn: c, from: st.d, to: d2, n, up: goingUp, secs: cost } });
+          pq.push({ key: "r:" + ci, d: d2, cost: st.cost + cost, up, down, row, par: st, ride: { conn: c, from: st.d, to: d2, n, up: goingUp, secs: cost } });
         });
       }
     }
     return best;
   }
-  const best = run(false) || run(true);
+  // A direct trip first, then with walks across decks in between; in Either mode beyond the stairs limit
+  // only when nothing fits within it.
+  const best = run(false, rowLim) || run(true, rowLim) || (rowLim < Infinity ? run(false, Infinity) || run(true, Infinity) : null);
   if (!best) return { error: null };
   // Walk back from the destination: each walk is a leg on one deck, and the rides join them.
   const chain = []; for (let st = best; st; st = st.par) chain.unshift(st);
@@ -1069,8 +1145,8 @@ function planRoute(W, from, to, opt){
   chain.forEach(st => {
     if (st.ride) rides.push(st.ride);
     if (!st.walk) return;
-    const d = st.walk.search.d, g = W.decks[d];
-    let pts = trail(g, st.walk.search.prev, st.walk.cell);
+    const d = st.walk.search.d, g = W.decks[d], s = st.walk.search;
+    let pts = trail(g, s.prev || gridSearch(g, s.seeds, s.groups, Infinity).prev, st.walk.cell);
     if (st.walk.back) pts = pts.reverse();
     legs.push({ deck: d, pts, W: g.W, H: g.H, secs: secs(d, st.walk.cells), meters: st.walk.cells * g.mpc,
       end: st.key === "T" ? { dest: true } : { conn: all[+st.key.split(":")[1]] } });
@@ -1082,12 +1158,12 @@ function routeSteps(r, toLabel){
   const out = [];
   const mins = s => { const m = Math.max(1, Math.round(s / 60)); return m + (m === 1 ? " minute" : " minutes"); };
   r.legs.forEach((l, i) => {
-    const where = l.end.dest ? toLabel : connName(l.end.conn);
+    const where = l.end.dest ? (r.target?.door ? "the " + toLabel + " entrance" : toLabel) : connName(l.end.conn);
     out.push({ leg: i, text: l.meters < 8 ? (l.end.dest ? `You're at ${where}.` : `${cap(where)} are right here.`) : `Walk to ${where}, about ${mins(l.secs)}.` });
     const rd = r.rides[i];
     if (rd){
       const dir = rd.up ? "up" : "down";
-      out.push({ leg: i, text: rd.conn.kind === "elevator" ? `Ride ${dir} to Deck ${rd.to}.` : `Take the stairs ${dir} ${rd.n} ${rd.n === 1 ? "deck" : "decks"} to Deck ${rd.to}.` });
+      out.push({ leg: i, text: rd.conn.kind === "elevator" ? `Ride ${dir} to Deck ${rd.to}.` : `Take ${rd.conn.name || "the stairs"} ${dir} ${rd.n} ${rd.n === 1 ? "deck" : "decks"} to Deck ${rd.to}.` });
     }
   });
   return out;
@@ -1181,7 +1257,7 @@ function dirPlace(id, v, typed){
   }
   if (kind === "v" || kind === "a"){
     const boxes = kind === "v" ? venueBoxes(id, +a, b) : amenityBoxes(id, +a, b);
-    return boxes.length ? { label: b, deck: +a, boxes } : { error: b + " isn't on the deck plan." };
+    return boxes.length ? { label: b, deck: +a, boxes, doors: kind === "v" ? venueDoors(id, +a, b) : [] } : { error: b + " isn't on the deck plan." };
   }
   if (kind === "p"){
     const p = tripPins().find(x => x.id === a);
@@ -1190,10 +1266,34 @@ function dirPlace(id, v, typed){
   if (kind === "n"){ const w = NEAR_KEYS.find(x => x[0] === a); return w ? { near: a, label: "the nearest " + w[1] } : { error: "pick" }; }
   return { error: "pick" };
 }
-// Every place of a "nearest" kind, on every deck.
+// Every place of a "nearest" kind, on every deck (a venue with entrances as its doors).
 function nearTargets(id, key){
   const nice = n => /^(restroom|stairs|elevator)$/i.test(n) ? "the " + n.toLowerCase().replace("elevator", "elevators") : n;
-  return deckList(id).flatMap(d => catHits(id, d, key).boxes.map(h => ({ deck: d, boxes: [h.box], label: nice(h.name) })));
+  return deckList(id).flatMap(d => {
+    const vs = geoDeck(id, d)?.venues || [];
+    return catHits(id, d, key).boxes.flatMap(h => {
+      const v = vs.find(x => x.box === h.box), p = { deck: d, boxes: [h.box], label: nice(h.name), doors: v ? venueDoors(id, d, v.name) : [] };
+      return doorTargets(id, p);
+    });
+  });
+}
+// Venue entrances (1.16.2, from geometry.json): a place with doors is routed to its nearest reachable
+// door, which can be on another deck (the Getaway Theater's Deck 6 entry has its doors on Deck 7). The
+// route ends at the door, and the venue's boxes on the door's deck glow (the picked deck's when it has none).
+const doorBox = e => [e.x, e.y, e.x, e.y];
+function doorTargets(id, p){
+  if (!p.doors?.length) return [p];
+  return p.doors.map(e => {
+    const there = e.deck === p.deck ? p.boxes : venueBoxes(id, e.deck, p.label);
+    return { deck: e.deck, boxes: [doorBox(e)], label: p.label, door: true, glow: there.length ? { deck: e.deck, boxes: there } : { deck: p.deck, boxes: p.boxes } };
+  });
+}
+// A start at a venue with entrances begins at its doors: those on the venue's deck, or else on the deck
+// of its first door.
+function doorStart(p){
+  if (!p.doors?.length) return p;
+  const here = p.doors.filter(e => e.deck === p.deck), use = here.length ? here : p.doors.filter(e => e.deck === p.doors[0].deck);
+  return Object.assign({}, p, { deck: use[0].deck, boxes: use.map(doorBox) });
 }
 let dirForm = { from: "", to: "", fromCab: "", toCab: "" };
 async function openDirections(pre){
@@ -1213,6 +1313,7 @@ async function openDirections(pre){
     $("dirBody").innerHTML = head + `<div class="empty"><strong>Coming soon</strong>Directions are coming soon for this ship.</div><button class="btn ghost" id="dClose">Close</button>`;
     openSheet("dirSheet"); $("dClose").onclick = closeSheets; return;
   }
+  warmHops(W);
   const d = state.dir || (state.dir = {});
   const using = d.elevOnly ? "elevators" : (["stairs", "elevators", "either"].includes(d.using) ? d.using : "either");
   $("dirBody").innerHTML = head + `
@@ -1264,11 +1365,12 @@ async function openDirections(pre){
 // Work out the route and show it on the plan. Returns a message when there is no route.
 function runDirections(id, W, extra){
   const d = state.dir || {};
-  const from = dirPlace(id, dirForm.from, dirForm.fromCab), to = dirPlace(id, dirForm.to, dirForm.toCab);
+  const from0 = dirPlace(id, dirForm.from, dirForm.fromCab), to = dirPlace(id, dirForm.to, dirForm.toCab);
+  const from = from0.error || from0.near ? from0 : doorStart(from0);
   if (from.error) return from.error === "pick" ? "Pick where you're starting." : from.error;
   if (from.near) return "Pick where you're starting.";
   if (to.error) return to.error === "pick" ? "Pick where you're going." : to.error;
-  const target = to.near ? { targets: nearTargets(id, to.near), label: to.label } : { targets: [to], label: to.label };
+  const target = to.near ? { targets: nearTargets(id, to.near), label: to.label } : { targets: doorTargets(id, to), label: to.label };
   if (!target.targets.length) return `There's no ${to.label.replace("the nearest ", "")} on the deck plans.`;
   // Decks that no stairs or elevator join to the start's deck (on the hallway maps as they are today).
   const joined = new Set([from.deck]);
@@ -1304,7 +1406,7 @@ function showRoute(id, r, from, target, tip, ms){
   const dest = r.target;
   route = { ship: id, legs: r.legs, rides: r.rides, total: r.total, cur: 0, from, dest, tip, ms,
     steps: routeSteps(r, dest.label), toLabel: target.label };
-  highlight = { ship: id, deck: dest.deck, boxes: dest.boxes };
+  highlight = { ship: id, deck: (dest.glow || dest).deck, boxes: (dest.glow || dest).boxes };
   cardPlace = null;
   closeSheets();
   goLeg(0);
@@ -2434,8 +2536,12 @@ async function setClockAlarm(ev, statusId){
   if (!A) return;
   try {
     await A.set({ hour: d.getHours(), minute: d.getMinutes(), message: "Deck Finder: " + ev.title });
-    st.textContent = "Clock alarm set for " + niceTime(hm(d)) + ". You'll find it in your phone's Clock app.";
-  } catch (e) { st.textContent = "Couldn't set the Clock alarm. Set one yourself in the Clock app for " + niceTime(hm(d)) + "."; }
+    // Since android4 the Clock app opens with the alarm on screen, where it can still be changed or deleted.
+    st.textContent = "Opened the Clock app with an alarm for " + niceTime(hm(d)) + ". Check it there.";
+  } catch (e) {
+    st.textContent = e?.code === "NO_CLOCK_APP" && e.message ? e.message
+      : "Couldn't set the Clock alarm. Set one yourself in the Clock app for " + niceTime(hm(d)) + ".";
+  }
 }
 // Android wants a whole number id per notification: a steady one from the trip and event ids.
 const notifId = (t, ev) => { let h = 17; for (const ch of t.id + ":" + ev.id) h = (Math.imul(h, 31) + ch.codePointAt(0)) | 0; return (h & 0x7fffffff) || 1; };

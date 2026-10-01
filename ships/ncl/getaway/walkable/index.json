@@ -59,6 +59,7 @@
    "id": "stairs forward-right",
    "kind": "stairs",
    "decks": [
+    17,
     18
    ]
   },
@@ -145,6 +146,15 @@
    "id": "stairs midship-left",
    "kind": "stairs",
    "decks": [
+    6,
+    7,
+    8
+   ]
+  },
+  {
+   "id": "stairs midship-left 2",
+   "kind": "stairs",
+   "decks": [
     15
    ]
   },
@@ -156,17 +166,19 @@
    ]
   },
   {
-   "id": "stairs midship-left 2",
+   "id": "stairs midship-left 3",
    "kind": "stairs",
    "decks": [
-    16
+    16,
+    17
    ]
   },
   {
    "id": "stairs aft-right",
    "kind": "stairs",
    "decks": [
-    16
+    16,
+    17
    ]
   },
   {
@@ -192,7 +204,9 @@
    "id": "stairs aft-right 2",
    "kind": "stairs",
    "decks": [
-    17
+    16,
+    17,
+    18
    ]
   }
  ]
