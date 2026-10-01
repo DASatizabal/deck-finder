@@ -1,5 +1,9 @@
 # Changelog
 
+## [1.16.1] - 2026-10-01
+### Fixed
+- Adding the island sign picture works on the first try, the update banner no longer covers map controls, and the Android app only offers an update when one is ready to download.
+
 ## [1.16.0] - 2026-10-01
 ### Added
 - Directions on Norwegian Getaway (beta): routes between any two places, using stairs or elevators, with tips for busy times.

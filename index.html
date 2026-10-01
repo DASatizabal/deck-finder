@@ -40,7 +40,7 @@ body{
 button{font:inherit;color:inherit;background:none;border:0;cursor:pointer}
 button:focus-visible,input:focus-visible,[tabindex]:focus-visible{outline:3px solid var(--accent);outline-offset:2px;border-radius:6px}
 
-.app{height:100%;display:grid;grid-template-rows:auto 1fr auto;max-width:720px;margin:0 auto}
+.app{height:100%;display:grid;grid-template-rows:auto 1fr auto auto;max-width:720px;margin:0 auto}
 
 /* header */
 .top{display:flex;align-items:flex-end;gap:8px;padding:10px 12px 8px 14px}
@@ -155,7 +155,9 @@ button:focus-visible,input:focus-visible,[tabindex]:focus-visible{outline:3px so
 .placebar .grow{flex:1}
 .placebar button{background:var(--bg);color:var(--ink);border-radius:8px;padding:6px 10px;font-weight:600}
 /* update banner + version */
-.updatebar{position:fixed;left:12px;right:12px;bottom:calc(64px + env(safe-area-inset-bottom,0px));max-width:696px;margin:0 auto;z-index:9;display:block;padding:13px 16px;border-radius:12px;background:var(--accent);color:var(--accent-ink);font-weight:700;text-align:center;box-shadow:0 4px 14px rgba(0,0,0,.3)}
+.updatebar{display:block;margin:4px 12px 2px;padding:13px 16px;border-radius:12px;background:var(--accent);color:var(--accent-ink);font-weight:700;text-align:center;box-shadow:0 2px 10px rgba(0,0,0,.25)}
+.island > .updatebar{margin:6px 8px 4px}
+.welcome > .updatebar{margin:18px 0 0}
 .updatebar[hidden]{display:none}
 .verline{font-size:13px;color:var(--muted);padding:14px 4px 2px}
 .news{font-size:15px;padding:6px 4px 4px}
@@ -182,7 +184,7 @@ button:focus-visible,input:focus-visible,[tabindex]:focus-visible{outline:3px so
 .app.wide .body{grid-template-columns:minmax(0,1fr) 44px;gap:6px;padding:0 4px 0 8px}
 .listbtn{position:sticky;top:8px;left:8px;float:left;margin:8px 0 -52px 8px;z-index:2;height:40px;padding:0 14px;border-radius:20px;background:var(--ink);color:var(--bg);font-size:14px;font-weight:700;opacity:.92}
 .zoom.fullbtn{font-size:18px}
-.app.full{grid-template-rows:1fr;max-width:none}
+.app.full{grid-template-rows:1fr auto;max-width:none}
 .app.full > div:first-child, .app.full > footer{display:none}
 .app.full .body{padding-top:calc(4px + env(safe-area-inset-top,0px));padding-bottom:calc(4px + env(safe-area-inset-bottom,0px))}
 #listSheet .list{overflow:visible;padding:0}
@@ -295,7 +297,7 @@ button:focus-visible,input:focus-visible,[tabindex]:focus-visible{outline:3px so
 .welcome .big{display:block;width:100%;padding:18px;border-radius:14px;font-size:18px;font-weight:700;margin-top:12px;background:var(--ink);color:var(--bg)}
 .welcome .big.ghost{background:var(--chip);color:var(--ink)}
 .welcome .small{font-size:14px;color:var(--muted);margin-top:22px}
-.toast{position:fixed;left:12px;right:12px;bottom:calc(72px + env(safe-area-inset-bottom,0px));max-width:560px;margin:0 auto;z-index:20;padding:12px 16px;border-radius:12px;background:#2E8B57;color:#fff;font-weight:700;text-align:center;box-shadow:0 4px 14px rgba(0,0,0,.3)}
+.toast{pointer-events:none;position:fixed;left:12px;right:12px;bottom:calc(72px + env(safe-area-inset-bottom,0px));max-width:560px;margin:0 auto;z-index:20;padding:12px 16px;border-radius:12px;background:#2E8B57;color:#fff;font-weight:700;text-align:center;box-shadow:0 4px 14px rgba(0,0,0,.3)}
 .toast.err{background:#C0392B}
 .toast[hidden]{display:none}
 .readybar{display:flex;align-items:center;gap:4px;margin:0 12px 8px;border-radius:12px;background:#2E8B57;color:#fff}
@@ -394,7 +396,7 @@ textarea.search{resize:vertical;min-height:84px}
 .evrow.past b{color:var(--muted)}
 .evrow .edit{padding:8px 10px;border-radius:8px;background:var(--chip);font-size:14px;flex:none}
 .day .ev{font-size:13px;color:var(--ink);margin-top:2px}
-.remindbar{position:fixed;left:12px;right:12px;top:calc(10px + env(safe-area-inset-top,0px));max-width:696px;margin:0 auto;z-index:19;display:flex;align-items:center;gap:8px;padding:10px 10px 10px 14px;border-radius:14px;background:var(--ink);color:var(--bg);box-shadow:0 4px 16px rgba(0,0,0,.35)}
+.remindbar{margin:8px 12px 2px;display:flex;align-items:center;gap:8px;padding:10px 10px 10px 14px;border-radius:14px;background:var(--ink);color:var(--bg);box-shadow:0 4px 16px rgba(0,0,0,.35)}
 .remindbar[hidden]{display:none}
 .remindbar .grow{flex:1;min-width:0}
 .remindbar b{display:block;font-size:16px}
@@ -554,7 +556,7 @@ textarea.search{resize:vertical;min-height:84px}
 <div class="toast" id="toast" hidden role="status"></div>
 
 <script>
-const APP_VERSION = "1.16.0";
+const APP_VERSION = "1.16.1";
 const APP_DATE = "2026-10-01";
 
 // ---------- Android app (1.14.0): this web app bundled in Capacitor (the deck-finder-android repo) ----------
@@ -1349,20 +1351,20 @@ function renderDBar(){
     const title = r.toLabel !== r.dest.label ? `${cap(r.toLabel)}, Deck ${r.dest.deck}` : cap(r.dest.label);
     bar.innerHTML = `<div class="row"><div class="grow"><b>To: ${esc(title)}</b> <span class="beta">Beta</span>
         <small>About ${mins} ${mins === 1 ? "minute" : "minutes"} in all${r.legs.length > 1 ? ", Deck " + r.legs[0].deck + " to Deck " + r.legs[r.legs.length - 1].deck : ", on Deck " + l.deck}.${onLeg ? "" : " You're looking at Deck " + state.deck + "."}</small></div>
-        <button class="x" id="rbX" aria-label="End the route">✕</button></div>
+        <button class="x" id="rtX" aria-label="End the route">✕</button></div>
       <ol class="rsteps">${r.steps.map(s => `<li class="${s.leg === r.cur ? "cur" : ""}">${esc(s.text)}</li>`).join("")}</ol>
-      ${r.tip ? `<div class="rtip" id="rbTip">💡 ${esc(r.tip.text)}${r.tip.alt ? ` <button id="rbAlt">Use ${esc(r.tip.altBank)}</button>` : ""}</div>` : ""}
-      <div class="acts">${hasNext ? `<button class="go" id="rbTook">I took it</button>` : ""}${r.cur > 0 ? `<button id="rbBack">Back a step</button>` : ""}${!onLeg ? `<button id="rbShow">Show this step</button>` : ""}<button id="rbAgain">Start over</button></div>`;
+      ${r.tip ? `<div class="rtip" id="rtTip">💡 ${esc(r.tip.text)}${r.tip.alt ? ` <button id="rtAlt">Use ${esc(r.tip.altBank)}</button>` : ""}</div>` : ""}
+      <div class="acts">${hasNext ? `<button class="go" id="rtTook">I took it</button>` : ""}${r.cur > 0 ? `<button id="rtBack">Back a step</button>` : ""}${!onLeg ? `<button id="rtShow">Show this step</button>` : ""}<button id="rtAgain">Start over</button></div>`;
     show(true);
-    $("rbX").onclick = () => { route = null; highlight = null; render(); };
-    if ($("rbTook")) $("rbTook").onclick = () => goLeg(route.cur + 1);
-    if ($("rbBack")) $("rbBack").onclick = () => goLeg(route.cur - 1);
-    if ($("rbShow")) $("rbShow").onclick = () => goLeg(route.cur);
-    if ($("rbAlt")) $("rbAlt").onclick = () => {
+    $("rtX").onclick = () => { route = null; highlight = null; render(); };
+    if ($("rtTook")) $("rtTook").onclick = () => goLeg(route.cur + 1);
+    if ($("rtBack")) $("rtBack").onclick = () => goLeg(route.cur - 1);
+    if ($("rtShow")) $("rtShow").onclick = () => goLeg(route.cur);
+    if ($("rtAlt")) $("rtAlt").onclick = () => {
       const a = route.tip.alt;
       showRoute(route.ship, a, route.from, { targets: [route.dest], label: route.toLabel }, null, route.ms);
     };
-    $("rbAgain").onclick = () => { route = null; highlight = null; render(); openDirections({}); };
+    $("rtAgain").onclick = () => { route = null; highlight = null; render(); openDirections({}); };
     return;
   }
   const c = cardPlace;
@@ -2365,7 +2367,7 @@ function untilText(ms){
 const canShowPlace = p => !!p && ((p.kind === "venue" || p.kind === "cabin") ? !!catEntry(p.ship) : p.kind === "island" ? !!placeEntry(p.island) : false);
 let remindNow = null, remindTimer = null;
 function checkReminders(){
-  const r = dueReminders()[0] || null, bar = $("remindBar");
+  const r = dueReminders()[0] || null, bar = $("remindBar"), was = bar.hidden;
   if (!r){ bar.hidden = true; remindNow = null; }
   else {
     const key = remindKey(r.t, r.ev), left = r.start - Date.now();
@@ -2377,6 +2379,7 @@ function checkReminders(){
     $("rbShow").hidden = !canShowPlace(r.ev.place);
     bar.hidden = false;
   }
+  if (was !== bar.hidden) bannersMoved();
   // Wake up right when the next reminder is due; the 20-second check below is the backup.
   clearTimeout(remindTimer);
   const now = Date.now(); let next = Infinity;
@@ -3155,6 +3158,7 @@ function openIsland(id){
   if (!isl) isl = { id, s: 1, tx: 0, ty: 0, sel: null, hot: null, back: null, moved: false };
   state.island = id; save();
   $("island").hidden = false; $("iTitle").textContent = e.name;
+  placeBanners();
   if (!history.state || !history.state.island) history.pushState({ island: id }, "");
   gps.fix = null; gpsStart();
   renderAboard(); islGpsChanged();
@@ -3172,6 +3176,7 @@ function closeIsland(fromHistory){
   gpsStop(); gps.fix = null;
   isl = null; delete state.island; save();
   $("island").hidden = true; closeSheets();
+  placeBanners();
   if (!fromHistory && history.state && history.state.island) history.back();
   render();
 }
@@ -4014,24 +4019,50 @@ function signHash(img){
 }
 const hexBits = (a, b) => { let n = 0; for (let i = 0; i < a.length; i++){ let v = parseInt(a[i], 16) ^ parseInt(b[i], 16); while (v){ n += v & 1; v >>= 1; } } return n; };
 // IndexedDB "deckfinder-sign", store "images": { data (ArrayBuffer), type, w, h, saved } per island id.
+// Since 1.16.1 one connection is opened once and kept (a failed or closed one is opened again next
+// time), and a write counts as done only when its transaction has committed.
+let signConn = null;
 function signDb(){
-  return new Promise((ok, bad) => {
+  if (signConn) return signConn;
+  signConn = new Promise((ok, bad) => {
     if (!("indexedDB" in window)) return bad(new Error("no IndexedDB"));
-    const r = indexedDB.open("deckfinder-sign", 1);
-    r.onupgradeneeded = () => r.result.createObjectStore("images");
-    r.onsuccess = () => ok(r.result); r.onerror = () => bad(r.error);
+    let r;
+    try { r = indexedDB.open("deckfinder-sign", 1); } catch (e) { return bad(e); }
+    r.onupgradeneeded = () => { if (!r.result.objectStoreNames.contains("images")) r.result.createObjectStore("images"); };
+    r.onsuccess = () => {
+      const db = r.result;
+      db.onversionchange = () => { db.close(); signConn = null; };
+      db.onclose = () => { signConn = null; };
+      ok(db);
+    };
+    r.onerror = () => bad(r.error || new Error("open failed"));
+    r.onblocked = () => bad(new Error("blocked"));
   });
+  signConn.catch(() => { signConn = null; });
+  return signConn;
 }
 async function signStore(mode, id, val){
   const db = await signDb();
-  try {
-    return await new Promise((ok, bad) => {
-      const tx = db.transaction("images", mode === "get" ? "readonly" : "readwrite"), st = tx.objectStore("images");
-      const r = mode === "get" ? st.get(id) : mode === "put" ? st.put(val, id) : st.delete(id);
-      r.onsuccess = () => ok(r.result); r.onerror = () => bad(r.error);
-    });
-  } finally { db.close(); }
+  return new Promise((ok, bad) => {
+    let tx;
+    try { tx = db.transaction("images", mode === "get" ? "readonly" : "readwrite"); } catch (e) { signConn = null; return bad(e); }
+    const st = tx.objectStore("images");
+    let r, result;
+    try { r = mode === "get" ? st.get(id) : mode === "put" ? st.put(val, id) : st.delete(id); } catch (e) { return bad(e); }
+    r.onsuccess = () => { result = r.result; };
+    tx.oncomplete = () => ok(result);
+    tx.onerror = () => bad(tx.error || r.error || new Error("write failed"));
+    tx.onabort = () => bad(tx.error || new Error("write aborted"));
+  });
 }
+// Try once more after a short wait: the first read of a just-picked file, or the first write on a
+// fresh install, can fail once on Android (1.16.1).
+const pause = ms => new Promise(r => setTimeout(r, ms));
+async function withRetry(fn, what){
+  try { return await fn(); }
+  catch (e) { console.warn("Deck Finder: " + what + " failed once, trying again:", e && e.name, e && e.message); await pause(700); return fn(); }
+}
+const errName = e => (e && (e.name && e.name !== "Error" ? e.name : e.message)) || "unknown error";
 const loadImg = url => new Promise((ok, bad) => { const i = new Image(); i.onload = () => ok(i); i.onerror = () => bad(new Error("not an image")); i.src = url; });
 async function loadSign(){
   const id = isl?.id, a = isl?.d?.sign; if (!id || !a) return;
@@ -4096,7 +4127,12 @@ $("iSignFile").onchange = async e => {
   const say = (t, err) => { if (msg){ msg.textContent = t; msg.classList.toggle("err", !!err); } };
   const bad = () => say("This image doesn't match the island sign map this app was aligned to.", true);
   say("Checking the image...");
-  const a = isl.d.sign, url = URL.createObjectURL(file);
+  // Read the picked file once, into memory, and use that copy for the check and the save. Android hands
+  // the app a link to the file (content://), and a second read of it later could fail (1.16.1).
+  let bytes;
+  try { bytes = await withRetry(() => file.arrayBuffer(), "reading the picture"); }
+  catch (err) { console.warn("Deck Finder: reading the picture failed:", err); return say(`The picture couldn't be read (${errName(err)}). Pick it again.`, true); }
+  const type = file.type || "image/webp", a = isl.d.sign, url = URL.createObjectURL(new Blob([bytes], { type }));
   try {
     const img = await loadImg(url).catch(() => null);
     if (!img) return bad();
@@ -4104,14 +4140,21 @@ $("iSignFile").onchange = async e => {
     if (!W || !H || Math.abs(W / H - ratio) / ratio > 0.01 || W < a.image.width * 0.4) return bad();
     if (hexBits(signHash(img), a.image.fingerprint.value) > (a.image.fingerprint.max_bits || 40)) return bad();
     say("Saving it on this phone...");
-    await signStore("put", isl.id, { data: await file.arrayBuffer(), type: file.type || "image/webp", w: W, h: H, saved: new Date().toISOString() });
+    const id = isl.id;
+    try { await withRetry(() => signStore("put", id, { data: bytes, type, w: W, h: H, saved: new Date().toISOString() }), "saving the picture"); }
+    catch (err) {
+      console.warn("Deck Finder: saving the picture failed:", err);
+      return say(`The image couldn't be saved on this phone (${errName(err)}). Try again, or free up some space.`, true);
+    }
+    if (navigator.storage && navigator.storage.persist) navigator.storage.persist().catch(() => {});
     const S = sg(isl.id); if (S.url) URL.revokeObjectURL(S.url);
     signs[isl.id] = { has: true };
     state.islView = "sign"; save(); closeSheets();
     toast("Island sign map added. Drawing it on the map...");
     applyMapView();
   } catch (err) {
-    say("The image couldn't be saved on this phone. Try again, or free up some space.", true);
+    console.warn("Deck Finder: adding the sign picture failed:", err);
+    say(`Something went wrong adding the picture (${errName(err)}). Try again.`, true);
   } finally { URL.revokeObjectURL(url); }
 };
 
@@ -4839,7 +4882,11 @@ $("toast").onclick = () => { $("toast").hidden = true; };
 
 // ---------- welcome screen: shown when there are no trips yet ----------
 let welcomeSeen = false;   // "Browse ships" or "Set up a trip" hides it until the app is opened again
-function renderWelcome(){ $("welcome").hidden = !!(data.trips.length || welcomeSeen); }
+function renderWelcome(){
+  const was = $("welcome").hidden;
+  $("welcome").hidden = !!(data.trips.length || welcomeSeen);
+  if (was !== $("welcome").hidden) placeBanners();
+}
 $("wTrip").onclick = () => { welcomeSeen = true; render(); openTripForm(null); };
 $("wLink").onclick = openAddLink;
 $("wBrowse").onclick = () => {
@@ -5091,12 +5138,22 @@ async function readyChecks(t){
       : loc === "unsupported" ? "This browser can't share your location." : "Deck Finder hasn't asked for it yet. Tap Fix, then tap Allow.",
     fix: loc === "unsupported" ? null : loc === "denied" ? openLocationHelp : askLocation, opens: loc === "denied" });
   let info = null;
+  if (IS_APP){
+    // The Android app: up to date unless the newest release has a newer APK (1.16.1).
+    const c = await apkCheck(), u = c && c.ok && c.url && newer(c.version, APP_VERSION) ? c : null;
+    const known = !!(c && c.ok);
+    checks.push({ key: "version", ok: known && !u, title: "Latest version of the app",
+      detail: u ? "Version " + u.version + " is available as a new Android app. Tap Fix to download it." : known ? "Version " + APP_VERSION + "."
+        : "Couldn't check. Connect to the internet, then tap Fix to check again.",
+      fix: u ? async () => openOutside(u.url) : async () => { if (state.apkCheck && !state.apkCheck.ok){ delete state.apkCheck; save(); } }, opens: !!u });
+  } else {
   try { const r = await fetch(VERSION_URL, { cache: "no-store" }); if (r.ok) info = await r.json(); } catch (x) {}
   const latest = !!info && !newer(info.version, APP_VERSION);
   checks.push({ key: "version", ok: latest, title: "Latest version of the app",
-    detail: latest ? "Version " + APP_VERSION + "." : info ? (IS_APP ? "Version " + info.version + " is available as a new Android app. Tap Fix to download it." : "Version " + info.version + " is available. Tap Fix to update.")
+    detail: latest ? "Version " + APP_VERSION + "." : info ? "Version " + info.version + " is available. Tap Fix to update."
       : "Couldn't check. Connect to the internet, then tap Fix to check again.",
-    fix: info ? (IS_APP ? async () => openOutside(APK_PAGE) : applyUpdate) : async () => {}, opens: !!info && IS_APP });
+    fix: info ? applyUpdate : async () => {}, opens: false });
+  }
   const inst = isInstalled();
   checks.push({ key: "installed", ok: inst, title: "Installed on this phone",
     detail: IS_APP ? "This is the Deck Finder app for Android." : inst ? "Deck Finder opens from its own icon." : "It's open in a browser tab. Tap Fix to install it, then open it from its icon.",
@@ -5204,6 +5261,30 @@ if ("serviceWorker" in navigator && (location.protocol === "https:" || location.
   navigator.serviceWorker.register("sw.js").catch(()=>{});
 }
 
+// ---------- banners (1.16.1): part of the screen's layout, so they never cover a control ----------
+// The update banner sits under the deck plan (above the ship name), under the island map, or at the
+// bottom of the welcome screen, and the reminder banner above the header or the island map's top bar.
+// The plan or map gets shorter instead.
+function placeBanners(){
+  const ub = $("updateBar"), rb = $("remindBar"), isle = $("island"), wel = $("welcome");
+  if (!ub || !rb || !isle || !wel) return;
+  const before = ub.parentElement.id + "|" + rb.parentElement.id;
+  if (isl){
+    if (isle.firstElementChild !== rb) isle.insertBefore(rb, isle.firstElementChild);
+    if (isle.lastElementChild !== ub) isle.appendChild(ub);
+  } else {
+    const top = document.querySelector(".app > div"), foot = document.querySelector(".app > footer");
+    if (top.firstElementChild !== rb) top.insertBefore(rb, top.firstElementChild);
+    if (!wel.hidden){ if (wel.lastElementChild !== ub) wel.appendChild(ub); }
+    else if (foot.previousElementSibling !== ub) foot.before(ub);
+  }
+  if (before !== ub.parentElement.id + "|" + rb.parentElement.id) bannersMoved();
+}
+// A banner appearing or going away changes the plan's height: keep the default view right.
+function bannersMoved(){
+  if (isl && isl.d){ isl.lastSize = mapSize(); applyView(); }
+  else if ($("map") && state.zoomAuto){ const c = viewCenterPct(); syncAutoWidth(); if (c) scrollNow(c.x, c.y, false); }
+}
 // ---------- updates: compare the live version.json with this copy ----------
 // The Android app compares with the live website's version.json, not the copy inside the app.
 const VERSION_URL = IS_APP ? LIVE_BASE + "version.json" : "version.json";
@@ -5220,17 +5301,54 @@ async function fetchVersion(){
   } catch (e) {}
   return liveInfo;
 }
+// Android app (1.16.1): a new version means installing a new APK, and the Android lane attaches one
+// to each release only after building it. So the app asks GitHub for the newest release and offers
+// the update only when deck-finder-android.apk is on it: at most once every 6 hours (kept in
+// state.apkCheck, also when the check fails), never offline, and nothing at all when it fails.
+const RELEASES_API = "https://api.github.com/repos/DASatizabal/deck-finder/releases/latest";
+const APK_NAME = "deck-finder-android.apk";
+const APK_CHECK_MS = 6 * 3600 * 1000;
+let apkChecking = null;
+async function apkCheck(){
+  if (!IS_APP || !navigator.onLine) return state.apkCheck || null;
+  const c = state.apkCheck;
+  if (c && typeof c.at === "number" && Date.now() - c.at < APK_CHECK_MS && c.at <= Date.now()) return c;
+  if (!apkChecking) apkChecking = (async () => {
+    let out = { at: Date.now(), ok: false };
+    try {
+      const r = await fetch(RELEASES_API, { cache: "no-store", headers: { Accept: "application/vnd.github+json" } });
+      if (r.ok){
+        const j = await r.json(), a = (j.assets || []).find(x => x && x.name === APK_NAME && (!x.state || x.state === "uploaded"));
+        const v = String(j.tag_name || "").replace(/^v/, "");
+        if (/^\d+\.\d+\.\d+$/.test(v)) out = { at: out.at, ok: true, version: v, url: a && /^https:\/\/github\.com\//.test(a.browser_download_url || "") ? a.browser_download_url : null };
+      }
+    } catch (e) {}
+    state.apkCheck = out; save();
+    return out;
+  })().finally(() => { apkChecking = null; });
+  return apkChecking;
+}
+// The APK update to offer, or null: online, the check worked, and the newest release has the APK.
+async function apkUpdate(){
+  const c = await apkCheck();
+  return navigator.onLine && c && c.ok && c.url && newer(c.version, APP_VERSION) ? c : null;
+}
 async function checkForUpdate(){
-  const info = await fetchVersion();
-  const bar = $("updateBar");
-  if (info && newer(info.version, APP_VERSION)){
-    bar.hidden = false;
-    // Android app: the web files are inside the app, so a new version means installing a new app.
-    if (IS_APP){ bar.textContent = `A new Android version is available (v${info.version}). Tap to download it.`; return; }
-    bar.textContent = `Update available (v${info.version}). Tap to update.`;
-    // Start downloading the new version now so the tap is quick.
-    if ("serviceWorker" in navigator) navigator.serviceWorker.getRegistration().then(reg => reg && reg.update()).catch(()=>{});
-  } else bar.hidden = true;
+  const bar = $("updateBar"), was = bar.hidden;
+  if (IS_APP){
+    const u = await apkUpdate();
+    bar.hidden = !u;
+    if (u){ bar.textContent = `A new Android version is available (v${u.version}). Tap to download it.`; bar.dataset.url = u.url; }
+  } else {
+    const info = await fetchVersion();
+    if (info && newer(info.version, APP_VERSION)){
+      bar.hidden = false;
+      bar.textContent = `Update available (v${info.version}). Tap to update.`;
+      // Start downloading the new version now so the tap is quick.
+      if ("serviceWorker" in navigator) navigator.serviceWorker.getRegistration().then(reg => reg && reg.update()).catch(()=>{});
+    } else bar.hidden = true;
+  }
+  if (was !== bar.hidden) bannersMoved();
 }
 async function applyUpdate(){
   $("updateBar").textContent = "Updating...";
@@ -5246,8 +5364,12 @@ async function applyUpdate(){
   if (!w) return reload();
   w.addEventListener("statechange", () => { if (w.state === "installed") activate(w); });
 }
-$("updateBar").onclick = () => IS_APP ? openOutside(APK_PAGE) : applyUpdate();
+$("updateBar").onclick = () => IS_APP ? openOutside($("updateBar").dataset.url || APK_PAGE) : applyUpdate();
+placeBanners();
 checkForUpdate();
+// Offline, the Android app never offers a download.
+window.addEventListener("offline", () => { if (IS_APP && !$("updateBar").hidden){ $("updateBar").hidden = true; bannersMoved(); } });
+window.addEventListener("online", () => { if (IS_APP) checkForUpdate(); });
 let lastFront = 0;
 function onForeground(){
   if (IS_APP && Date.now() - lastFront < 1500) return;   // the Android app reports a return twice (page and plugin)
@@ -5261,13 +5383,14 @@ if (IS_APP){ try { plugin("App")?.addListener("resume", onForeground); } catch (
 // ---------- what's new ----------
 async function openNews(){
   const info = (await fetchVersion()) || { version: APP_VERSION, date: APP_DATE, notes: "" };
-  const update = newer(info.version, APP_VERSION);
+  const apk = IS_APP ? await apkUpdate() : null;
+  const update = IS_APP ? !!apk : newer(info.version, APP_VERSION);
   $("newsBody").innerHTML = `
     <h3>What's new</h3>
     <div class="hint" style="padding-top:0">Version ${esc(info.version)} (${esc(info.date)})</div>
     <div class="news">${esc(info.notes || "No notes for this version.")}</div>
     ${update ? `<button class="btn" id="nUpdate">${IS_APP ? "Download the new Android version" : "Update to v" + esc(info.version)}</button>` : `<div class="hint">You have the latest version.</div>`}`;
-  if (update) $("nUpdate").onclick = () => { closeSheets(); if (IS_APP) openOutside(APK_PAGE); else applyUpdate(); };
+  if (update) $("nUpdate").onclick = () => { closeSheets(); if (IS_APP) openOutside(apk.url); else applyUpdate(); };
   openSheet("newsSheet");
 }
 </script>
