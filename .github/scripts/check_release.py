@@ -26,7 +26,12 @@ Checks:
     inside the island's bounds), the image's width, height and a 64-digit fingerprint, and a map
     panel; and no image file of any kind may sit anywhere under places/, because the island sign
     image must never be published.
+11. Since 1.16.0, a ship.json that names a "walkable" index must have a grid for every deck (each a
+    bitmap of exactly cols x rows cells, with access cells inside it), and every stairs or elevator
+    connection must name only decks the ship has. A "directions" rules file must have its costs as
+    positive numbers and a list of tips.
 """
+import base64
 import json
 import os
 import re
@@ -40,6 +45,17 @@ errors = []
 def fail(msg):
     errors.append(msg)
     print(f"FAIL: {msg}")
+
+
+def load_json(path, label):
+    if not path.is_file():
+        fail(f"{label} is missing")
+        return None
+    try:
+        return json.loads(path.read_text(encoding="utf-8"))
+    except json.JSONDecodeError as e:
+        fail(f"{label} is not valid JSON: {e}")
+        return None
 
 
 def parse(v):
@@ -150,18 +166,53 @@ for ship_file in ship_files:
             except json.JSONDecodeError as e:
                 fail(f"{folder}/{geo} is not valid JSON: {e}")
 
+    # 11. Walkable grids for Directions (1.16.0): every deck has a grid of the right size, and every
+    #     stairs or elevator connection names real decks, with access cells inside the grids.
+    wk = ship.get("walkable")
+    if wk is not None:
+        wpath = ship_file.parent / str(wk)
+        widx = load_json(wpath, f"{folder}/{wk}") if isinstance(wk, str) else None
+        if isinstance(widx, dict):
+            wdecks = widx.get("decks") if isinstance(widx.get("decks"), dict) else {}
+            ship_decks = {str(k) for k in decks}
+            for d in sorted(ship_decks - set(wdecks), key=int):
+                fail(f"{folder}/{wk} has no grid for deck {d}. Run python tools/import_walkable.py.")
+            for d in sorted(set(wdecks) - ship_decks, key=lambda x: int(x) if str(x).isdigit() else 0):
+                fail(f"{folder}/{wk} has a grid for deck {d}, which {folder}/ship.json doesn't have")
+            for c in widx.get("connections") or []:
+                cd = c.get("decks") if isinstance(c, dict) else None
+                if not (isinstance(c, dict) and c.get("kind") in ("stairs", "elevator") and isinstance(cd, list) and cd
+                        and all(str(x) in ship_decks for x in cd)):
+                    fail(f"{folder}/{wk}: connection {c.get('id') if isinstance(c, dict) else c!r} must be stairs or elevator and name only decks the ship has (found {cd!r})")
+            for d, fname in wdecks.items():
+                gfile = wpath.parent / str(fname)
+                g = load_json(gfile, f"{folder}/{gfile.relative_to(ship_file.parent).as_posix()}")
+                if not isinstance(g, dict):
+                    continue
+                cols, rows = g.get("cols"), g.get("rows")
+                try:
+                    nbytes = len(base64.b64decode(g.get("walkable", ""), validate=True))
+                except Exception:
+                    nbytes = -1
+                if not (isinstance(cols, int) and isinstance(rows, int) and nbytes == (cols * rows + 7) // 8):
+                    fail(f"{folder}/{fname}: the grid needs cols, rows and a bitmap of exactly cols x rows cells")
+                    continue
+                for c in g.get("connections") or []:
+                    if any(not (0 <= a[0] < cols and 0 <= a[1] < rows) for a in c.get("access") or []):
+                        fail(f"{folder}/{fname}: {c.get('id')!r} has an access cell outside the grid")
+    # The Directions rules (1.16.0): costs as numbers and a list of tips.
+    dr = ship.get("directions")
+    if dr is not None:
+        rules = load_json(ship_file.parent / str(dr), f"{folder}/{dr}")
+        if isinstance(rules, dict):
+            costs = rules.get("costs") or {}
+            need = ("ship_length_m", "walk_m_per_s", "stairs_up_s_per_deck", "stairs_down_s_per_deck", "elevator_wait_s", "elevator_s_per_deck")
+            if not all(isinstance(costs.get(k), (int, float)) and costs[k] > 0 for k in need):
+                fail(f"{folder}/{dr} needs \"costs\" with {', '.join(need)} as positive numbers")
+            if not isinstance(rules.get("tips"), list) or not all(isinstance(t, dict) and t.get("id") and t.get("text") for t in rules["tips"]):
+                fail(f"{folder}/{dr} needs a \"tips\" list, each with an id and a text")
+
 # 10. Island maps: the files exist, are valid JSON, and every place sits inside the island's bounds
-def load_json(path, label):
-    if not path.is_file():
-        fail(f"{label} is missing")
-        return None
-    try:
-        return json.loads(path.read_text(encoding="utf-8"))
-    except json.JSONDecodeError as e:
-        fail(f"{label} is not valid JSON: {e}")
-        return None
-
-
 num = lambda v: isinstance(v, (int, float)) and not isinstance(v, bool)
 for place_file in sorted(Path("places").glob("*/place.json")):
     folder = place_file.parent

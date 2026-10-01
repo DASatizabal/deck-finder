@@ -1,5 +1,9 @@
 # Changelog
 
+## [1.16.0] - 2026-10-01
+### Added
+- Directions on Norwegian Getaway (beta): routes between any two places, using stairs or elevators, with tips for busy times.
+
 ## [1.15.0] - 2026-09-30
 ### Added
 - Great Stirrup Cay category buttons for restrooms, bars, food, tram stops, and more.

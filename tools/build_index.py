@@ -18,11 +18,13 @@ INDEX = SHIPS_DIR / "index.json"
 
 
 def ship_hash(folder):
-    """sha256 over every file in the ship (or place) folder (name, size, bytes), in a fixed order."""
+    """sha256 over every file in the ship (or place) folder (path, size, bytes), in a fixed order.
+    Since 1.16.0 it includes subfolders (like walkable/), each file named by its path inside the
+    folder, so a folder without subfolders hashes exactly as before."""
     h = hashlib.sha256()
-    for f in sorted(p for p in folder.iterdir() if p.is_file()):
+    for f in sorted((p for p in folder.rglob("*") if p.is_file()), key=lambda p: p.relative_to(folder).as_posix()):
         data = f.read_bytes()
-        h.update(f"{f.name}\n{len(data)}\n".encode())
+        h.update(f"{f.relative_to(folder).as_posix()}\n{len(data)}\n".encode())
         h.update(data)
     return h.hexdigest()
 
@@ -40,7 +42,7 @@ def build():
                 "name": ship["name"],
                 "path": folder.as_posix() + "/",
                 "decks": len(ship["decks"]),
-                "bytes": sum(p.stat().st_size for p in folder.iterdir() if p.is_file()),
+                "bytes": sum(p.stat().st_size for p in folder.rglob("*") if p.is_file()),
                 "hash": ship_hash(folder),
             })
         ships.sort(key=lambda s: s["name"])
@@ -57,7 +59,7 @@ def build():
             "port_name": place.get("port_name", place["name"]),
             "port_match": place.get("port_match", place.get("port_name", place["name"])),
             "bounds": place["bounds"],
-            "bytes": sum(p.stat().st_size for p in folder.iterdir() if p.is_file()),
+            "bytes": sum(p.stat().st_size for p in folder.rglob("*") if p.is_file()),
             "hash": ship_hash(folder),
         })
     return {"lines": lines, "places": places}

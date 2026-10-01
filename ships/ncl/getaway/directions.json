@@ -1,0 +1,36 @@
+{
+  "note": "Rules for Directions on Norwegian Getaway (1.16.0). Costs are in seconds and set how routes are chosen; tips are the one-line hints under the steps. Edit this file to change them, then run python tools/build_index.py.",
+  "costs": {
+    "ship_length_m": 325.7,
+    "walk_m_per_s": 1.2,
+    "stairs_up_s_per_deck": 25,
+    "stairs_down_s_per_deck": 18,
+    "elevator_wait_s": 60,
+    "elevator_s_per_deck": 4
+  },
+  "tips": [
+    {
+      "id": "after-arrival",
+      "day": "port",
+      "minutes_after_arrival": [0, 90],
+      "uses": "elevator",
+      "max_elevator_decks": 3,
+      "text": "Elevators are busiest just after arrival. Stairs may be quicker."
+    },
+    {
+      "id": "debarkation",
+      "day": "debark",
+      "before": "10:00",
+      "uses": "elevator",
+      "text": "Debarkation morning: elevators are packed with luggage. Stairs are usually quicker."
+    },
+    {
+      "id": "buffet",
+      "times": [["07:00", "09:30"], ["11:30", "13:30"]],
+      "uses": "elevator",
+      "busy_place": { "deck": 15, "name": "Garden Cafe", "label": "Garden Café" },
+      "similar_within": 0.2,
+      "text": "Mealtime at the {place}: {bank} are farther from it and take about as long."
+    }
+  ]
+}

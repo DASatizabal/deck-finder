@@ -1,0 +1,199 @@
+{
+ "ship": "getaway",
+ "cell_px": 2,
+ "format": "walkable is a base64 packed bitmap, 1 = walkable, row by row from the top left, most significant bit first. A cell is cell_px x cell_px image pixels. access cells are [col, row].",
+ "decks": {
+  "5": "deck5.json",
+  "6": "deck6.json",
+  "7": "deck7.json",
+  "8": "deck8.json",
+  "9": "deck9.json",
+  "10": "deck10.json",
+  "11": "deck11.json",
+  "12": "deck12.json",
+  "13": "deck13.json",
+  "14": "deck14.json",
+  "15": "deck15.json",
+  "16": "deck16.json",
+  "17": "deck17.json",
+  "18": "deck18.json"
+ },
+ "connections": [
+  {
+   "id": "elevators forward",
+   "kind": "elevator",
+   "decks": [
+    5,
+    6,
+    7,
+    8,
+    9,
+    10,
+    11,
+    12,
+    13,
+    14,
+    15,
+    16
+   ]
+  },
+  {
+   "id": "elevators aft",
+   "kind": "elevator",
+   "decks": [
+    5,
+    6,
+    7,
+    8,
+    9,
+    10,
+    11,
+    12,
+    13,
+    14,
+    15,
+    16
+   ]
+  },
+  {
+   "id": "stairs forward-right",
+   "kind": "stairs",
+   "decks": [
+    18
+   ]
+  },
+  {
+   "id": "stairs forward-left",
+   "kind": "stairs",
+   "decks": [
+    17
+   ]
+  },
+  {
+   "id": "stairs forward-left 2",
+   "kind": "stairs",
+   "decks": [
+    15,
+    16
+   ]
+  },
+  {
+   "id": "stairs forward-right 2",
+   "kind": "stairs",
+   "decks": [
+    16,
+    17
+   ]
+  },
+  {
+   "id": "stairs forward",
+   "kind": "stairs",
+   "decks": [
+    5,
+    7,
+    8,
+    9,
+    10,
+    11,
+    12,
+    13,
+    14,
+    17
+   ]
+  },
+  {
+   "id": "stairs forward-left 3",
+   "kind": "stairs",
+   "decks": [
+    16,
+    17
+   ]
+  },
+  {
+   "id": "stairs forward-left 4",
+   "kind": "stairs",
+   "decks": [
+    15,
+    16
+   ]
+  },
+  {
+   "id": "stairs forward-right 3",
+   "kind": "stairs",
+   "decks": [
+    15,
+    16
+   ]
+  },
+  {
+   "id": "stairs forward-right 4",
+   "kind": "stairs",
+   "decks": [
+    12,
+    13,
+    15
+   ]
+  },
+  {
+   "id": "stairs forward-left 5",
+   "kind": "stairs",
+   "decks": [
+    15
+   ]
+  },
+  {
+   "id": "stairs midship-left",
+   "kind": "stairs",
+   "decks": [
+    15
+   ]
+  },
+  {
+   "id": "stairs midship-right",
+   "kind": "stairs",
+   "decks": [
+    15
+   ]
+  },
+  {
+   "id": "stairs midship-left 2",
+   "kind": "stairs",
+   "decks": [
+    16
+   ]
+  },
+  {
+   "id": "stairs aft-right",
+   "kind": "stairs",
+   "decks": [
+    16
+   ]
+  },
+  {
+   "id": "stairs aft",
+   "kind": "stairs",
+   "decks": [
+    5,
+    6,
+    7,
+    8,
+    9,
+    10,
+    11,
+    12,
+    13,
+    14,
+    15,
+    16,
+    17
+   ]
+  },
+  {
+   "id": "stairs aft-right 2",
+   "kind": "stairs",
+   "decks": [
+    17
+   ]
+  }
+ ]
+}

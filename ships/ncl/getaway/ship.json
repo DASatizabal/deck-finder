@@ -4,6 +4,8 @@
   "name": "Norwegian Getaway",
   "itinerary_code": "GETAWAY",
   "geometry": "geometry.json",
+  "walkable": "walkable/index.json",
+  "directions": "directions.json",
   "decks": {
     "5": {
       "image": "deck5.webp",

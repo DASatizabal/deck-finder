@@ -1,5 +1,5 @@
 {
-  "version": "1.15.0",
-  "date": "2026-09-30",
-  "notes": "Island map: category buttons, map views (drawn, satellite, island sign), the harbor by the Lagoon as water, and labels that no longer overlap."
+  "version": "1.16.0",
+  "date": "2026-10-01",
+  "notes": "Directions on Norwegian Getaway (beta): routes between any two places, using stairs or elevators, with tips for busy times."
 }

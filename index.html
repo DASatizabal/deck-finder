@@ -428,6 +428,36 @@ textarea.search{resize:vertical;min-height:84px}
 .zoom.lyr svg{width:20px;height:20px;display:block;margin:auto}
 .catopt[disabled]{opacity:.55}
 .catopt .ci.vimg{font-size:20px}
+/* 1.16.0: Directions (beta): the route on the plan, the route bar, the place card */
+.routesvg{position:absolute;left:0;top:0;width:100%;height:100%;pointer-events:none;z-index:2;overflow:visible}
+.routesvg .rcase{fill:none;stroke:#fff;stroke-width:9px;stroke-linecap:round;stroke-linejoin:round;vector-effect:non-scaling-stroke;opacity:.9}
+.routesvg .rline{fill:none;stroke:#E53935;stroke-width:5px;stroke-linecap:round;stroke-linejoin:round;vector-effect:non-scaling-stroke}
+.routesvg .past{opacity:.35}
+.rmark{position:absolute;transform:translate(-50%,-50%);z-index:3;pointer-events:none;min-width:24px;height:24px;padding:0 6px;border-radius:12px;background:#E53935;color:#fff;border:2px solid #fff;font-size:12px;font-weight:800;display:flex;align-items:center;justify-content:center;gap:3px;box-shadow:0 1px 4px rgba(0,0,0,.4);white-space:nowrap}
+.rmark.start{min-width:16px;width:16px;height:16px;padding:0;background:#fff;border:4px solid #E53935}
+.dbar{position:absolute;left:8px;right:8px;bottom:8px;z-index:4;max-width:420px;background:var(--surface);color:var(--ink);border-radius:14px;padding:10px 12px;box-shadow:0 2px 12px rgba(0,0,0,.3);max-height:48%;overflow-y:auto}
+.dbar[hidden]{display:none}
+.dbar .row{display:flex;align-items:center;gap:8px}
+.dbar .grow{flex:1;min-width:0}
+.dbar small{display:block;color:var(--muted);font-size:13px}
+.dbar .x{font-size:15px;padding:4px 8px;border-radius:8px;background:var(--chip);flex:none}
+.dbar .acts{display:flex;gap:6px;margin-top:8px;flex-wrap:wrap}
+.dbar .acts button{padding:8px 12px;border-radius:9px;background:var(--chip);font-weight:700;font-size:14px}
+.dbar .acts .go{background:#E53935;color:#fff}
+.rsteps{margin:6px 0 2px;padding-left:22px;font-size:14px}
+.rsteps li{margin:3px 0;color:var(--muted)}
+.rsteps li.cur{color:var(--ink);font-weight:700}
+.rtip{margin-top:6px;font-size:13px;background:var(--chip);border-radius:8px;padding:6px 8px}
+.rtip button{font-weight:700;text-decoration:underline;padding:0;margin-left:4px;font-size:13px}
+.beta{display:inline-block;font-size:11px;font-weight:800;letter-spacing:.04em;text-transform:uppercase;padding:1px 6px;border-radius:6px;background:#8E44AD;color:#fff;vertical-align:2px}
+.plancol.hasbar .catcount{bottom:auto;top:46px}
+.seg{display:flex;gap:6px}
+.seg button{flex:1;padding:11px 6px;border-radius:10px;background:var(--chip);color:var(--ink);font-weight:700;font-size:15px}
+.seg button.on{background:var(--ink);color:var(--bg)}
+.seg button:disabled{opacity:.45}
+.check{display:flex;align-items:center;gap:10px;margin:12px 0;font-size:15px}
+.check input{width:22px;height:22px}
+.field[hidden]{display:none}
 @media (prefers-reduced-motion: reduce){*{transition:none!important}.hl{animation:none}}
 </style>
 </head>
@@ -453,6 +483,7 @@ textarea.search{resize:vertical;min-height:84px}
       <div class="catbar" id="catBar" hidden role="toolbar" aria-label="Highlight places"></div>
       <div class="mapwrap" id="mapwrap"></div>
       <div class="catcount" id="catCount" hidden role="status"></div>
+      <div class="dbar" id="dBar" hidden></div>
     </div>
     <div class="slider" id="slider" role="slider" tabindex="0" aria-label="Deck" aria-orientation="vertical"></div>
   </main>
@@ -518,12 +549,13 @@ textarea.search{resize:vertical;min-height:84px}
   <p class="small">Got an invite link from family? Just tap it. On an iPhone, copy it and tap Add from a link.</p>
 </div>
 <div class="sheet" id="catSheet" role="dialog" aria-label="More places to highlight"><div class="scroll" id="catBody"></div></div>
+<div class="sheet" id="dirSheet" role="dialog" aria-label="Directions"><div class="scroll" id="dirBody"></div></div>
 <div class="remindbar" id="remindBar" hidden role="alert"><div class="grow"><b id="rbTitle"></b><small id="rbWhen"></small></div><button class="go" id="rbShow">Show me</button><button class="x" id="rbX" aria-label="Dismiss the reminder">✕</button></div>
 <div class="toast" id="toast" hidden role="status"></div>
 
 <script>
-const APP_VERSION = "1.15.0";
-const APP_DATE = "2026-09-29";
+const APP_VERSION = "1.16.0";
+const APP_DATE = "2026-10-01";
 
 // ---------- Android app (1.14.0): this web app bundled in Capacitor (the deck-finder-android repo) ----------
 // Everything that checks IS_APP runs only inside the Android app. Chrome and iPhone never take those paths.
@@ -688,16 +720,19 @@ function centerTarget(box, pt){
     scrollNow(c.x, c.y, true);
   });
 }
-async function showBoxes(id, deck, boxes){
+// place (1.16.0): { label, value } for the place card, where value is how the Directions screen names it.
+async function showBoxes(id, deck, boxes, place){
   state.ship = id; state.deck = deck;
   try { await ensureShip(id); } catch (e) {}
   highlight = { ship: id, deck, boxes };
+  cardPlace = place ? Object.assign({ ship: id, deck }, place) : null;
   render();
   if (boxes[0]) centerTarget(boxes[0]);
 }
 function highlightVenue(id, deck, name){
   const boxes = venueBoxes(id, deck, name);
-  if (boxes.length) showBoxes(id, deck, boxes); else { state.deck = deck; highlight = null; render(); }
+  if (boxes.length) showBoxes(id, deck, boxes, { label: name, value: "v|" + deck + "|" + name });
+  else { state.deck = deck; highlight = null; cardPlace = null; render(); }
 }
 
 // ---------- category buttons (1.12.0): light up every bar, restroom, stairway... on the deck ----------
@@ -793,12 +828,563 @@ function openCatMore(){
   openSheet("catSheet");
 }
 
+// ---------- Directions (1.16.0, beta): walking routes on ships with walkable grids ----------
+// ships/<line>/<ship>/walkable/ (from the builder's build_walkable.py, copied by tools/import_walkable.py):
+// index.json lists one grid per deck and every stairway and elevator bank with the decks it serves.
+// Each grid is a bitmap of walkable cells (cell_px image pixels square) plus the access cells of
+// the stairs and elevators on that deck. directions.json holds the costs and the busy-time tips.
+// On each deck the route is the shortest walk on the grid; between decks it takes the stairs or
+// elevator bank that gives the shortest whole trip (in seconds), within the choices on the screen.
+let route = null;       // the route on the plan: { ship, legs, rides, cur, total, dest, tip, ... }, in memory only
+let cardPlace = null;   // the place card under the plan: { ship, deck, label, value }
+const WALKS = {}, walkLoads = {};
+function loadWalk(id){
+  if (WALKS[id]) return Promise.resolve(WALKS[id]);
+  if (walkLoads[id]) return walkLoads[id];
+  walkLoads[id] = (async () => {
+    const sh = await ensureShip(id), e = catEntry(id);
+    if (!sh || !sh.walkable || !e) return null;
+    const get = async f => { const r = await fetch(e.path + f); if (!r.ok) throw new Error(f + " answered " + r.status); return r.json(); };
+    const dir = sh.walkable.replace(/[^/]*$/, "");
+    const [idx, rules] = await Promise.all([get(sh.walkable), sh.directions ? get(sh.directions).catch(() => ({})) : {}]);
+    const decks = {};
+    await Promise.all(Object.entries(idx.decks || {}).map(async ([d, f]) => { decks[d] = walkGrid(await get(dir + f), sh.decks[d], rules); }));
+    return (WALKS[id] = { idx, rules: rules || {}, decks });
+  })().finally(() => { delete walkLoads[id]; });
+  return walkLoads[id];
+}
+const walkCost = (W, k, dflt) => { const v = W?.rules?.costs?.[k]; return typeof v === "number" && v > 0 ? v : dflt; };
+function walkGrid(g, info, rules){
+  const n = g.cols * g.rows, bin = atob(g.walkable), walk = new Uint8Array(n);
+  for (let i = 0; i < n; i++) walk[i] = (bin.charCodeAt(i >> 3) >> (7 - (i & 7))) & 1;
+  const e = info?.ship_extent, H = g.image_size[1];
+  const shipPx = (e && e.bottom > e.top ? (e.bottom - e.top) / 100 : 1) * H;
+  const L = typeof rules?.costs?.ship_length_m === "number" ? rules.costs.ship_length_m : 300;
+  return { cols: g.cols, rows: g.rows, cell: g.cell_px, W: g.image_size[0], H, walk, conns: g.connections || [], mpc: L / shipPx * g.cell_px, main: null };
+}
+// The biggest connected walkable area of a deck (the hallways), found once. Places anchor to it, so a
+// sealed-looking room on the plan never strands a route.
+function mainArea(g){
+  if (g.main) return g.main;
+  const n = g.cols * g.rows, lab = new Int32Array(n), q = new Int32Array(n);
+  let best = 0, bestSize = 0, next = 0;
+  for (let s0 = 0; s0 < n; s0++){
+    if (!g.walk[s0] || lab[s0]) continue;
+    next++; lab[s0] = next; let h = 0, t = 0; q[t++] = s0;
+    while (h < t){
+      const i = q[h++], c = i % g.cols;
+      const nb = [c > 0 ? i - 1 : -1, c < g.cols - 1 ? i + 1 : -1, i - g.cols, i + g.cols];
+      for (const j of nb) if (j >= 0 && j < n && g.walk[j] && !lab[j]){ lab[j] = next; q[t++] = j; }
+    }
+    if (t > bestSize){ bestSize = t; best = next; }
+  }
+  const main = new Uint8Array(n);
+  for (let i = 0; i < n; i++) main[i] = lab[i] === best ? 1 : 0;
+  return (g.main = main);
+}
+// The walkable hallway cells next to some boxes (percent of the plan), each with its distance in
+// cells from the nearest box: a Map of cell -> cost. Inside or right next to the box first, farther only
+// when nothing is close.
+function anchorCells(g, boxes){
+  const main = mainArea(g);
+  for (const reach of [6, 12, 24, 40]){
+    const m = new Map();
+    for (const b of boxes){
+      const c1 = Math.floor(b[0] / 100 * g.W / g.cell), r1 = Math.floor(b[1] / 100 * g.H / g.cell);
+      const c2 = Math.max(c1 + 1, Math.ceil(b[2] / 100 * g.W / g.cell)), r2 = Math.max(r1 + 1, Math.ceil(b[3] / 100 * g.H / g.cell));
+      for (let r = Math.max(0, r1 - reach); r < Math.min(g.rows, r2 + reach); r++)
+        for (let c = Math.max(0, c1 - reach); c < Math.min(g.cols, c2 + reach); c++){
+          const i = r * g.cols + c; if (!main[i]) continue;
+          const dc = c < c1 ? c1 - c : c >= c2 ? c - c2 + 1 : 0, dr = r < r1 ? r1 - r : r >= r2 ? r - r2 + 1 : 0, d = Math.hypot(dc, dr);
+          if (d <= reach && !(m.get(i) <= d)) m.set(i, d);
+        }
+    }
+    if (m.size) return m;
+  }
+  return new Map();
+}
+const accessCells = (g, cid) => { const c = g?.conns.find(x => x.id === cid); return c && c.access?.length ? new Map(c.access.map(([col, row]) => [row * g.cols + col, 0])) : null; };
+// Shortest walks on one deck (8 directions, never cutting a corner) from seed cells to groups of target
+// cells. groups: [{ cells: Map cell -> extra }]. Returns each group's best { cost, cell } (cost in cells,
+// extra included) and the trail back to the seeds. Stops once every group is settled, or past maxCost.
+function gridSearch(g, seeds, groups, maxCost){
+  const n = g.cols * g.rows, C = g.cols, W = g.walk;
+  const dist = new Float64Array(n).fill(Infinity), prev = new Int32Array(n).fill(-1);
+  const hk = [], hv = [];
+  const push = (c, i) => {
+    let k = hk.length; hk.push(c); hv.push(i);
+    while (k){ const pk = (k - 1) >> 1; if (hk[pk] <= c) break; hk[k] = hk[pk]; hv[k] = hv[pk]; k = pk; }
+    hk[k] = c; hv[k] = i;
+  };
+  const tgt = new Map();
+  groups.forEach((gr, gi) => gr.cells.forEach((x, i) => { (tgt.get(i) || tgt.set(i, []).get(i)).push([gi, x]); }));
+  const best = groups.map(() => null);
+  let unreached = groups.length, worst = 0;
+  seeds.forEach((c, i) => { if (W[i] && c < dist[i]){ dist[i] = c; push(c, i); } });
+  const S2 = Math.SQRT2;
+  while (hk.length){
+    const c = hk[0], i = hv[0];
+    const lc = hk.pop(), li = hv.pop();
+    if (hk.length){
+      let k = 0; const L = hk.length;
+      for (;;){ let a = 2 * k + 1; if (a >= L) break; if (a + 1 < L && hk[a + 1] < hk[a]) a++; if (hk[a] >= lc) break; hk[k] = hk[a]; hv[k] = hv[a]; k = a; }
+      hk[k] = lc; hv[k] = li;
+    }
+    if (c > dist[i]) continue;
+    if (c > maxCost) break;
+    if (!unreached && c >= worst) break;
+    const hits = tgt.get(i);
+    if (hits) for (const [gi, x] of hits){
+      const v = c + x;
+      if (!best[gi]){ best[gi] = { cost: v, cell: i }; unreached--; }
+      else if (v < best[gi].cost) best[gi] = { cost: v, cell: i };
+      worst = Math.max(...best.map(b => b ? b.cost : 0));
+    }
+    const col = i % C, up = i >= C, dn = i < n - C, lf = col > 0, rt = col < C - 1;
+    const relax = (j, w) => { const v = c + w; if (v < dist[j]){ dist[j] = v; prev[j] = i; push(v, j); } };
+    const N = up && W[i - C], S = dn && W[i + C], Wl = lf && W[i - 1], E = rt && W[i + 1];
+    if (N) relax(i - C, 1); if (S) relax(i + C, 1); if (Wl) relax(i - 1, 1); if (E) relax(i + 1, 1);
+    if (N && Wl && W[i - C - 1]) relax(i - C - 1, S2); if (N && E && W[i - C + 1]) relax(i - C + 1, S2);
+    if (S && Wl && W[i + C - 1]) relax(i + C - 1, S2); if (S && E && W[i + C + 1]) relax(i + C + 1, S2);
+  }
+  return { best, prev };
+}
+// The cells from a seed to cell i, as image pixel points with the straight runs merged.
+function trail(g, prev, i){
+  const cells = []; for (let j = i; j >= 0; j = prev[j]) cells.push(j);
+  cells.reverse();
+  const pts = cells.map(j => [((j % g.cols) + 0.5) * g.cell, (Math.floor(j / g.cols) + 0.5) * g.cell]);
+  const out = [];
+  pts.forEach((p, k) => {
+    if (out.length >= 2){
+      const a = out[out.length - 2], b = out[out.length - 1];
+      if (Math.abs((b[0] - a[0]) * (p[1] - b[1]) - (b[1] - a[1]) * (p[0] - b[0])) < 1e-6){ out[out.length - 1] = p; return; }
+    }
+    out.push(p);
+  });
+  return out;
+}
+// "elevators aft" -> "the aft elevators", "stairs forward-left 2" -> "the forward left stairs".
+function connName(c){
+  const pos = String(c.id).split(" ").slice(1).filter(x => !/^\d+$/.test(x)).join(" ").replace(/-/g, " ");
+  return "the " + (pos ? pos + " " : "") + (c.kind === "elevator" ? "elevators" : "stairs");
+}
+// The route from one place to another. from: { deck, boxes, label }. to: { targets: [{ deck, boxes, label }] }
+// (one target, or every candidate for "the nearest ..."). opt: { using: "stairs" | "elevators" | "either",
+// maxUp, maxDown (decks by stairs, null for no limit), avoid (a Set of connection ids), cache (shared
+// between routes with the same from and to, so a second try reuses the deck searches) }.
+// Each deck search reaches every stairway and elevator bank on its deck, so the same searches serve any
+// choice of Using. The start deck is searched from the start, each destination deck backwards from
+// the destination. Walking across a deck in between (to change stairs) is tried only when no direct
+// stairway or elevator works.
+function planRoute(W, from, to, opt){
+  const speed = walkCost(W, "walk_m_per_s", 1.2), upS = walkCost(W, "stairs_up_s_per_deck", 25), downS = walkCost(W, "stairs_down_s_per_deck", 18);
+  const waitS = walkCost(W, "elevator_wait_s", 60), rideS = walkCost(W, "elevator_s_per_deck", 4);
+  const K = opt.cache || {};
+  const g0 = W.decks[from.deck];
+  if (!g0) return { error: "Deck " + from.deck + " has no hallway map yet." };
+  const fromSeeds = K.fromSeeds || (K.fromSeeds = anchorCells(g0, from.boxes));
+  if (!fromSeeds.size) return { error: "Couldn't find a hallway next to " + from.label + " on the deck map." };
+  if (!K.tByDeck){
+    K.tByDeck = {};
+    to.targets.forEach((t, ti) => {
+      const g = W.decks[t.deck]; if (!g) return;
+      const cells = anchorCells(g, t.boxes); if (!cells.size) return;
+      const dt = K.tByDeck[t.deck] || (K.tByDeck[t.deck] = { cells: new Map(), owner: new Map() });
+      cells.forEach((x, i) => { if (!(dt.cells.get(i) <= x)){ dt.cells.set(i, x); dt.owner.set(i, ti); } });
+    });
+  }
+  const tByDeck = K.tByDeck;
+  if (!Object.keys(tByDeck).length) return { error: "Couldn't find a hallway next to " + to.label + " on the deck map." };
+  const all = W.idx.connections || [];
+  const ok = c => !(opt.avoid && opt.avoid.has(c.id)) && (opt.using === "either" || (opt.using === "stairs") === (c.kind === "stairs"));
+  // Every stairway and elevator bank on deck d with its access cells there (whatever the choices).
+  const connsOn = d => (K["c" + d] || (K["c" + d] = all.map((c, ci) => ({ ci, cells: c.decks.includes(+d) ? accessCells(W.decks[d], c.id) : null })).filter(x => x.cells)));
+  const search = (key, d, seeds, groups) => K[key] || (K[key] = Object.assign({ d, groups }, gridSearch(W.decks[d], seeds, groups, Infinity)));
+  const fromSearch = () => search("S", from.deck, fromSeeds, [...connsOn(from.deck), ...(tByDeck[from.deck] ? [{ ti: true, cells: tByDeck[from.deck].cells }] : [])]);
+  const toSearch = d => search("T" + d, d, tByDeck[d].cells, connsOn(d));
+  const lim = v => typeof v === "number" && v >= 0 ? v : Infinity;
+  const maxUp = lim(opt.maxUp), maxDown = lim(opt.maxDown);
+  const secs = (d, cells) => cells * W.decks[d].mpc / speed;
+  function run(hops){
+    const pq = [{ key: "S", d: from.deck, cost: 0, up: 0, down: 0, par: null }], done = new Set();
+    let best = null;
+    while (pq.length){
+      let bi = 0; for (let k = 1; k < pq.length; k++) if (pq[k].cost < pq[bi].cost) bi = k;
+      const st = pq.splice(bi, 1)[0];
+      if (best && st.cost >= best.cost) break;
+      const sk = st.key + "|" + st.d + "|" + st.up + "|" + st.down;
+      if (done.has(sk)) continue; done.add(sk);
+      if (st.key === "T"){ best = st; break; }
+      if (st.key === "S"){
+        const s = fromSearch();
+        s.groups.forEach((gr, k) => {
+          const b = s.best[k]; if (!b) return;
+          const walk = { search: s, cell: b.cell, cells: b.cost };
+          if (gr.ti) pq.push({ key: "T", d: st.d, cost: secs(st.d, b.cost), up: 0, down: 0, par: st, walk, ti: tByDeck[st.d].owner.get(b.cell) });
+          else if (ok(all[gr.ci])) pq.push({ key: "w:" + gr.ci, d: st.d, cost: secs(st.d, b.cost), up: 0, down: 0, par: st, walk });
+        });
+      } else if (st.key.startsWith("r:")){
+        const ci = +st.key.split(":")[1];
+        if (tByDeck[st.d]){
+          const s = toSearch(st.d), k = s.groups.findIndex(gr => gr.ci === ci), b = k >= 0 ? s.best[k] : null;
+          if (b){
+            // The backward search ends at this bank's access cell; its trail starts at the destination.
+            let j = b.cell; while (s.prev[j] >= 0) j = s.prev[j];
+            pq.push({ key: "T", d: st.d, cost: st.cost + secs(st.d, b.cost), up: st.up, down: st.down, par: st, walk: { search: s, cell: b.cell, cells: b.cost, back: true }, ti: tByDeck[st.d].owner.get(j) });
+          }
+        }
+        if (hops){
+          const s = search("F" + ci + "@" + st.d, st.d, accessCells(W.decks[st.d], all[ci].id), connsOn(st.d));
+          s.groups.forEach((gr, k) => {
+            const b = s.best[k]; if (!b || gr.ci === ci || !ok(all[gr.ci])) return;
+            pq.push({ key: "w:" + gr.ci, d: st.d, cost: st.cost + secs(st.d, b.cost), up: st.up, down: st.down, par: st, walk: { search: s, cell: b.cell, cells: b.cost } });
+          });
+        }
+      } else {
+        const ci = +st.key.split(":")[1], c = all[ci];
+        c.decks.forEach(d2 => {
+          if (d2 === st.d || !W.decks[d2] || !accessCells(W.decks[d2], c.id)) return;
+          if (!hops && !tByDeck[d2]) return;          // a direct trip goes straight to a destination deck
+          const n = Math.abs(d2 - st.d), goingUp = d2 > st.d;
+          let cost, up = st.up, down = st.down;
+          if (c.kind === "stairs"){
+            if (goingUp) up += n; else down += n;
+            if (up > maxUp || down > maxDown) return;
+            cost = n * (goingUp ? upS : downS);
+          } else cost = waitS + n * rideS;
+          pq.push({ key: "r:" + ci, d: d2, cost: st.cost + cost, up, down, par: st, ride: { conn: c, from: st.d, to: d2, n, up: goingUp, secs: cost } });
+        });
+      }
+    }
+    return best;
+  }
+  const best = run(false) || run(true);
+  if (!best) return { error: null };
+  // Walk back from the destination: each walk is a leg on one deck, and the rides join them.
+  const chain = []; for (let st = best; st; st = st.par) chain.unshift(st);
+  const legs = [], rides = [];
+  chain.forEach(st => {
+    if (st.ride) rides.push(st.ride);
+    if (!st.walk) return;
+    const d = st.walk.search.d, g = W.decks[d];
+    let pts = trail(g, st.walk.search.prev, st.walk.cell);
+    if (st.walk.back) pts = pts.reverse();
+    legs.push({ deck: d, pts, W: g.W, H: g.H, secs: secs(d, st.walk.cells), meters: st.walk.cells * g.mpc,
+      end: st.key === "T" ? { dest: true } : { conn: all[+st.key.split(":")[1]] } });
+  });
+  return { legs, rides, total: best.cost, target: to.targets[best.ti] || to.targets[0], decks: legs.map(l => l.deck) };
+}
+// The walking steps, one or more per leg: [{ leg, text }].
+function routeSteps(r, toLabel){
+  const out = [];
+  const mins = s => { const m = Math.max(1, Math.round(s / 60)); return m + (m === 1 ? " minute" : " minutes"); };
+  r.legs.forEach((l, i) => {
+    const where = l.end.dest ? toLabel : connName(l.end.conn);
+    out.push({ leg: i, text: l.meters < 8 ? (l.end.dest ? `You're at ${where}.` : `${cap(where)} are right here.`) : `Walk to ${where}, about ${mins(l.secs)}.` });
+    const rd = r.rides[i];
+    if (rd){
+      const dir = rd.up ? "up" : "down";
+      out.push({ leg: i, text: rd.conn.kind === "elevator" ? `Ride ${dir} to Deck ${rd.to}.` : `Take the stairs ${dir} ${rd.n} ${rd.n === 1 ? "deck" : "decks"} to Deck ${rd.to}.` });
+    }
+  });
+  return out;
+}
+const cap = t => t.charAt(0).toUpperCase() + t.slice(1);
+// ---------- busy-time tips (directions.json "tips"): one line under the steps, the first rule that applies ----------
+const clockMin = t => { const m = /^(\d{1,2}):(\d{2})$/.exec(t || ""); return m ? +m[1] * 60 + +m[2] : null; };
+function routeTip(W, r, opt, ctx){
+  const now = ctx.now || new Date(), mins = now.getHours() * 60 + now.getMinutes();
+  const trip = activeTrip(), day = trip && trip.ship === ctx.ship ? (trip.itinerary?.days || []).find(x => x.date === ymd(now)) : null;
+  const elev = r.rides.filter(x => x.conn.kind === "elevator"), elevDecks = elev.reduce((t, x) => t + x.n, 0);
+  for (const t of W.rules.tips || []){
+    if (t.uses === "elevator" && !elev.length) continue;
+    if (typeof t.max_elevator_decks === "number" && elevDecks > t.max_elevator_decks) continue;
+    if (t.day === "port"){
+      const a = day && !day.sea && day.kind === "port" ? clockMin(day.arrive) : null;
+      const w = t.minutes_after_arrival || [0, 90];
+      if (a === null || mins < a + w[0] || mins > a + w[1]) continue;
+    }
+    if (t.day === "debark" && !(day && day.kind === "debark")) continue;
+    if (t.before && !(mins < clockMin(t.before))) continue;
+    if (Array.isArray(t.times) && !t.times.some(([a, b]) => mins >= clockMin(a) && mins <= clockMin(b))) continue;
+    if (t.busy_place){
+      const alt = busyAlternative(W, r, opt, ctx, t);
+      if (!alt) continue;
+      return { text: t.text.replace("{place}", t.busy_place.label || t.busy_place.name).replace("{bank}", connName(alt.bank)), alt: alt.route, altBank: connName(alt.bank) };
+    }
+    return { text: t.text };
+  }
+  return null;
+}
+// For the buffet rule: the elevator bank this route uses is the one nearer the busy place, and a route
+// through a bank farther from it takes about as long (within similar_within). Returns that route.
+function busyAlternative(W, r, opt, ctx, t){
+  const bp = t.busy_place, g = W.decks[bp.deck]; if (!g) return null;
+  const boxes = (geoDeck(ctx.ship, bp.deck)?.venues || []).filter(v => normName(v.name) === normName(bp.name)).map(v => v.box);
+  if (!boxes.length) return null;
+  const cx = boxes.reduce((a, b) => a + (b[0] + b[2]) / 2, 0) / boxes.length / 100 * g.W, cy = boxes.reduce((a, b) => a + (b[1] + b[3]) / 2, 0) / boxes.length / 100 * g.H;
+  const far = c => { const a = g.conns.find(x => x.id === c.id)?.access; if (!a || !a.length) return null;
+    return Math.hypot(a.reduce((s, p) => s + p[0], 0) / a.length * g.cell - cx, a.reduce((s, p) => s + p[1], 0) / a.length * g.cell - cy); };
+  const used = r.rides.filter(x => x.conn.kind === "elevator").map(x => x.conn);
+  if (!used.length) return null;
+  const others = (W.idx.connections || []).filter(c => c.kind === "elevator" && !used.some(u => u.id === c.id));
+  for (const u of used){
+    const du = far(u); if (du === null) continue;
+    const farther = others.filter(o => (far(o) ?? -1) > du);
+    if (!farther.length) continue;
+    const alt = planRoute(W, ctx.from, ctx.to, Object.assign({}, opt, { avoid: new Set([...(opt.avoid || []), u.id]) }));
+    const bank = alt.legs && alt.rides.find(x => farther.some(o => o.id === x.conn.id));
+    if (bank && alt.total <= r.total * (1 + (t.similar_within ?? 0.2))) return { route: alt, bank: bank.conn };
+  }
+  return null;
+}
+
+// ---------- the Directions screen ----------
+// Choices (what to avoid, the stairs limits) are remembered in state.dir; the route itself is not.
+const NEAR_KEYS = [["restroom", "restroom"], ["bar", "bar"], ["food", "place to eat"], ["pool", "pool"], ["stairs", "stairs"], ["elevator", "elevators"]];
+const ptBox = p => [p.x - 0.4, p.y - 0.06, p.x + 0.4, p.y + 0.06];
+function dirOptions(id, withNear){
+  const t = activeTrip(), mine = t && t.ship === id && t.cabin && (geoCabin(id, t.cabin) || t.pin);
+  const o = (v, label) => `<option value="${esc(v)}">${esc(label)}</option>`;
+  let h = `<option value="">Pick a place</option>`;
+  if (withNear) h += `<optgroup label="The nearest">${NEAR_KEYS.map(([k, w]) => o("n|" + k, "The nearest " + w)).join("")}</optgroup>`;
+  h += `<optgroup label="Cabins">${mine ? o("my", "My cabin " + t.cabin) : ""}${o("cabin", "A cabin number (type it)")}</optgroup>`;
+  const pins = t && t.ship === id ? (t.pins || []).filter(p => p.ship === id) : [];
+  if (pins.length) h += `<optgroup label="My pins">${pins.map(p => o("p|" + p.id, p.label + ", Deck " + p.deck)).join("")}</optgroup>`;
+  deckList(id).forEach(d => {
+    const gd = geoDeck(id, d); if (!gd) return;
+    const names = [...new Set((gd.venues || []).map(v => v.name))].sort((a, b) => a.localeCompare(b));
+    const kinds = [...new Set((gd.amenities || []).map(a => a.kind))].filter(k => !names.some(n => normName(n) === normName(k)));
+    if (names.length || kinds.length) h += `<optgroup label="Deck ${d}">${names.map(n => o("v|" + d + "|" + n, n)).join("")}${kinds.map(k => o("a|" + d + "|" + k, k)).join("")}</optgroup>`;
+  });
+  return h;
+}
+// A Directions choice as a place: { label, deck, boxes }, { near, label }, or { error }.
+function dirPlace(id, v, typed){
+  if (!v) return { error: "pick" };
+  const [kind, a, b] = v.split("|");
+  if (v === "my"){
+    const t = activeTrip(); if (!t || !t.cabin) return { error: "Set up your cabin in Trip set up first." };
+    const box = myCabinBox(t), pt = cabinPoint(t);
+    if (!box && !pt) return { error: `Cabin ${t.cabin} isn't placed on the deck plan yet. Tap the cabin chip to place it.` };
+    return { label: "your cabin " + t.cabin, deck: cabinDeckNum(t.cabin), boxes: [box || ptBox(pt)] };
+  }
+  if (v === "cabin" || kind === "c"){
+    const n = String(kind === "c" ? a : typed || "").trim();
+    if (!/^\d{4,5}$/.test(n)) return { error: "Type the cabin number, like 5768." };
+    const c = geoCabin(id, n);
+    if (!c) return { error: `Cabin ${n} isn't on the ${shipName(id)} deck plans. Check the number on the door.` };
+    return { label: "cabin " + c.number, deck: cabinDeckNum(c.number), boxes: [c.box] };
+  }
+  if (kind === "v" || kind === "a"){
+    const boxes = kind === "v" ? venueBoxes(id, +a, b) : amenityBoxes(id, +a, b);
+    return boxes.length ? { label: b, deck: +a, boxes } : { error: b + " isn't on the deck plan." };
+  }
+  if (kind === "p"){
+    const p = tripPins().find(x => x.id === a);
+    return p ? { label: p.label, deck: p.deck, boxes: [ptBox(p)], pin: p } : { error: "That pin is gone." };
+  }
+  if (kind === "n"){ const w = NEAR_KEYS.find(x => x[0] === a); return w ? { near: a, label: "the nearest " + w[1] } : { error: "pick" }; }
+  return { error: "pick" };
+}
+// Every place of a "nearest" kind, on every deck.
+function nearTargets(id, key){
+  const nice = n => /^(restroom|stairs|elevator)$/i.test(n) ? "the " + n.toLowerCase().replace("elevator", "elevators") : n;
+  return deckList(id).flatMap(d => catHits(id, d, key).boxes.map(h => ({ deck: d, boxes: [h.box], label: nice(h.name) })));
+}
+let dirForm = { from: "", to: "", fromCab: "", toCab: "" };
+async function openDirections(pre){
+  const id = state.ship;
+  if (pre.from !== undefined) dirForm.from = pre.from;
+  if (pre.to !== undefined) dirForm.to = pre.to;
+  if (!dirForm.from && !pre.to && activeTrip()?.ship === id && activeTrip()?.cabin) dirForm.from = "my";
+  ["from", "to"].forEach(k => { const v = dirForm[k]; if (v && v.startsWith("c|")){ dirForm[k] = "cabin"; dirForm[k + "Cab"] = v.slice(2); } });
+  const head = `<h3>Directions <span class="beta">Beta</span></h3>
+    <div class="hint" style="padding-top:0">Routes are new. If one looks wrong, tell David.</div>`;
+  let W = null;
+  try { W = await loadWalk(id); } catch (e) {
+    $("dirBody").innerHTML = head + `<div class="empty"><strong>Not saved yet</strong>${NOT_SAVED_MSG}</div><button class="btn ghost" id="dClose">Close</button>`;
+    openSheet("dirSheet"); $("dClose").onclick = closeSheets; return;
+  }
+  if (!W){
+    $("dirBody").innerHTML = head + `<div class="empty"><strong>Coming soon</strong>Directions are coming soon for this ship.</div><button class="btn ghost" id="dClose">Close</button>`;
+    openSheet("dirSheet"); $("dClose").onclick = closeSheets; return;
+  }
+  const d = state.dir || (state.dir = {});
+  const using = d.elevOnly ? "elevators" : (["stairs", "elevators", "either"].includes(d.using) ? d.using : "either");
+  $("dirBody").innerHTML = head + `
+    <label class="field"><span>From</span><select id="dFrom">${dirOptions(id, false)}</select></label>
+    <label class="field" id="dFromCabW" hidden><span>Cabin number (from the door, if you're standing by one)</span><input id="dFromCab" inputmode="numeric" maxlength="5" autocomplete="off" placeholder="5768"></label>
+    <label class="field"><span>To</span><select id="dTo">${dirOptions(id, true)}</select></label>
+    <label class="field" id="dToCabW" hidden><span>Cabin number</span><input id="dToCab" inputmode="numeric" maxlength="5" autocomplete="off" placeholder="9204"></label>
+    <div class="field"><span>Using</span><div class="seg" role="radiogroup" aria-label="Using">${[["stairs", "Stairs"], ["elevators", "Elevators"], ["either", "Either"]].map(([k, l]) =>
+      `<button role="radio" data-u="${k}" class="${using === k ? "on" : ""}" aria-checked="${using === k}"${d.elevOnly && k !== "elevators" ? " disabled" : ""}>${l}</button>`).join("")}</div></div>
+    <details class="adv" id="dAdv"${d.elevOnly || Number.isFinite(d.maxUp) || Number.isFinite(d.maxDown) ? " open" : ""}><summary>Advanced</summary>
+      <label class="field"><span>No more than this many decks up by stairs</span><input id="dUp" type="number" min="0" max="15" inputmode="numeric" placeholder="No limit" value="${Number.isFinite(d.maxUp) ? d.maxUp : ""}"></label>
+      <label class="field"><span>No more than this many decks down by stairs</span><input id="dDown" type="number" min="0" max="15" inputmode="numeric" placeholder="No limit" value="${Number.isFinite(d.maxDown) ? d.maxDown : ""}"></label>
+      <label class="check"><input type="checkbox" id="dAcc"${d.elevOnly ? " checked" : ""}> Elevators only (accessible)</label>
+    </details>
+    <div class="status err" id="dErr"></div>
+    <button class="btn" id="dGo">Show the route</button>
+    <button class="btn ghost" id="dClose">Close</button>`;
+  openSheet("dirSheet");
+  const sel = (k, v) => { const s = $(k); s.value = v; if (s.value !== v) s.value = ""; };
+  sel("dFrom", dirForm.from); sel("dTo", dirForm.to);
+  $("dFromCab").value = dirForm.fromCab || ""; $("dToCab").value = dirForm.toCab || "";
+  const sync = () => { $("dFromCabW").hidden = $("dFrom").value !== "cabin"; $("dToCabW").hidden = $("dTo").value !== "cabin"; };
+  sync();
+  $("dFrom").onchange = () => { sync(); if ($("dFrom").value === "cabin") $("dFromCab").focus(); };
+  $("dTo").onchange = () => { sync(); if ($("dTo").value === "cabin") $("dToCab").focus(); };
+  $("dirBody").querySelectorAll("[data-u]").forEach(b => b.onclick = () => {
+    d.using = b.dataset.u; save();
+    $("dirBody").querySelectorAll("[data-u]").forEach(x => { x.classList.toggle("on", x === b); x.setAttribute("aria-checked", x === b); });
+  });
+  $("dAcc").onchange = () => {
+    d.elevOnly = $("dAcc").checked; save();
+    $("dirBody").querySelectorAll("[data-u]").forEach(x => {
+      x.disabled = d.elevOnly && x.dataset.u !== "elevators";
+      const on = d.elevOnly ? x.dataset.u === "elevators" : x.dataset.u === (d.using || "either");
+      x.classList.toggle("on", on); x.setAttribute("aria-checked", on);
+    });
+  };
+  const num = el => { const v = el.value.trim(); return v === "" ? null : Math.max(0, Math.floor(+v)); };
+  $("dUp").onchange = () => { d.maxUp = num($("dUp")); if (d.maxUp === null) delete d.maxUp; save(); };
+  $("dDown").onchange = () => { d.maxDown = num($("dDown")); if (d.maxDown === null) delete d.maxDown; save(); };
+  $("dClose").onclick = closeSheets;
+  $("dGo").onclick = () => {
+    Object.assign(dirForm, { from: $("dFrom").value, to: $("dTo").value, fromCab: $("dFromCab").value, toCab: $("dToCab").value });
+    $("dUp").onchange(); $("dDown").onchange();
+    const msg = runDirections(id, W);
+    if (msg) $("dErr").textContent = msg;
+  };
+}
+// Work out the route and show it on the plan. Returns a message when there is no route.
+function runDirections(id, W, extra){
+  const d = state.dir || {};
+  const from = dirPlace(id, dirForm.from, dirForm.fromCab), to = dirPlace(id, dirForm.to, dirForm.toCab);
+  if (from.error) return from.error === "pick" ? "Pick where you're starting." : from.error;
+  if (from.near) return "Pick where you're starting.";
+  if (to.error) return to.error === "pick" ? "Pick where you're going." : to.error;
+  const target = to.near ? { targets: nearTargets(id, to.near), label: to.label } : { targets: [to], label: to.label };
+  if (!target.targets.length) return `There's no ${to.label.replace("the nearest ", "")} on the deck plans.`;
+  // Decks that no stairs or elevator join to the start's deck (on the hallway maps as they are today).
+  const joined = new Set([from.deck]);
+  for (let grew = true; grew;){
+    grew = false;
+    (W.idx.connections || []).forEach(c => { if (c.decks.some(x => joined.has(x))) c.decks.forEach(x => { if (!joined.has(x)){ joined.add(x); grew = true; } }); });
+  }
+  if (!target.targets.some(t => joined.has(t.deck)))
+    return `Deck ${target.targets[0].deck} isn't joined to Deck ${from.deck} by any stairs or elevator on the hallway maps yet, so there's no route there. Tell David.`;
+  target.targets = target.targets.filter(t => joined.has(t.deck));
+  const using = d.elevOnly ? "elevators" : (["stairs", "elevators", "either"].includes(d.using) ? d.using : "either");
+  const opt = Object.assign({ using, maxUp: d.elevOnly ? null : d.maxUp, maxDown: d.elevOnly ? null : d.maxDown, cache: {} }, extra || {});
+  const t0 = performance.now();
+  const r = planRoute(W, from, target, opt);
+  const ms = performance.now() - t0;
+  if (!r.legs) return r.error || whyNoRoute(W, from, target, opt);
+  const tip = routeTip(W, r, opt, { ship: id, from, to: target });
+  showRoute(id, r, from, target, tip, ms);
+  return "";
+}
+function whyNoRoute(W, from, target, opt){
+  const any = planRoute(W, from, target, { using: "either", cache: opt.cache });
+  if (!any.legs) return "No route found between these places on the deck maps. The hallway maps are new, so tell David.";
+  const toDeck = target.targets.length === 1 ? target.targets[0].deck : null;
+  const limited = Number.isFinite(opt.maxUp) || Number.isFinite(opt.maxDown);
+  if (limited && planRoute(W, from, target, { using: opt.using, cache: opt.cache }).legs)
+    return opt.using === "stairs" ? "No stairs route stays within your stairs limits. Allow more decks, or try Elevators or Either."
+      : "No route stays within your stairs limits. Allow more decks, or choose Elevators or Either.";
+  if (opt.using === "stairs") return "No stairs connect these decks; try Elevators or Either.";
+  return `No elevators reach ${toDeck ? "Deck " + toDeck : "there"} from Deck ${from.deck}; try Stairs or Either.`;
+}
+function showRoute(id, r, from, target, tip, ms){
+  const dest = r.target;
+  route = { ship: id, legs: r.legs, rides: r.rides, total: r.total, cur: 0, from, dest, tip, ms,
+    steps: routeSteps(r, dest.label), toLabel: target.label };
+  highlight = { ship: id, deck: dest.deck, boxes: dest.boxes };
+  cardPlace = null;
+  closeSheets();
+  goLeg(0);
+}
+// Show leg k of the route: its deck, centered where it starts, at the current zoom.
+function goLeg(k){
+  if (!route) return;
+  route.cur = k;
+  const l = route.legs[k];
+  state.ship = route.ship; state.deck = l.deck;
+  render();
+  // Center where this leg starts, at the current zoom, in the part of the plan above the steps.
+  const p = l.pts[0]; if (!p) return;
+  whenPlanReady(() => {
+    const map = $("map"), wrap = $("mapwrap"), bar = $("dBar"); if (!map) return;
+    const bh = bar && !bar.hidden ? bar.offsetHeight + 8 : 0;
+    wrap.scrollTo({ top: Math.max(0, map.offsetTop + p[1] / l.H * map.offsetHeight - (wrap.clientHeight - bh) / 2),
+      left: Math.max(0, map.offsetLeft + p[0] / l.W * map.offsetWidth - wrap.clientWidth / 2), behavior: "smooth" });
+  });
+}
+function routeLayer(d){
+  if (!route || route.ship !== state.ship) return "";
+  const legs = route.legs.map((l, i) => [l, i]).filter(([l]) => l.deck === d);
+  if (!legs.length) return "";
+  const W = legs[0][0].W, H = legs[0][0].H, pts = l => l.pts.map(p => p[0].toFixed(1) + "," + p[1].toFixed(1)).join(" ");
+  const pct = (p, l) => `left:${(p[0] / l.W * 100).toFixed(2)}%;top:${(p[1] / l.H * 100).toFixed(2)}%`;
+  let marks = "";
+  legs.forEach(([l, i]) => {
+    marks += `<div class="rmark start" style="${pct(l.pts[0], l)}"></div>`;
+    const rd = route.rides[i];
+    if (rd && !l.end.dest) marks += `<div class="rmark" style="${pct(l.pts[l.pts.length - 1], l)}">${rd.conn.kind === "elevator" ? "🛗" : "🪜"} ${rd.up ? "▲" : "▼"} ${rd.to}</div>`;
+  });
+  return `<svg class="routesvg" viewBox="0 0 ${W} ${H}" preserveAspectRatio="none" aria-hidden="true">${legs.map(([l, i]) =>
+    `<polyline class="rcase${i === route.cur ? "" : " past"}" points="${pts(l)}"/><polyline class="rline${i === route.cur ? "" : " past"}" points="${pts(l)}"/>`).join("")}</svg>${marks}`;
+}
+// Under the plan: the route's steps while a route is on, otherwise the card of the place picked last.
+function renderDBar(){
+  const bar = $("dBar"); if (!bar) return;
+  const show = (on) => { bar.hidden = !on; $("plancol").classList.toggle("hasbar", on); };
+  if (route && route.ship === state.ship){
+    const r = route, l = r.legs[r.cur], hasNext = r.cur < r.legs.length - 1;
+    const mins = Math.max(1, Math.round(r.total / 60));
+    const onLeg = l.deck === state.deck;
+    const title = r.toLabel !== r.dest.label ? `${cap(r.toLabel)}, Deck ${r.dest.deck}` : cap(r.dest.label);
+    bar.innerHTML = `<div class="row"><div class="grow"><b>To: ${esc(title)}</b> <span class="beta">Beta</span>
+        <small>About ${mins} ${mins === 1 ? "minute" : "minutes"} in all${r.legs.length > 1 ? ", Deck " + r.legs[0].deck + " to Deck " + r.legs[r.legs.length - 1].deck : ", on Deck " + l.deck}.${onLeg ? "" : " You're looking at Deck " + state.deck + "."}</small></div>
+        <button class="x" id="rbX" aria-label="End the route">✕</button></div>
+      <ol class="rsteps">${r.steps.map(s => `<li class="${s.leg === r.cur ? "cur" : ""}">${esc(s.text)}</li>`).join("")}</ol>
+      ${r.tip ? `<div class="rtip" id="rbTip">💡 ${esc(r.tip.text)}${r.tip.alt ? ` <button id="rbAlt">Use ${esc(r.tip.altBank)}</button>` : ""}</div>` : ""}
+      <div class="acts">${hasNext ? `<button class="go" id="rbTook">I took it</button>` : ""}${r.cur > 0 ? `<button id="rbBack">Back a step</button>` : ""}${!onLeg ? `<button id="rbShow">Show this step</button>` : ""}<button id="rbAgain">Start over</button></div>`;
+    show(true);
+    $("rbX").onclick = () => { route = null; highlight = null; render(); };
+    if ($("rbTook")) $("rbTook").onclick = () => goLeg(route.cur + 1);
+    if ($("rbBack")) $("rbBack").onclick = () => goLeg(route.cur - 1);
+    if ($("rbShow")) $("rbShow").onclick = () => goLeg(route.cur);
+    if ($("rbAlt")) $("rbAlt").onclick = () => {
+      const a = route.tip.alt;
+      showRoute(route.ship, a, route.from, { targets: [route.dest], label: route.toLabel }, null, route.ms);
+    };
+    $("rbAgain").onclick = () => { route = null; highlight = null; render(); openDirections({}); };
+    return;
+  }
+  const c = cardPlace;
+  if (c && c.ship === state.ship && c.deck === state.deck){
+    bar.innerHTML = `<div class="row"><div class="grow"><b>${esc(cap(c.label))}</b><small>Deck ${c.deck}</small></div><button class="x" id="cdX" aria-label="Close">✕</button></div>
+      <div class="acts"><button id="cdTo">🧭 Directions here</button><button id="cdFrom">Start from here</button></div>`;
+    show(true);
+    $("cdX").onclick = () => { cardPlace = null; render(); };
+    $("cdTo").onclick = () => openDirections({ to: c.value, from: dirForm.from && dirForm.from !== c.value ? dirForm.from : (c.value === "my" ? "" : undefined) });
+    $("cdFrom").onclick = () => openDirections({ from: c.value, to: dirForm.to === c.value ? "" : undefined });
+    return;
+  }
+  show(false);
+}
+
 // ---------- custom pins: a "pins" array on each trip, saved with the trips ----------
 const PIN_COLORS = ["#8E44AD", "#E74C3C", "#27AE60", "#2980B9", "#F39C12", "#16A085"];
 function tripPins(){ const t = activeTrip(); return t ? (t.pins || (t.pins = [])) : []; }
 async function goToPin(pid){
   const p = tripPins().find(x => x.id === pid); if (!p) return;
   state.ship = p.ship; state.deck = p.deck; highlight = null;
+  cardPlace = { ship: p.ship, deck: p.deck, label: p.label, value: "p|" + p.id };
   try { await ensureShip(p.ship); } catch (e) {}
   render(); centerTarget(null, { x: p.x, y: p.y });
 }
@@ -879,7 +1465,7 @@ async function refreshSaved(){
   }
   await refreshSavedPlaces();
 }
-// Download ship.json and every deck image, then store them together as one unit.
+// Download ship.json, every deck image and the ship's other files, then store them together as one unit.
 // saved.json is written last, so a download cut off halfway never counts as saved.
 async function saveShip(id){
   if (!("caches" in window) || downloading[id]) return;
@@ -890,7 +1476,13 @@ async function saveShip(id){
     const get = async f => { const r = await fetch(entry.path + f + bust, { cache: "no-store" }); if (!r.ok) throw new Error(f + " answered " + r.status); return r; };
     const shipRes = await get("ship.json");
     const sh = await shipRes.clone().json();
-    const files = [...new Set([...Object.values(sh.decks).map(d => d.image), ...(sh.geometry ? [sh.geometry] : [])])];
+    // Since 1.16.0 also the Directions rules and the walkable grids (index.json and one file per deck).
+    let walkFiles = [];
+    if (sh.walkable){
+      const wi = await (await get(sh.walkable)).json(), dir = sh.walkable.replace(/[^/]*$/, "");
+      walkFiles = [sh.walkable, ...Object.values(wi.decks || {}).map(f => dir + f)];
+    }
+    const files = [...new Set([...Object.values(sh.decks).map(d => d.image), ...(sh.geometry ? [sh.geometry] : []), ...(sh.directions ? [sh.directions] : []), ...walkFiles])];
     const imgs = await Promise.all(files.map(async f => [f, await get(f)]));
     await caches.delete(shipCacheName(id));
     const c = await caches.open(shipCacheName(id));
@@ -1014,7 +1606,7 @@ function render(){
          <button class="zoom" id="zoomBtn" aria-label="Zoom in">+</button>
        </div>
        ${isWide() ? `<button class="listbtn" id="listBtn">On this deck</button>` : ""}
-       <div class="map" id="map" style="width:${state.zoom * 100}%"><img src="${src}" alt="Deck ${d} plan" onerror="imgFailed()">${hl}${pin}${upins}</div>`
+       <div class="map" id="map" style="width:${state.zoom * 100}%"><img src="${src}" alt="Deck ${d} plan" onerror="imgFailed()">${hl}${pin}${upins}${routeLayer(d)}</div>`
     : `<div class="empty"><strong>No plan image</strong>Deck ${d} doesn't have a plan image yet.</div>`;
   if (src){
     // Keep the plan's width right once the image's size is known, before any scroll below runs.
@@ -1059,11 +1651,12 @@ function render(){
       };
     } else {
       wrap.querySelectorAll(".upin").forEach(b => b.onclick = e => { e.stopPropagation(); openPinEditor(b.dataset.pin); });
-      wrap.querySelectorAll(".hl").forEach(b => b.onclick = () => { highlight = null; render(); });
+      wrap.querySelectorAll(".hl").forEach(b => b.onclick = () => { highlight = null; cardPlace = null; render(); });
     }
     wrap.scrollTop = prevScroll !== null ? prevScroll : 0;
   }
   renderCats();   // the category highlight and the slider
+  renderDBar();   // the route steps, or the place card (1.16.0)
   if (pendingPlace) { if (pendingPlace.deck === d && pendingPlace.ship === state.ship) armPendingPlace(); else pendingPlace = null; }
   save();
 }
@@ -1344,6 +1937,7 @@ function renderMenu(){
     <button class="menuopt" id="mItin" ${activeTrip() ? "" : "disabled"}>Itinerary</button>
     <button class="menuopt" id="mReady">Ready for sea</button>
     <button class="menuopt" id="mPins" ${activeTrip() ? "" : "disabled"}>My pins</button>
+    <button class="menuopt" id="mDir">Directions <span class="beta">Beta</span></button>
     ${data.passphrase ? `<button class="menuopt" id="mInvite">Invite family</button><div class="status" id="mInviteMsg"></div>` : ""}
     <button class="menuopt" id="mLink">Add from a link</button>
     <button class="menuopt" id="mNews">What's new</button>
@@ -1360,13 +1954,14 @@ function renderMenu(){
   $("mNews").onclick = openNews;
   $("mItin").onclick = openItinerary;
   $("mPins").onclick = openPinList;
+  $("mDir").onclick = () => openDirections({});
   $("mReady").onclick = () => openReady();
   $("mLink").onclick = openAddLink;
   if ($("mInvite")) $("mInvite").onclick = () => shareOrCopy("Deck Finder family invite",
     "Tap this link to connect Deck Finder to our family's itinerary lookups.", inviteLink(), "mInviteMsg");
   $("menuBody").querySelectorAll("[data-layout]").forEach(b => b.onclick = () => setLayout(b.dataset.layout));
   $("menuBody").querySelectorAll(".shipopt").forEach(b => b.onclick = () => {
-    state.ship = b.dataset.k; state.zoomAuto = true; state.deck = 0; highlight = null; delete shipErrors[state.ship];
+    state.ship = b.dataset.k; state.zoomAuto = true; state.deck = 0; highlight = null; cardPlace = null; route = null; delete shipErrors[state.ship];
     closeSheets(); render();
   });
   $("menuBody").querySelectorAll("[data-isl]").forEach(b => b.onclick = () => openIsland(b.dataset.isl));
@@ -2208,11 +2803,11 @@ function runSearch(){
   if (/^\d{4,5}$/.test(q)) {
     const d = cabinDeckNum(q);
     const exact = (geoDeck(id, d)?.cabins || []).find(c => c.number === q);
-    if (exact) res.push({ label: "Cabin " + q, deck: d, boxes: [exact.box] });
+    if (exact) res.push({ label: "Cabin " + q, deck: d, boxes: [exact.box], place: { label: "Cabin " + q, value: "c|" + q } });
     // A cabin whose deck plan label is this number (a misprint on the plan).
     for (const [dk, gd] of Object.entries(GEO[id]?.decks || {}))
       (gd.cabins || []).filter(c => c.printed_as === q).forEach(c =>
-        res.push({ label: `Cabin ${c.number} (printed on the plan as ${q})`, deck: Number(dk), boxes: [c.box] }));
+        res.push({ label: `Cabin ${c.number} (printed on the plan as ${q})`, deck: Number(dk), boxes: [c.box], place: { label: "Cabin " + c.number, value: "c|" + c.number } }));
     if (!res.length && d && ship.decks[String(d)]) res.push({ label: "Cabin " + q, deck: d });
   }
   const seen = new Set();
@@ -2230,7 +2825,7 @@ function runSearch(){
       if (a.kind.toLowerCase().includes(q) && !names.some(n => normName(n) === normName(a.kind)))
         (byKind[a.kind] = byKind[a.kind] || []).push(a.box);
     });
-    Object.entries(byKind).forEach(([kind, boxes]) => res.push({ label: boxes.length > 1 ? `${kind} (${boxes.length})` : kind, deck: Number(d), boxes }));
+    Object.entries(byKind).forEach(([kind, boxes]) => res.push({ label: boxes.length > 1 ? `${kind} (${boxes.length})` : kind, deck: Number(d), boxes, place: { label: kind, value: "a|" + d + "|" + kind } }));
   }
   const t = activeTrip();
   if (t && t.ship === id) (t.pins || []).forEach(p => { if (p.ship === id && p.label.toLowerCase().includes(q)) res.push({ label: "📍 " + p.label, deck: p.deck, pin: p.id }); });
@@ -2240,7 +2835,7 @@ function runSearch(){
   out.querySelectorAll(".res").forEach(b => b.onclick = () => {
     const r = res[+b.dataset.i]; closeSheets();
     if (r.pin) goToPin(r.pin);
-    else if (r.boxes) showBoxes(id, r.deck, r.boxes);
+    else if (r.boxes) showBoxes(id, r.deck, r.boxes, r.place);
     else if (r.name) highlightVenue(id, r.deck, r.name);
     else { state.deck = r.deck; highlight = null; render(); }
   });
@@ -2256,7 +2851,10 @@ $("cabinChip").onclick = () => {
   const pt = cabinPoint(t);
   if (!pt) return startPlacing(t.id);
   // Center your cabin at the current zoom. Its green square and pin are always drawn on its deck.
-  state.ship = t.ship; state.deck = cd; highlight = null; render();
+  // Since 1.16.0 its place card offers Directions from (or to) your cabin.
+  state.ship = t.ship; state.deck = cd; highlight = null;
+  cardPlace = { ship: t.ship, deck: cd, label: "Your cabin " + t.cabin, value: "my" };
+  render();
   centerTarget(null, pt);
 };
 
@@ -2268,6 +2866,7 @@ function openPinEditor(pid, isNew){
     <label class="field"><span>Name</span><input id="pName" maxlength="40" value="${esc(p.label)}" placeholder="Mom's cabin, Meet here"></label>
     <div class="field"><span>Color</span><div class="swatches">${PIN_COLORS.map(c => `<button class="sw ${c === p.color ? "on" : ""}" data-c="${c}" style="background:${c}" aria-label="Color ${c}"></button>`).join("")}</div></div>
     <button class="btn" id="pSave">Save</button>
+    <button class="btn ghost" id="pDir">Directions to this pin</button>
     <button class="btn ghost" id="pMove">Move this pin</button>
     <button class="btn danger" id="pDel">Delete pin</button>`;
   let color = p.color;
@@ -2277,6 +2876,7 @@ function openPinEditor(pid, isNew){
   const keep = () => { p.label = $("pName").value.trim() || "Pin"; p.color = color; };
   $("pSave").onclick = () => { keep(); save(); closeSheets(); render(); };
   $("pMove").onclick = () => { keep(); save(); closeSheets(); addingPin = p.id; placing = null; render(); };
+  $("pDir").onclick = () => { keep(); save(); openDirections({ to: "p|" + p.id }); };
   $("pDel").onclick = () => {
     if (!confirm(`Delete the pin "${p.label}"?`)) return;
     const t = activeTrip(); t.pins = (t.pins || []).filter(x => x.id !== p.id); save(); closeSheets(); render();

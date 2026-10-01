@@ -1,5 +1,5 @@
 // Bump VERSION on every release (it must match APP_VERSION and version.json), so phones grab the update.
-const VERSION = "deckfinder-v1.15.0";
+const VERSION = "deckfinder-v1.16.0";
 // Each ship saved for offline lives in its own cache, "deckfinder-ship-<line>-<ship>".
 // These are NOT tied to the app version: they stay until that ship's hash in ships/index.json changes.
 const SHIP_CACHE_PREFIX = "deckfinder-ship-";
@@ -55,8 +55,9 @@ self.addEventListener("fetch", e => {
   const isPage = e.request.mode === "navigate" || rel === "" || rel === "index.html";
   if (isPage || rel === "version.json" || rel === "ships/index.json") { e.respondWith(networkFirst(e.request, isPage)); return; }
 
-  // Ship files (ships/<line>/<ship>/<file>): use the saved copy for that ship if there is one.
-  const ship = rel.match(/^ships\/([^/]+)\/([^/]+)\/[^/]+$/);
+  // Ship files (ships/<line>/<ship>/<file>, and since 1.16.0 files in a ship's subfolder like
+  // walkable/deck5.json): use the saved copy for that ship if there is one.
+  const ship = rel.match(/^ships\/([^/]+)\/([^/]+)\/.+$/);
   if (ship) {
     if (url.search) return; // "?v=" means the app is downloading this ship for offline: go to the network
     const cacheName = SHIP_CACHE_PREFIX + ship[1] + "-" + ship[2];
