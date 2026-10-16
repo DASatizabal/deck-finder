@@ -1,11 +1,12 @@
 // Bump VERSION on every release (it must match APP_VERSION and version.json), so phones grab the update.
-const VERSION = "deckfinder-v1.16.2";
+const VERSION = "deckfinder-v1.17.0";
 // Each ship saved for offline lives in its own cache, "deckfinder-ship-<line>-<ship>".
 // These are NOT tied to the app version: they stay until that ship's hash in ships/index.json changes.
 const SHIP_CACHE_PREFIX = "deckfinder-ship-";
 // Island maps work the same way: each lives in its own cache, "deckfinder-place-<id>".
 const PLACE_CACHE_PREFIX = "deckfinder-place-";
-const FILES = ["./", "./index.html", "./version.json", "./ships/index.json", "./manifest.webmanifest", "./icon-192.png", "./icon-512.png"];
+// vendor/fuse.basic.min.js (1.17.0) is the fuzzy search library, bundled so search works offline at sea.
+const FILES = ["./", "./index.html", "./version.json", "./ships/index.json", "./manifest.webmanifest", "./icon-192.png", "./icon-512.png", "./vendor/fuse.basic.min.js"];
 const TIMEOUT_MS = 3000;
 
 self.addEventListener("install", e => {

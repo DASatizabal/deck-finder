@@ -32,6 +32,13 @@ Checks:
     positive numbers and a list of tips. Since 1.16.2 its "either" stairs limit must be a whole number
     above 0, and each of its "names" must name a stairway or elevator bank of the walkable index (with
     the same decks).
+12. Since 1.17.0, every ships/<line>/<ship>/aliases.json is named by its ship.json ("aliases") and is
+    valid: an object with "venues", "amenities" and "landmarks", each mapping a name to {"aliases": [...],
+    "drafted": [...]} lists of short texts. Every venue name must be a venue in the ship's ship.json deck
+    lists or geometry, every amenity name an amenity kind in the geometry, and every landmark name a
+    landmark kind in the geometry (restroom, elevator, stairs).
+13. Since 1.17.0, every <script src> in index.html is a file in this repo (never the internet), is
+    saved for offline in sw.js FILES, and has its license file next to it (vendor/<name>-LICENSE.txt).
 """
 import base64
 import json
@@ -39,6 +46,7 @@ import os
 import re
 import subprocess
 import sys
+import unicodedata
 from pathlib import Path
 
 errors = []
@@ -62,6 +70,12 @@ def load_json(path, label):
 
 def parse(v):
     return tuple(int(x) for x in v.split("."))
+
+
+def norm_name(x):
+    """The app's normName: no accents or apostrophes, lower case, words split on anything else."""
+    x = "".join(c for c in unicodedata.normalize("NFD", str(x)) if not unicodedata.combining(c)).lower()
+    return re.sub(r"[^a-z0-9]+", " ", re.sub(r"[’']", "", x)).strip()
 
 
 # 1. Versions match
@@ -156,17 +170,56 @@ for ship_file in ship_files:
 
     # 8. A geometry file named in ship.json exists and is valid JSON
     geo = ship.get("geometry")
+    geometry = None
     if geo is not None:
         gpath = ship_file.parent / str(geo)
         if not isinstance(geo, str) or not gpath.is_file():
             fail(f"{folder}/ship.json names geometry {geo!r}, but that file is missing")
         else:
             try:
-                g = json.loads(gpath.read_text(encoding="utf-8"))
-                if not isinstance(g.get("decks"), dict):
+                geometry = json.loads(gpath.read_text(encoding="utf-8"))
+                if not isinstance(geometry.get("decks"), dict):
                     fail(f"{folder}/{geo} has no \"decks\" object")
+                    geometry = None
             except json.JSONDecodeError as e:
                 fail(f"{folder}/{geo} is not valid JSON: {e}")
+
+    # 12. Search aliases (1.17.0): valid, and every name is a real venue, amenity or landmark type.
+    al = ship.get("aliases")
+    if al is None:
+        if (ship_file.parent / "aliases.json").is_file():
+            fail(f"{folder}/aliases.json exists, but {folder}/ship.json doesn't name it. Add \"aliases\": \"aliases.json\".")
+    elif not isinstance(al, str) or not (ship_file.parent / al).is_file():
+        fail(f"{folder}/ship.json names aliases {al!r}, but that file is missing")
+    else:
+        aliases = load_json(ship_file.parent / al, f"{folder}/{al}")
+        gdecks = (geometry or {}).get("decks") or {}
+        venue_names = {norm_name(n) for info in decks.values() if isinstance(info, dict) for n in info.get("venues") or []}
+        venue_names |= {norm_name(v.get("name")) for gd in gdecks.values() for v in gd.get("venues") or []}
+        amenity_kinds = {norm_name(a.get("kind")) for gd in gdecks.values() for a in gd.get("amenities") or []}
+        landmark_kinds = {l.get("kind") for gd in gdecks.values() for l in gd.get("landmarks") or []}
+        if not isinstance(aliases, dict):
+            if aliases is not None:
+                fail(f"{folder}/{al} must be an object with \"venues\", \"amenities\" and \"landmarks\"")
+        else:
+            for section, known, what in (("venues", venue_names, "a venue in ship.json or the geometry"),
+                                         ("amenities", amenity_kinds, "an amenity kind in the geometry"),
+                                         ("landmarks", None, "a landmark kind in the geometry")):
+                sec = aliases.get(section)
+                if not isinstance(sec, dict):
+                    fail(f"{folder}/{al} needs a \"{section}\" object (it can be empty: {{}})")
+                    continue
+                for name, entry in sec.items():
+                    ok_name = name in landmark_kinds if section == "landmarks" else norm_name(name) in known
+                    if not ok_name:
+                        fail(f"{folder}/{al}: {section} name {name!r} is not {what}. Check the spelling against ship.json and geometry.json.")
+                    lists = [entry.get(k) for k in ("aliases", "drafted")] if isinstance(entry, dict) else [None]
+                    if not isinstance(entry, dict) or set(entry) - {"aliases", "drafted"} or not all(
+                            isinstance(x, list) and all(isinstance(s, str) and s.strip() and len(s) <= 60 for s in x) for x in lists):
+                        fail(f"{folder}/{al}: {name!r} needs \"aliases\" and \"drafted\" lists of short texts (60 characters at most)")
+            extra = set(aliases) - {"about", "venues", "amenities", "landmarks"}
+            if extra:
+                fail(f"{folder}/{al} has unknown fields: {', '.join(sorted(extra))}")
 
     # 11. Walkable grids for Directions (1.16.0): every deck has a grid of the right size, and every
     #     stairs or elevator connection names real decks, with access cells inside the grids.
@@ -343,6 +396,21 @@ for place_file in sorted(Path("places").glob("*/place.json")):
                 fail(f"{sf} must hold coordinates only, never image data")
 for img in sorted(x for x in Path("places").rglob("*") if x.is_file() and x.suffix.lower() in (".webp", ".png", ".jpg", ".jpeg", ".gif", ".avif", ".heic", ".bmp", ".tif", ".tiff")):
     fail(f"{img.as_posix()} is an image under places/. Island images (like the island sign) must never be published. Remove it.")
+
+# 13. Scripts the app loads (1.17.0: Fuse.js) come from this repo, are saved for offline, and keep their license.
+sw_files = set(re.findall(r'"\./([^"]*)"', (re.search(r"const FILES\s*=\s*\[(.*?)\]", sw, re.S) or [None, ""])[1]))
+for src in re.findall(r'<script\b[^>]*\bsrc\s*=\s*"([^"]+)"', html):
+    if re.match(r"^(https?:)?//", src) or ":" in src:
+        fail(f"index.html loads {src} from the internet. Bundle it in vendor/ so the app works offline at sea.")
+        continue
+    path = src.split("?")[0].lstrip("./")
+    if not Path(path).is_file():
+        fail(f"index.html loads {src}, but {path} is missing")
+    if path not in sw_files:
+        fail(f"index.html loads {src}, but sw.js FILES doesn't list \"./{path}\", so it wouldn't work offline")
+    lic = re.sub(r"(\.basic)?(\.min)?\.js$", "", Path(path).name)
+    if path.startswith("vendor/") and not Path(f"vendor/{lic}.js-LICENSE.txt").is_file() and not Path(f"vendor/{lic}-LICENSE.txt").is_file():
+        fail(f"{path} needs its license file next to it (vendor/{lic}.js-LICENSE.txt)")
 
 # 6. ships/index.json is up to date
 sys.path.insert(0, "tools")

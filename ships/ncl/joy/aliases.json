@@ -1,0 +1,6 @@
+{
+  "about": "Other names people say for each place, used by Search. To be filled during this ship's review in deck-finder-builder. Each place gets \"aliases\" (checked by David) and \"drafted\" (still to be checked). Venue and amenity names must match a name in ship.json or geometry.json; landmark names must be restroom, elevator or stairs. The release check fails on any name that matches nothing.",
+  "venues": {},
+  "amenities": {},
+  "landmarks": {}
+}

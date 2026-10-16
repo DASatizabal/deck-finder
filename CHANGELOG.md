@@ -1,5 +1,16 @@
 # Changelog
 
+## [1.17.0] - 2026-10-16
+### Added
+- Search understands the names people say, like "daycare" for Splash Academy, "front desk" for Guest Services, or "bathroom" for restrooms, and still finds places when a word is misspelled or only partly typed.
+- Search covers every deck at once. Each result shows its deck, and tapping it takes you there with the place lit up.
+- With nothing typed, search shows your cabin, your favorites, the places you looked up last, and categories (Food, Bars, Kids, Pools, Restrooms, Medical, Shops, Entertainment) listed deck by deck.
+- Favorites: tap the star next to any place, cabin or pin. They belong to your trip and are included when you share it. Your muster station can be added in Trip set up.
+- A "BOW" label marks the front of the ship on every deck plan, and an arrow at the edge of the plan points to it when it is off screen.
+- A Flip map button turns the plan around to match the way you are facing. Your phone remembers the choice.
+### Changed
+- In Directions, From and To are now searched the same way, so you no longer need to know the deck first.
+
 ## [1.16.2] - 2026-10-01
 ### Changed
 - Directions on Norwegian Getaway use hand-checked hallway maps, real venue entrances (like the Getaway Theater's doors on Deck 7), and the atrium stairs, and take elevators instead of long climbs.

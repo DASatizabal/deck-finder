@@ -1,0 +1,369 @@
+{
+  "about": "Other names people say for each place, used by Search. Each place has \"aliases\" (David's starter set, or ones he has checked) and \"drafted\" (written by Claude for 1.17.0, still to be checked by David). Search uses both. To approve a drafted alias, move it into \"aliases\"; to drop one, delete it. Venue and amenity names must match a name in ship.json or geometry.json; landmark names must be restroom, elevator or stairs. The release check fails on any name that matches nothing.",
+  "venues": {
+    "Medical Center": {
+      "aliases": ["doctor", "nurse", "infirmary", "clinic", "medical"],
+      "drafted": ["first aid", "sick bay", "hospital", "seasick", "health center"]
+    },
+    "Getaway Theater": {
+      "aliases": ["theater", "theatre", "showroom", "show", "main stage"],
+      "drafted": ["shows", "auditorium", "stage", "broadway show"]
+    },
+    "Illusionarium": {
+      "aliases": [],
+      "drafted": ["magic show", "magic", "illusion", "dinner show"]
+    },
+    "Guest Services": {
+      "aliases": ["front desk", "reception", "purser", "customer service"],
+      "drafted": ["information", "info desk", "help desk", "lost and found", "guest relations"]
+    },
+    "Shore Excursion Desk": {
+      "aliases": [],
+      "drafted": ["excursions", "shore excursions", "tours", "port tours", "excursion desk"]
+    },
+    "The Atrium": {
+      "aliases": [],
+      "drafted": ["lobby", "main lobby", "centrum"]
+    },
+    "Bar at the Atrium": {
+      "aliases": [],
+      "drafted": ["atrium bar", "lobby bar"]
+    },
+    "Starbucks": {
+      "aliases": [],
+      "drafted": ["coffee", "coffee shop", "cafe", "latte", "espresso"]
+    },
+    "Internet Café": {
+      "aliases": [],
+      "drafted": ["internet", "wifi", "wi-fi", "computers"]
+    },
+    "Card Room": {
+      "aliases": [],
+      "drafted": ["cards", "card games", "board games", "games room"]
+    },
+    "Meeting Rooms": {
+      "aliases": [],
+      "drafted": ["meeting room", "conference room"]
+    },
+    "Perspectives Photo Studio": {
+      "aliases": [],
+      "drafted": ["photo studio", "portraits", "photographer", "family photos"]
+    },
+    "The Collection Art Gallery": {
+      "aliases": [],
+      "drafted": ["art", "art gallery", "art auction", "paintings"]
+    },
+    "Headliners Comedy Club": {
+      "aliases": [],
+      "drafted": ["comedy", "comedy show", "comedian", "stand up"]
+    },
+    "Le Bistro French Restaurant": {
+      "aliases": [],
+      "drafted": ["french", "french food", "bistro", "fine dining"]
+    },
+    "Teppanyaki": {
+      "aliases": [],
+      "drafted": ["hibachi", "japanese grill", "benihana"]
+    },
+    "Mixx Bar": {
+      "aliases": [],
+      "drafted": ["cocktails", "cocktail bar"]
+    },
+    "Savor Restaurant": {
+      "aliases": [],
+      "drafted": ["main dining", "dining room", "mdr", "dinner"]
+    },
+    "Taste Restaurant": {
+      "aliases": [],
+      "drafted": ["main dining", "dining room", "mdr", "dinner"]
+    },
+    "678 Ocean Place (Deck 6)": {
+      "aliases": [],
+      "drafted": ["ocean place", "678"]
+    },
+    "678 Ocean Place (Deck 7)": {
+      "aliases": [],
+      "drafted": ["ocean place", "678"]
+    },
+    "678 Ocean Place (Deck 8)": {
+      "aliases": [],
+      "drafted": ["ocean place", "678"]
+    },
+    "Box Office": {
+      "aliases": [],
+      "drafted": ["tickets", "show tickets", "ticket desk", "show reservations"]
+    },
+    "O'Sheehan's Neighborhood Bar & Grill": {
+      "aliases": ["pub", "bar food", "24 hour", "late night food"],
+      "drafted": ["irish pub", "burgers", "wings", "sports bar", "free food"]
+    },
+    "Getaway Casino": {
+      "aliases": [],
+      "drafted": ["casino", "slots", "slot machines", "gambling", "blackjack", "poker"]
+    },
+    "Bliss Ultra Lounge": {
+      "aliases": [],
+      "drafted": ["nightclub", "night club", "dance club", "dancing", "disco", "club"]
+    },
+    "Bar 21": {
+      "aliases": [],
+      "drafted": ["lounge", "cocktail bar"]
+    },
+    "Shanghai's Noodle Bar": {
+      "aliases": [],
+      "drafted": ["noodles", "chinese", "chinese food", "dumplings", "asian food"]
+    },
+    "The Manhattan Room": {
+      "aliases": [],
+      "drafted": ["supper club", "dinner and dancing", "main dining", "dining room", "mdr"]
+    },
+    "The Waterfront (outdoor promenade)": {
+      "aliases": [],
+      "drafted": ["promenade", "boardwalk", "outdoor walkway", "waterfront"]
+    },
+    "La Cucina Italian Restaurant": {
+      "aliases": [],
+      "drafted": ["italian", "italian food", "pasta", "pizza"]
+    },
+    "Syd Norman's Pour House": {
+      "aliases": [],
+      "drafted": ["rock bar", "live music", "classic rock", "rock and roll"]
+    },
+    "Sunset Bar": {
+      "aliases": [],
+      "drafted": ["outdoor bar", "sunset"]
+    },
+    "The Humidor Cigar Lounge": {
+      "aliases": [],
+      "drafted": ["cigars", "cigar bar", "smoking", "smoking lounge"]
+    },
+    "Ice Bar": {
+      "aliases": [],
+      "drafted": ["frozen bar", "coldest bar", "igloo"]
+    },
+    "Sugarcane Mojito Bar": {
+      "aliases": [],
+      "drafted": ["mojito", "mojitos", "rum bar"]
+    },
+    "The Raw Bar": {
+      "aliases": [],
+      "drafted": ["oysters", "shellfish", "seafood bar"]
+    },
+    "Wasabi": {
+      "aliases": [],
+      "drafted": ["sushi", "sushi bar", "japanese"]
+    },
+    "Ocean Blue": {
+      "aliases": [],
+      "drafted": ["seafood", "seafood restaurant", "fish"]
+    },
+    "Cagney's Steakhouse": {
+      "aliases": [],
+      "drafted": ["steak", "steaks", "steakhouse", "beef"]
+    },
+    "Moderno Churrascaria": {
+      "aliases": [],
+      "drafted": ["brazilian", "brazilian steakhouse", "churrasco", "rodizio", "meat skewers"]
+    },
+    "Prime Meridian Bar": {
+      "aliases": [],
+      "drafted": ["lounge", "cocktail bar"]
+    },
+    "Dolce Gelato": {
+      "aliases": [],
+      "drafted": ["ice cream", "gelato", "dessert", "sorbet"]
+    },
+    "The Bake Shop": {
+      "aliases": [],
+      "drafted": ["bakery", "cupcakes", "pastries", "cookies", "desserts"]
+    },
+    "Tradewinds Tax & Duty Free": {
+      "aliases": [],
+      "drafted": ["duty free", "liquor", "alcohol", "perfume", "jewelry", "store"]
+    },
+    "Tides Boutique": {
+      "aliases": [],
+      "drafted": ["souvenirs", "gift shop", "logo shop", "clothes", "store"]
+    },
+    "Photo Gallery": {
+      "aliases": [],
+      "drafted": ["photos", "pictures", "buy photos", "photo pickup"]
+    },
+    "Moderno Waterfront": {
+      "aliases": [],
+      "drafted": ["moderno outdoor seating", "outdoor seating"]
+    },
+    "Ocean Blue Waterfront": {
+      "aliases": [],
+      "drafted": ["ocean blue outdoor seating", "outdoor seating"]
+    },
+    "Sugarcane Mojito Bar Waterfront": {
+      "aliases": [],
+      "drafted": ["sugarcane outdoor seating", "outdoor seating"]
+    },
+    "Syd Normans Pour House Waterfront": {
+      "aliases": [],
+      "drafted": ["syd normans outdoor seating", "outdoor seating"]
+    },
+    "Studio Lounge": {
+      "aliases": [],
+      "drafted": ["solo travelers", "singles lounge", "studio cabins lounge"]
+    },
+    "Splash Academy": {
+      "aliases": ["daycare", "kids club", "childcare", "kids", "youth program", "babysitting"],
+      "drafted": ["children's club", "kids program", "camp"]
+    },
+    "Spa": {
+      "aliases": ["spa", "massage", "salon", "thermal suite"],
+      "drafted": ["mandara", "mandara spa", "facial", "wellness", "sauna", "steam room"]
+    },
+    "Garden Café": {
+      "aliases": [],
+      "drafted": ["buffet", "breakfast", "lunch buffet", "cafeteria", "food court"]
+    },
+    "Open-Air Garden Café": {
+      "aliases": [],
+      "drafted": ["outdoor buffet", "outdoor dining"]
+    },
+    "The Market Place": {
+      "aliases": [],
+      "drafted": ["convenience store", "sundries", "snacks", "store"]
+    },
+    "Waves Pool Bar": {
+      "aliases": [],
+      "drafted": ["pool bar", "poolside bar", "drinks by the pool"]
+    },
+    "Aqua Park": {
+      "aliases": [],
+      "drafted": ["water park", "waterpark", "water slides", "slides"]
+    },
+    "Kids' Aqua Park": {
+      "aliases": [],
+      "drafted": ["kids pool", "kiddie pool", "toddler pool", "splash pad"]
+    },
+    "Slide": {
+      "aliases": [],
+      "drafted": ["water slide", "waterslide", "slides"]
+    },
+    "Fitness Center": {
+      "aliases": [],
+      "drafted": ["gym", "workout", "weights", "treadmill", "exercise"]
+    },
+    "Spa Thermal Suite": {
+      "aliases": [],
+      "drafted": ["thermal suite", "sauna", "steam room", "heated loungers"]
+    },
+    "Salt Room": {
+      "aliases": [],
+      "drafted": ["salt therapy", "halotherapy"]
+    },
+    "Salon": {
+      "aliases": [],
+      "drafted": ["hair salon", "haircut", "nails", "manicure", "beauty salon"]
+    },
+    "Barber Shop": {
+      "aliases": [],
+      "drafted": ["barber", "haircut", "shave"]
+    },
+    "American Diner": {
+      "aliases": [],
+      "drafted": ["diner", "burgers", "fries", "milkshakes"]
+    },
+    "Spice H2O": {
+      "aliases": [],
+      "drafted": ["adults only", "adult pool", "adults pool", "18 plus"]
+    },
+    "Entourage Teen Lounge": {
+      "aliases": [],
+      "drafted": ["teens", "teen club", "teen lounge", "teenagers"]
+    },
+    "Video Arcade": {
+      "aliases": [],
+      "drafted": ["arcade", "video games", "games", "game room"]
+    },
+    "Guppies": {
+      "aliases": [],
+      "drafted": ["babies", "baby", "toddlers", "infants", "nursery", "playroom"]
+    },
+    "The Whip": {
+      "aliases": [],
+      "drafted": ["water slide", "waterslide", "racing slides", "slides"]
+    },
+    "Free Fall": {
+      "aliases": [],
+      "drafted": ["water slide", "waterslide", "drop slide", "slides"]
+    },
+    "Jogging Track": {
+      "aliases": [],
+      "drafted": ["running track", "running", "walking track", "jog"]
+    },
+    "Bar": {
+      "aliases": [],
+      "drafted": ["drinks", "pool deck bar"]
+    },
+    "The Haven Courtyard": {
+      "aliases": [],
+      "drafted": ["haven pool", "haven"]
+    },
+    "The Haven Lounge": {
+      "aliases": [],
+      "drafted": ["haven bar", "haven"]
+    },
+    "The Haven Restaurant": {
+      "aliases": [],
+      "drafted": ["haven dining", "haven"]
+    },
+    "Private Spa": {
+      "aliases": [],
+      "drafted": ["haven spa"]
+    },
+    "Vibe Beach Club": {
+      "aliases": [],
+      "drafted": ["adults only", "beach club", "cabanas", "adult sun deck"]
+    },
+    "The Haven Private Sun Deck": {
+      "aliases": [],
+      "drafted": ["haven sundeck", "haven sun deck", "haven"]
+    },
+    "Sports Complex": {
+      "aliases": [],
+      "drafted": ["sports", "mini golf", "climbing wall", "rock climbing", "sports deck"]
+    },
+    "Ropes Course": {
+      "aliases": [],
+      "drafted": ["ropes", "obstacle course", "zip line", "high ropes"]
+    },
+    "The Whip and Free Fall (tops)": {
+      "aliases": [],
+      "drafted": ["slide tops", "water slides"]
+    },
+    "Basketball Court": {
+      "aliases": [],
+      "drafted": ["basketball", "hoops", "sports court"]
+    }
+  },
+  "amenities": {
+    "Pool": {
+      "aliases": [],
+      "drafted": ["swimming pool", "swim", "main pool", "pools"]
+    },
+    "Sun Deck": {
+      "aliases": [],
+      "drafted": ["sunbathing", "tanning", "loungers", "deck chairs"]
+    }
+  },
+  "landmarks": {
+    "restroom": {
+      "aliases": ["bathroom", "toilet", "restroom", "washroom", "loo"],
+      "drafted": ["restrooms", "bathrooms", "wc", "lavatory", "men's room", "ladies room", "potty"]
+    },
+    "elevator": {
+      "aliases": ["elevator", "lift"],
+      "drafted": ["elevators", "lifts"]
+    },
+    "stairs": {
+      "aliases": ["stairs", "stairway", "staircase"],
+      "drafted": ["stairwell", "steps"]
+    }
+  }
+}

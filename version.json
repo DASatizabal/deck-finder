@@ -1,5 +1,5 @@
 {
-  "version": "1.16.2",
-  "date": "2026-10-01",
-  "notes": "Directions on Norwegian Getaway use hand-checked hallway maps, real venue entrances and the atrium stairs, and reach every part of the top decks."
+  "version": "1.17.0",
+  "date": "2026-10-16",
+  "notes": "Search finds places by the names people say, with typos and on every deck, plus favorites, recent places, categories, a BOW label and a Flip map button."
 }

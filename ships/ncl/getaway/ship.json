@@ -6,6 +6,8 @@
   "geometry": "geometry.json",
   "walkable": "walkable/index.json",
   "directions": "directions.json",
+  "aliases": "aliases.json",
+  "cabins_increase_aft": true,
   "decks": {
     "5": {
       "image": "deck5.webp",

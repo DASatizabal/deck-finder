@@ -10,24 +10,24 @@
           "name": "Norwegian Aqua",
           "path": "ships/ncl/aqua/",
           "decks": 16,
-          "bytes": 1153143,
-          "hash": "8986e93f47eeb448e699db3c866224eb0753d31a251465ac5b1409a89744e2fd"
+          "bytes": 1153662,
+          "hash": "25112a5db09a36dbaff518a994b27691eb7975fa814fc28eef2cd450ca8ac3ac"
         },
         {
           "id": "ncl/getaway",
           "name": "Norwegian Getaway",
           "path": "ships/ncl/getaway/",
           "decks": 14,
-          "bytes": 1900413,
-          "hash": "396174b922eeaa4bf73c699031396f618cee02cb297a1690a8a15beb56c8a686"
+          "bytes": 1912175,
+          "hash": "44090ef0a6534044582d99b24ae2a6ac82f7fab3c1a79c49580c5f9198388443"
         },
         {
           "id": "ncl/joy",
           "name": "Norwegian Joy",
           "path": "ships/ncl/joy/",
           "decks": 16,
-          "bytes": 1530303,
-          "hash": "a3317fd78e160a2b8bb866190996883d3dd3a3c3679b27eb5b75f478e3bc68ee"
+          "bytes": 1530822,
+          "hash": "dbc7159a1ff01f4f982ba613dbdd86d34d8010dbf3e972bb8540e0dc3c3e9c89"
         }
       ]
     }
