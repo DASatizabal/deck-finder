@@ -5,7 +5,7 @@ Read this with `CLAUDE.md` at the start of every session. CLAUDE.md holds the ru
 ## Current state
 
 - **Live version:** 1.16.2, at https://dasatizabal.github.io/deck-finder/ (check `version.json` there). Confirmed live on 2026-10-01. This is the last Getaway release planned before the Oct 2 sailing.
-- **Android app:** the Android lane's newest APK is android4, which bundles 1.16.1 (see deck-finder-android's NOTES.md). **The Android lane must build the next APK with 1.16.2 (commit `0b783fa`)** and attach it to release v1.16.2 as `deck-finder-android.apk`. Without it, phones on android4 keep the 1.16.1 hallway maps and routes, and see no update banner (the app offers an update only when the newest GitHub release has `deck-finder-android.apk` attached, and v1.16.2 has none yet).
+- **Android app:** done. The Android lane's newest APK is android5, which bundles 1.16.2 (see deck-finder-android's NOTES.md), and it is attached to release v1.16.2 as `deck-finder-android.apk` (7,876,134 bytes, checked on 2026-10-16).
 - **Priority ship:** Norwegian Getaway, which the family sails first (Oct 2, 2026). Joy and Aqua trips follow later. Trip details and cabin numbers live only in the saved trips on the phones, not in this public repo.
 - **Worker status (2026-09-27):** deployed at https://deck-finder.dasatizabal.workers.dev with the KV version of `worker/worker.js`, the secrets `CRUISEFEED_KEY` and `APP_PASS`, and the KV namespace `deck-finder-itineraries` bound as `ITINERARIES`. The Getaway Oct 2 sailing is seeded in KV with full times, and the live route returned it. The phones still need to re-run the Oct 2 lookup (Trip set up, Edit, Save and look up itinerary).
 - **Install status:** David was installing the app on his Android phone for the first time. The first attempt failed with "This app cannot be installed", which 1.6.1 fixed. A successful install on a real phone has not been confirmed yet.
@@ -227,11 +227,7 @@ Fields have only been added, never renamed or reshaped.
   - **Consequence of the update check (since 1.16.1):** a web release no longer makes the app offer anything until the Android lane attaches `deck-finder-android.apk` to that release. GitHub's "latest" release is the newest one, so a newer web release without an APK hides the offer of an older release's APK.
   - **Not done in 1.14.0:** all-aboard notifications (Android NOTES Phase 2 plan 1), Save to Downloads, and opening invite and trip links in the app (Android App Links need `/.well-known/assetlinks.json` on dasatizabal.github.io). Tapping a link in Messages still opens Chrome; Add from a link works in the app.
   - **Not tried on a real phone or the emulator yet:** all of the above. The tests used Playwright with test doubles for Capacitor and every plugin.
-- **What the Android lane must do next (in deck-finder-android, following its own CLAUDE.md):**
-  1. Bring in deck-finder 1.16.2 (commit `0b783fa`) as the bundled web copy.
-  2. Build with `scripts\build_release.ps1`, which checks the signing certificate and attaches the APK to release v1.16.2 as `deck-finder-android.apk`.
-  3. On the emulator, check: Directions from cabin 5768 to the Getaway Theater ends at its Deck 7 door; to the Sports Complex takes the elevators to 16 and the stairs to 17; Guest Services to La Cucina says "the atrium stairs"; "Also set a Clock alarm" opens the Clock app and the message says "Opened the Clock app with an alarm for ..."; with Clock disabled it shows the plugin's "No Clock app on this phone..." text.
-  4. Note in deck-finder-android's NOTES.md which deck-finder version and commit the APK bundles, and mark the Clock alarm message item done.
+- **Android lane for 1.16.2: done.** android5 bundles 1.16.2 and is attached to release v1.16.2 as `deck-finder-android.apk`. The emulator checks (Getaway Theater door, Sports Complex, the atrium stairs, the Clock alarm messages) are recorded in deck-finder-android's NOTES.md.
 
 ## Lessons learned
 
